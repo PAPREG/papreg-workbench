@@ -56,7 +56,7 @@ Serve the parent directory so that a local copy of the data repository is reacha
 (`localData` in `config.local.json`), and open `?config=config.local.json`:
 
 ```
-cd ~/github && python3 -m http.server 8090
+cd .. && python3 -m http.server 8090        # run from the app directory
 # http://localhost:8090/papreg_workbench/?config=config.local.json          (task view)
 # http://localhost:8090/papreg_workbench/?config=config.local.json&page=RV10/4r
 ```
