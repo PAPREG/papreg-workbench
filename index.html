@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PAPREG · HTR review</title>
+<style>
+/* Junicode (P. S. Baker, SIL Open Font License, fonts/OFL.txt): covers MUFI, incl. the
+   private-use abbreviation signs of CATMuS (U+F1AC in plerũq\uf1ac, atq\uf1ac, possessionib\uf1ac) */
+@font-face{font-family:"Junicode";src:url("fonts/JunicodeVF-Roman.woff2") format("woff2");font-weight:300 700;font-display:swap}
+:root{
+  --fs:1;
+  --bg:#fbfbfa; --ink:#161616; --mute:#6e6e6a; --rule:#e5e4e0; --sel:#f1f0ec;
+  --err:#b42318; --err-bg:#fde4e3; --unc:#9a5b00; --unc-bg:#fff0c7; --ok:#2f6b3a; --ok-bg:#e3f2e3;
+  /* cursus: categorical slots 1-3; entities: validated 4-slot set (always shown with a text tag) */
+  --planus:#2a78d6; --tardus:#eb6834; --velox:#1baf7a;
+  --person:#4a3aa7; --place:#008300; --org:#e87ba4; --date:#eda100;
+  --serif:"Junicode","Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Junicode",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#141413; --ink:#e9e8e3; --mute:#9a9892; --rule:#2c2b28; --sel:#1f1e1c;
+    --err:#f0846f; --err-bg:#4a1f1b; --unc:#e8a55a; --unc-bg:#3d3112; --ok:#7fbf8c; --ok-bg:#1b3320;
+    --planus:#3987e5; --tardus:#d95926; --velox:#199e70; --person:#9085e9; --place:#008300; --org:#d55181; --date:#c98500;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 var(--sans)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button.t{color:var(--mute)} button.t:hover,button.t[aria-pressed="true"]{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+button.b{border:1px solid var(--ink);padding:3px 10px;border-radius:2px}
+button.b.sm{padding:1px 7px;font-size:12px}
+button:disabled{opacity:.35;cursor:default}
+select,input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:0;border-bottom:1px solid var(--ink);padding:2px 0;outline:none;border-radius:0}
+header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--rule);padding:10px 22px 8px}
+.row1,.row2{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px;max-width:1500px;margin:0 auto}
+.row1 h1{font:600 14px var(--sans);margin:0}
+.row1 .src{color:var(--mute)}
+.row1 .sp{flex:1}
+.row1 .who{color:var(--mute)} .row1 .who b{color:var(--ink);font-weight:600}
+#sync{color:var(--mute);font-variant-numeric:tabular-nums}
+#sync.dirty::before{content:"● ";color:var(--unc)}
+#sync.clean::before{content:"● ";color:var(--ok)}
+.row2{margin-top:4px;color:var(--mute);font-size:12px}
+.row2 .sep{color:var(--rule)}
+.row3{font-size:11px;margin-top:2px}
+main{display:grid;grid-template-columns:minmax(240px,32%) 1fr;max-width:1500px;margin:0 auto}
+@media (max-width:900px){header{position:static}.row2 .keys,.row3 .sep,.row2 .sep{display:none}main{grid-template-columns:1fr}.viewer{position:static!important;border-right:0!important;border-bottom:1px solid var(--rule);max-height:none!important}}
+.viewer{position:sticky;top:var(--hdr,92px);align-self:start;padding:18px 22px;border-right:1px solid var(--rule);max-height:calc(100vh - var(--hdr,92px));overflow:auto}
+.lbl{font:600 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:0 0 10px}
+.lbl.gap{margin-top:26px}
+.stage{position:relative;line-height:0}
+.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.stage svg{width:100%;height:auto;display:block;position:relative}
+#lens{position:absolute;width:200px;height:200px;border-radius:50%;border:1px solid var(--ink);background-repeat:no-repeat;pointer-events:none;z-index:5;background-color:var(--bg)}
+.live{font-weight:700;margin:14px 0 4px}
+.note{color:var(--mute);font-size:12px;margin:4px 0}
+.imgbar{margin-top:10px;font-size:12px;color:var(--mute)}
+.imgbar label{text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:var(--ink)}
+/* model progress */
+.mp-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mp-head .big{font:600 22px var(--sans);font-variant-numeric:tabular-nums}
+.mp-head .delta{color:var(--ok);font-size:12px}
+.mp svg{width:100%;height:auto;display:block;overflow:visible}
+.mp .axis{stroke:var(--rule)} .mp text{fill:var(--mute);font:10.5px var(--sans)}
+.mp .ser{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.mp .s-wer{stroke:var(--planus)} .mp .s-cer{stroke:var(--tardus)}
+.mp .dot{stroke:var(--bg);stroke-width:2}
+.mp .hit{fill:transparent;cursor:default}
+.mp .key{display:flex;gap:14px;font-size:12px;color:var(--mute);margin-top:2px}
+.mp .key i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px}
+.mp details{margin-top:6px;font-size:12px;color:var(--mute)}
+.mp table{border-collapse:collapse;margin-top:6px;font-variant-numeric:tabular-nums}
+.mp td,.mp th{padding:2px 10px 2px 0;text-align:right;font-weight:400}
+.mp th{color:var(--mute);border-bottom:1px solid var(--rule)}
+#mpTip{position:fixed;z-index:90;background:var(--bg);border:1px solid var(--ink);padding:5px 8px;font-size:12px;pointer-events:none;display:none;line-height:1.4}
+.pending{margin-top:8px;font-size:12px}
+/* transcription */
+.editor{padding:18px 26px 80px;min-width:0}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--mute);font-size:12px;margin:0 0 14px}
+.legend i{font-style:normal;color:var(--ink);font-family:var(--serif);font-size:14px;padding:0 2px}
+.line{display:grid;grid-template-columns:70px 1fr 30px;gap:12px;padding:4px 0}
+.line.active{background:var(--sel)}
+.line.dim{opacity:.3}
+.ln{color:var(--mute);font:11px var(--sans);text-align:right;padding-top:6px;cursor:pointer;font-variant-numeric:tabular-nums}
+.marks{font:10.5px var(--sans);color:var(--mute);padding-top:6px;line-height:1.3}
+.marks .y{color:var(--ok);font-weight:600}
+.dipl{font:calc(13.5px * var(--fs))/1.7 var(--mono);color:var(--mute);cursor:text;white-space:pre-wrap;overflow-wrap:anywhere}
+.dipl.changed{color:var(--ink)}
+.dipl .tag{font:10px var(--sans);letter-spacing:.06em;text-transform:uppercase;margin-right:8px;color:var(--mute)}
+.dipl input{width:100%;font:calc(13.5px * var(--fs)) var(--mono)}
+.txt{font:calc(17px * var(--fs))/2.45 var(--serif);overflow-wrap:anywhere}
+.layer-dipl .txt{display:none} .layer-edit .dipl{display:none}
+.w{cursor:pointer;outline:none;border-radius:2px;padding:0 1px}
+.w:focus{box-shadow:0 0 0 1.5px var(--ink)}
+.on .w.low{background:var(--err-bg);text-decoration:underline wavy var(--err) 1.5px;text-underline-offset:4px}
+.on .w.med{background:var(--unc-bg);text-decoration:underline dotted var(--unc) 2px;text-underline-offset:4px}
+.on .w.name{text-decoration:underline dotted var(--mute) 1px;text-underline-offset:4px}
+.w.edited{background:var(--ok-bg)!important;text-decoration:none!important}
+.w sup{font:600 9px var(--sans);margin-left:1px;color:var(--mute)}
+.w sup.e,.w sup.p{color:var(--ok)} .w sup.x{color:var(--err)}
+.w.cad{box-shadow:inset 0 -1px 0 var(--mute)}
+.w.cad:focus{box-shadow:0 0 0 1.5px var(--ink)}
+.sy{color:var(--rule);font-family:var(--sans);font-size:11px;margin:0 .5px}
+.st{font-weight:700;position:relative}
+.st::before{content:"´";position:absolute;left:50%;transform:translateX(-30%);top:-.62em;font-size:.9em;font-weight:400;color:var(--ink)}
+.w.ne{border-top:2px solid var(--nec);border-radius:0}
+.net{font:600 9px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin:0 3px 0 0;vertical-align:sub}
+.net::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--nec);margin-right:3px;vertical-align:middle}
+.fn{font:600 10px var(--sans);color:var(--ink);vertical-align:super;margin-right:2px;cursor:pointer}
+.cl{font:italic 13px var(--serif);color:var(--mute);margin:0 2px 0 1px;white-space:nowrap}
+.cl::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle;background:var(--clc,transparent);border:1px solid var(--clc,var(--mute))}
+.cl.planus{--clc:var(--planus)} .cl.tardus{--clc:var(--tardus)} .cl.velox{--clc:var(--velox)}
+.cl.risk{color:var(--err)} .cl.risk::after{content:" *"}
+.cl.changed{color:var(--ink);text-decoration:underline}
+.cl .jn{font:10.5px var(--sans);font-style:normal;color:var(--mute);margin-left:4px}
+.panel{margin-top:30px;border-top:1px solid var(--rule);padding-top:10px}
+.panel ol{margin:0;padding:0;list-style:none}
+.panel li{padding:3px 0;font:14px/1.5 var(--serif);cursor:pointer}
+.panel li:hover{background:var(--sel)}
+.panel .lm{font-weight:600}
+.panel .ty{font:italic 14px var(--serif)}
+.panel .meta{font:11.5px var(--sans);color:var(--mute)}
+.panel .empty{color:var(--mute);font:12px var(--sans)}
+/* popover */
+#pop{position:absolute;z-index:40;width:330px;max-width:calc(100vw - 16px);background:var(--bg);border:1px solid var(--ink);padding:12px 14px;display:none;font-size:12.5px}
+#pop h3{margin:0 0 2px;font:17px var(--serif)}
+#pop .m{color:var(--mute);margin-bottom:8px}
+#pop ol{list-style:none;margin:0 0 8px;padding:0}
+#pop li{display:grid;grid-template-columns:16px 1fr auto;gap:8px;padding:3px 0;cursor:pointer;border-top:1px solid var(--rule)}
+#pop li:hover .c{text-decoration:underline}
+#pop .k{font:11px var(--sans);color:var(--mute)}
+#pop .c{font:15px var(--serif)}
+#pop .s{color:var(--mute);font-size:11.5px;text-align:right}
+#pop .peer{color:var(--ok)}
+#pop input[type=text]{width:100%;font:15px var(--serif)}
+#pop .acts{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;margin-top:10px}
+#pop .sec{border-top:1px solid var(--rule);margin-top:10px;padding-top:8px}
+#pop .sylb{font:15px var(--serif);border:1px solid var(--rule);padding:0 5px;margin:2px 2px 0 0;border-radius:2px}
+#pop .sylb.on{border-color:var(--ink);font-weight:700}
+#pop .grid{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:baseline}
+#pop .grid select,#pop .grid input{width:100%}
+#pop .span{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+#pop .span .lem{font:15px var(--serif)}
+#pop .types{display:flex;flex-wrap:wrap;gap:6px}
+#pop .types button{border:1px solid var(--rule);padding:2px 8px;border-radius:2px}
+#pop .types button[aria-pressed="true"]{border-color:var(--ink);font-weight:600}
+#pop .types button::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:var(--nec)}
+/* special characters */
+#chars{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--bg);border-top:1px solid var(--ink);padding:6px 22px calc(6px + env(safe-area-inset-bottom,0px));display:none;flex-wrap:wrap;gap:4px;align-items:center}
+#chars.show{display:flex}
+#chars .lb{font:600 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-right:8px}
+#chars button.ch{font:18px var(--serif);min-width:30px;height:30px;border:1px solid var(--rule);border-radius:2px}
+#chars button.ch:hover{border-color:var(--ink)}
+#chars input{width:120px;font:15px var(--serif);margin-left:10px}
+/* modal, footer */
+#modal{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 70%,transparent);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+#modal .box{background:var(--bg);border:1px solid var(--ink);max-width:900px;width:100%;max-height:86vh;display:flex;flex-direction:column}
+#modal .hd{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;padding:10px 14px;border-bottom:1px solid var(--rule)}
+#modal .hd .sp{flex:1}
+#modal pre{margin:0;padding:14px;overflow:auto;font:11.5px/1.45 ui-monospace,Menlo,Consolas,monospace;flex:1}
+#modal .ft{padding:8px 14px;border-top:1px solid var(--rule);color:var(--mute);font-size:12px}
+footer{max-width:1500px;margin:0 auto;padding:16px 22px 60px;color:var(--mute);font-size:12px;border-top:1px solid var(--rule)}
+footer p{margin:4px 0;max-width:110ch}
+.toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 12px;font-size:12px;opacity:0;transition:opacity .2s;z-index:80}
+.toast.show{opacity:1}
+kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
+.c-person{--nec:var(--person)} .c-place{--nec:var(--place)} .c-org{--nec:var(--org)} .c-date{--nec:var(--date)}
+  header .msel { margin-left: 12px; font-size: 13px; color: var(--muted, #555); }
+  header .msel select { margin-left: 4px; font: inherit; padding: 2px 4px; }
+  #neList li.sugg { opacity: 0.85; } #neList li.sugg .net { border-style: dashed; }
+/* diplomatic structure */
+.ds-inscriptio{--dsc:#4f6bb8} .ds-arenga{--dsc:#8b5cc4} .ds-narratio{--dsc:#1f9a8b} .ds-dispositio{--dsc:#c7861a}
+.ds-sanctio{--dsc:#c4415e} .ds-datatio{--dsc:#7d7d7d} .ds-nota{--dsc:#a0784f} .ds-margo{--dsc:#b0a89a}
+.dsb{display:none}
+.ds-on .dsb{display:inline-block;width:1.5px;height:1.3em;vertical-align:-.3em;margin:0 6px 0 1px;border-radius:1px;background:var(--dsc);cursor:ew-resize}
+.ds-on .dsb:hover,.ds-on .dsb.drag{box-shadow:0 0 0 3px color-mix(in srgb,var(--dsc) 25%,transparent)}
+.ds-on .w.dsdrop{box-shadow:inset 0 -2px 0 var(--dsc)}
+.ebr{display:block;height:calc(18px * var(--fs))}
+.line.entry{margin-top:calc(22px * var(--fs))}
+.eno{font:600 calc(10px * var(--fs)) var(--sans);color:var(--mute);letter-spacing:.04em;margin-right:8px;vertical-align:.15em}
+.msec{margin:calc(34px * var(--fs)) 0 6px;padding-top:10px;border-top:1px solid var(--rule);font:600 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.msec span{font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px}
+.line.marg .txt{font-size:calc(15px * var(--fs))} .mref{font:11px var(--sans);color:var(--mute);margin-left:6px}
+.fm-herde{--fmc:#b5523b} .fm-chancery{--fmc:#3d6f9e}
+.fm{background:linear-gradient(to top,color-mix(in srgb,var(--fmc) 16%,transparent) 0 45%,transparent 45%);box-decoration-break:clone;-webkit-box-decoration-break:clone;border-radius:2px;padding:0 1px}
+.fm::before{content:"";display:inline-block;width:5px;height:.8em;border-left:1.5px solid var(--fmc);border-top:1.5px solid var(--fmc);margin-right:2px;vertical-align:.35em}
+.fm.cont::before{display:none}
+.fmk{display:inline-block;width:14px;height:7px;border-radius:1px;background:color-mix(in srgb,var(--fmc) 30%,transparent);border-left:1.5px solid var(--fmc);vertical-align:middle;margin:0 3px 0 6px}
+#fmLegend{margin-left:14px}
+.ds-on-root .dsl{cursor:pointer} .ds-on-root .dsl:hover{text-decoration:underline}
+#dsMenu{position:fixed;z-index:60;background:var(--bg,#fff);border:1px solid var(--rule);border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px 0;font:12px var(--sans);min-width:150px}
+#dsMenu .h{padding:3px 10px;color:var(--mute);font-size:11px}
+#dsMenu button{display:block;width:100%;text-align:left;border:0;background:none;padding:3px 10px;font:inherit;color:var(--ink);cursor:pointer}
+#dsMenu button:hover{background:color-mix(in srgb,var(--dsc,#888) 14%,transparent)}
+#dsMenu button.cur{font-weight:600}
+.dsl{display:none;font:600 calc(9px * var(--fs)) var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--dsc);text-align:right;margin-top:2px;line-height:1.25}
+.ds-on-root .dsl{display:block}
+.dsk{display:inline-block;width:14px;height:4px;border-radius:2px;background:var(--dsc);vertical-align:middle;margin:0 3px 0 6px}
+/* text size */
+.fsz{display:inline-flex;gap:4px;align-items:center;color:var(--mute)}
+.fsz button{border:1px solid var(--rule);border-radius:2px;padding:0 7px;line-height:20px;font:600 12px var(--sans);color:var(--ink)}
+.fsz button:hover{border-color:var(--ink)} .fsz .v{font:11px var(--sans);min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+/* entity suggestion above the word */
+.sgw{position:relative;display:inline}
+.w.sg{border-top:1.5px dashed var(--nec);border-radius:0}
+.sgc{position:absolute;left:0;bottom:calc(100% + 1px);white-space:nowrap;display:inline-flex;align-items:center;gap:2px;z-index:3;
+  font:600 calc(9.5px * var(--fs)) var(--sans);line-height:1.15;letter-spacing:.03em;text-transform:uppercase;color:var(--nec);background:var(--bg);
+  border:1px dashed var(--nec);border-radius:3px;padding:0 1px 0 4px}
+.sgc{pointer-events:none;padding:0 4px}
+.w.sg{cursor:pointer}
+.w.sg.hl{background:linear-gradient(90deg,color-mix(in srgb,var(--err) 26%,transparent) 50%,transparent 50%)!important}
+.w.sg.hr{background:linear-gradient(90deg,transparent 50%,color-mix(in srgb,var(--ok) 30%,transparent) 50%)!important}
+@keyframes flashOk{0%{background:color-mix(in srgb,var(--ok) 55%,transparent)}100%{background:transparent}}
+@keyframes flashNo{0%{background:color-mix(in srgb,var(--err) 50%,transparent)}100%{background:transparent}}
+.w.fl-ok{animation:flashOk 1.1s ease-out} .w.fl-no{animation:flashNo 1.1s ease-out}
+/* simulated picture-in-picture of the current word */
+#pip{margin:0 0 16px}
+.pip-hd{font:12px var(--sans);color:var(--mute);margin-bottom:4px;display:flex;justify-content:space-between;gap:8px}
+.pip-hd b{color:var(--ink);font-weight:600}
+.pip-ms{position:relative;height:118px;overflow:hidden;border-radius:3px;border:1px solid #c9b88f;
+  background:radial-gradient(ellipse at 30% 20%,#f4ead2 0%,#ead9b5 55%,#dcc79c 100%);color:#3a2716;
+  font:calc(30px * var(--fs))/1 var(--serif);display:flex;align-items:center;justify-content:center;white-space:nowrap;letter-spacing:.01em}
+.pip-ms .tk{opacity:.55;margin:0 .22em;filter:blur(.15px)} .pip-ms .tk.cur{opacity:1;filter:none;font-size:1.25em;padding:0 .12em;
+  box-shadow:0 0 0 2px #b42318;border-radius:3px;background:rgba(255,255,255,.18)}
+.pip-ms .rule{position:absolute;left:0;right:0;height:1px;background:rgba(90,60,30,.16)}
+.pip-ms .wm{position:absolute;right:8px;bottom:5px;font:600 9.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:rgba(70,45,20,.55)}
+.pip-ms .empty{font:13px var(--sans);color:#6b5236}
+.pip-map{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:6px;font:11.5px var(--sans);color:var(--mute)}
+.pip-map .bar{height:8px;background:var(--rule);border-radius:4px;position:relative;overflow:hidden}
+.pip-map .bar i{position:absolute;top:0;bottom:0;background:var(--err);border-radius:4px}
+
+/* workbench: login, task view, page navigation */
+.wb-login{max-width:640px;margin:60px auto;font:15px/1.5 var(--sans,system-ui)}
+.wb-login input{font:14px monospace;padding:4px 6px}.wb-login button,.wb-tasks button{font:14px var(--sans,system-ui);padding:4px 10px;cursor:pointer}
+.wb-tasks{max-width:1100px;margin:0 auto;padding:12px 20px;font:14px/1.45 var(--sans,system-ui)}
+.wb-tasks header{display:flex;gap:16px;align-items:baseline;position:static;background:none;border:0;padding:0}.wb-tasks header .sp{flex:1}
+.wb-tasks table{border-collapse:collapse;width:100%}.wb-tasks th,.wb-tasks td{border-bottom:1px solid #ddd;padding:4px 8px;text-align:left}
+.wb-tasks .note{color:#666}.wb-grid{columns:8 90px;font:12px monospace}.wb-grid a{display:block}
+.wb-nav{font:13px var(--sans,system-ui);margin-left:12px}.wb-nav a{color:inherit}
+</style>
+</head>
+<body>
+<header>
+  <div class="row1">
+    <h1>PAPREG</h1><span class="src" id="src"></span>
+    <span class="sp"></span>
+    <span class="fsz" role="group" aria-label="Text size">text <button id="fsDown" title="Smaller text" aria-label="Smaller text">A−</button><span class="v" id="fsVal">100%</span><button id="fsUp" title="Larger text" aria-label="Larger text">A+</button></span>
+    <span class="who" id="who"></span>
+    <span id="sync" class="clean">not saved yet</span>
+    <button class="t" id="bUndo" disabled title="Undo (Ctrl+Z)">Undo</button>
+    <button class="b" id="bExport">Approve &amp; save</button>
+  </div>
+  <div class="row2">
+    <span>layer
+      <button class="t" data-layer="both" aria-pressed="true">both</button>
+      <button class="t" data-layer="dipl" aria-pressed="false">diplomatic</button>
+      <button class="t" data-layer="edit" aria-pressed="false">edition</button></span><span class="sep">|</span>
+    <button class="t" id="bHeat" aria-pressed="true">uncertainty</button>
+    <button class="t" id="bAcc" aria-pressed="true">accents</button>
+    <button class="t" id="bClaus" aria-pressed="false">clausulae only</button>
+    <button class="t" id="bStruct" aria-pressed="true" title="Diplomatic structure: inscriptio, arenga, narratio, dispositio, sanctio, datatio (rule-based on the formula openings, recomputed after every correction)">structure</button><span class="sep">|</span>
+    <button class="t" id="bNer" aria-pressed="true" title="Named entities: accepted names and the NER head's suggestions (PERS? / PLACE?). Turn off to check the structure or the formulae without them.">NER</button>
+    <button class="t" id="bForm" aria-pressed="true" title="Formulae found algorithmically: legal / procedural formulae of Herde's Audientia litterarum contradictarum, and chancery formulae that recur in the Honorius III register">formulae</button><span class="sep">|</span>
+    <button class="t" id="bPeers" aria-pressed="false" title="Two SIMULATED editors, for illustrating the UI only: not checked palaeographically, not ground truth, with one deliberate wrong choice. Off by default, so that the page shows the model's own output and calibrated uncertainty.">simulated peers (UI demo)</button>
+  </div>
+  <div class="row2 row3">
+    <span id="stats"></span><span class="sep">|</span>
+    <span class="keys"><kbd>Tab</kbd> next · <kbd>1–3</kbd> accept · <kbd>A</kbd> apparatus · <kbd>N</kbd> entity · name? right half ✓ left half ✗ · <kbd>D</kbd> edit diplomatic · <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> approve edition / diplomatic · <kbd>Ctrl+Z</kbd> undo</span>
+  </div>
+</header>
+
+<main>
+  <section class="viewer" aria-label="Page and model">
+    <p class="lbl">Current word</p>
+    <div id="pip" aria-live="polite">
+      <div class="pip-hd"><span id="pipHd">Select a word</span><span id="pipPos"></span></div>
+      <div class="pip-ms" id="pipMs"><span class="empty">Click a word or press Tab</span></div>
+      <div class="pip-map"><div class="bar" title="position of the word in its line"><i id="pipBar"></i></div><span id="pipLine"></span></div>
+      <p class="note" id="pipNote">The panel follows the word being transcribed or corrected and requests its region through the IIIF Image API (URL below). On this static site the region is cut from the synthetic page in the browser; with a IIIF server the same request returns the crop of the manuscript.</p>
+      <p class="note"><code id="pipUrl" style="font-size:10.5px;word-break:break-all"></code></p>
+    </div>
+    <p class="lbl">Page</p>
+    <div class="stage" id="stage">
+      <img id="pageImg" alt="Manuscript page" hidden>
+      <svg id="page" role="img" aria-label="Line regions of the page"></svg>
+      <div id="lens" hidden></div>
+    </div>
+    <p class="live">The live version shows the manuscript page from a IIIF image service here, with a magnifier on the highlighted line (mouse wheel to zoom). Image upload is disabled.</p>
+    <p class="note" id="viewnote"></p>
+
+    <p class="lbl gap">Model progress</p>
+    <div class="mp" id="mp"></div>
+  </section>
+
+  <section class="editor layer-both" id="editor" aria-label="Transcription">
+    <p class="lbl">Transcription</p>
+    <div class="legend">
+      <span><i style="background:var(--err-bg);text-decoration:underline wavy var(--err) 1.5px;text-underline-offset:4px">verbum</i> likely error (≥ 50%)</span>
+      <span><i style="background:var(--unc-bg);text-decoration:underline dotted var(--unc) 2px;text-underline-offset:4px">verbum</i> uncertain (20–50%)</span>
+      <span><i style="background:var(--ok-bg)">verbum</i> corrected</span>
+      <span><i style="box-shadow:inset 0 -1px 0 var(--mute)">dú<span class="sy">·</span>xi<span class="sy">·</span>mus</i> cadence window, stressed syllable</span>
+      <span><span class="cl planus">planus</span> <span class="cl tardus">tardus</span> <span class="cl velox">velox</span></span>
+      <span><sup style="color:var(--ok);font:600 9px var(--sans)">✓2</sup> confirmed by peers · <sup style="color:var(--err);font:600 9px var(--sans)">→ ≠</sup> peer correction / disagreement</span>
+      <span id="dsLegend">structure:<span class="ds-inscriptio"><i class="dsk"></i>inscriptio</span><span class="ds-arenga"><i class="dsk"></i>arenga</span><span class="ds-narratio"><i class="dsk"></i>narratio</span><span class="ds-dispositio"><i class="dsk"></i>dispositio</span><span class="ds-sanctio"><i class="dsk"></i>sanctio</span><span class="ds-datatio"><i class="dsk"></i>datatio</span><span class="ds-nota"><i class="dsk"></i>registration note</span><span class="ds-margo"><i class="dsk"></i>margin</span> <span class="meta">· drag a bar to move a boundary · click a label or bar to relabel · right-click a word to start a part</span></span>
+      <span id="fmLegend">formulae:<span class="fm-herde"><i class="fmk"></i>legal (Herde)</span><span class="fm-chancery"><i class="fmk"></i>chancery (register)</span> <span class="meta">· hover for the sources</span></span>
+      <span><span class="c-person"><span class="net">pers</span></span><span class="c-place"><span class="net">place</span></span><span class="c-org"><span class="net">inst</span></span><span class="c-date"><span class="net">date</span></span> named entities · <span class="fn">a</span> apparatus note</span>
+    </div>
+    <div id="lines"></div>
+    <div class="panel"><p class="lbl">Critical apparatus</p><ol id="appList"></ol></div>
+    <div class="panel"><p class="lbl">Named entities</p><ol id="neList"></ol></div>
+  </section>
+</main>
+<footer id="foot"></footer>
+
+<div id="pop" role="dialog" aria-label="Word"></div>
+<div id="mpTip"></div>
+<div id="chars" aria-label="Special characters"></div>
+<div id="modal" role="dialog" aria-modal="true"><div class="box">
+  <div class="hd"><b>Saved record</b>
+    <button class="t" data-tab="audit" aria-pressed="true">audit JSON</button>
+    <button class="t" data-tab="tei" aria-pressed="false">TEI</button>
+    <button class="t" data-tab="git" aria-pressed="false">commit payload</button>
+    <button class="t" data-tab="sync" aria-pressed="false">sync log</button>
+    <span class="sp"></span>
+    <button class="t" id="mCopy">copy</button><button class="t" id="mDown">download</button><button class="t" id="mClose">close</button></div>
+  <pre id="mBody"></pre><div class="ft" id="mFoot"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="js/wb.js"></script>
+<script>
+"use strict";
+(async function () {
+  let D = await window.WB.ready;                                  // page data from the private data repository (js/wb.js)
+  if (!D) return;                                                  // login or task view instead of a page
+  const CFG = window.WORKBENCH_CONFIG;
+  const $ = (id) => document.getElementById(id), S = D.source, M = D.model, TH = D.thresholds, CR = D.cadence_rules;
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const pct = (x, d = 1) => (100 * x).toFixed(d) + "%";
+  const keyOf = (li, wi) => li + ":" + wi;
+  const lineIdx = {}; D.lines.forEach((l, i) => lineIdx[l.line_id] = i);
+  const FL = [], GI = {};                                       // flat word order across lines
+  D.lines.forEach((l, li) => l.words.forEach((w, wi) => { GI[keyOf(li, wi)] = FL.length; FL.push([li, wi]); }));
+  // entity suggestions (A28b NER head + algorithmic filter; model output, not checked) — shown separately, accepted one by one
+  const SUGG = (D.entity_suggestions || []).map((x, k) => ({ ...x, k, gi: GI[keyOf(x.line_index, x.word_index)] })).filter(x => x.gi !== undefined);
+  const suggOpen = () => SUGG.filter(x => !state.rej.has(x.k) && !state.ne.some(n => n.gi <= x.gi && x.gi < n.gi + n.span));
+  const SUGG_AT = () => { const m = {}; suggOpen().forEach(x => { for (let j = 0; j < x.span; j++) m[x.gi + j] = { x, first: j === 0 }; }); return m; };
+  function suggList() {
+    const open = suggOpen(); if (!SUGG.length) return "";
+    return `<li class="empty">Suggestions (${esc(D.entity_suggestion_source || "model")}; not checked): ${open.length}</li>` + open.map(x =>
+      `<li class="c-${x.type} sugg"><span class="net">${NE_TYPES[x.type][0]}?</span> ${esc(FL.slice(x.gi, x.gi + x.span).map(([li, wi]) => D.lines[li].words[wi].text).join(" "))} <span class="meta">line ${FL[x.gi][0] + 1}</span> <button class="t" data-sugg="${x.k}">accept</button> <button class="t" data-srej="${x.k}">reject</button></li>`).join("") + (state.rej.size ? `<li class="empty">${state.rej.size} suggestion(s) rejected</li>` : "");
+  }
+  function decideSugg(x, accept, g) {
+    if (accept) mutate(() => state.ne.push({ id: ++state.seq, gi: x.gi, span: x.span, type: x.type, at: new Date().toISOString(), source: "suggestion" }));
+    else mutate(() => state.rej.add(x.k));
+    const [fl, fw] = FL[x.gi]; state.focus = [fl, fw]; state.active = fl; render();
+    for (let j = 0; j < x.span; j++) { const [a, b] = FL[x.gi + j], el = document.querySelector(`.w[data-k="${keyOf(a, b)}"]`); if (el) { el.classList.add(accept ? "fl-ok" : "fl-no"); } }
+  }
+  document.addEventListener("click", (e) => {
+    const r = e.target.closest && e.target.closest("[data-srej]");
+    if (r) { e.stopPropagation(); const k = +r.dataset.srej; mutate(() => state.rej.add(k)); render(); toast("suggestion rejected"); return; }
+    const b = e.target.closest && e.target.closest("[data-sugg]"); if (!b) return;
+    e.stopPropagation(); const x = SUGG[+b.dataset.sugg];
+    mutate(() => state.ne.push({ id: ++state.seq, gi: x.gi, span: x.span, type: x.type, at: new Date().toISOString(), source: "suggestion" }));
+    render(); toast("suggested entity accepted");
+  });
+  const NE_TYPES = { person: ["pers", "persName"], place: ["place", "placeName"], org: ["inst", "orgName"], date: ["date", "date"] };
+  const APP_TYPES = ["corr. ex", "add. supra lin.", "add. in marg.", "del.", "in ras.", "om.", "sic", "lectio dubia", "alia manu", "nota"];
+
+  const state = { showPeers: false, heat: true, acc: true, clausOnly: false, layer: "both", active: null, focus: null, pop: null, form: null,
+    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, history: [], seq: 0,
+    dirty: false, lastPush: null, peers: [], peerSig: "", syncLog: [], hasImage: false, rej: new Set(), struct: true, ner: true, fml: true };
+  WB.restore(state, D);                                            // this editor's saved work on the page
+  const lineHasClaus = new Set(D.clausulae.flatMap(c => c.tokens.map(t => t[0])));
+  const clausAt = {}; D.clausulae.forEach(c => clausAt[c.end.join(":")] = c);
+
+  // ------------------------------------------------------------ accents and cursus (port of pilot-1 M1)
+  // Words of the page and all candidates carry their M1 accent from the Python accentuator (lexicon,
+  // variants, chancery overrides). A manually typed word gets a browser approximation (syllable
+  // weight by position + suffix rules); an editor can set the stressed syllable by hand.
+  const TYPE = {}; CR.type_table.forEach(([k, f, t]) => TYPE[k + f] = t);
+  const SUFFIX = CR.suffix_rules_p.map(r => new RegExp(r));
+  const plainOf = (s) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/j/g, "i").replace(/v/g, "u");
+  function readingOf(tok) {                                      // mirrors pathway.normalize.reading
+    let t = plainOf(tok.replace(/[^\p{L}\p{N}_]/gu, "")).replace(/[^a-z]/g, " ").replace(/y/g, "i").replace(/ae|oe/g, "e");
+    t = t.replace(/ti(?=[aeiou])/g, "ci").replace(/mpn/g, "mn").replace(/\bmichi\b/g, "mihi").replace(/\bnichil/g, "nihil");
+    return t.trim().split(/\s+/).filter(Boolean);
+  }
+  function jsSyllables(w) {
+    const V = "aeiouy", isV = (i) => V.includes(w[i]), n = w.length, nuc = [];
+    for (let i = 0; i < n;) {
+      if (!isV(i)) { i++; continue; }
+      const c = w[i];
+      // consonantal i/u: word-initial before a vowel, between vowels, u after q / ngu
+      if ((c === "i" || c === "u") && i + 1 < n && isV(i + 1) && (i === 0 || isV(i - 1) || (c === "u" && (w[i - 1] === "q" || (w[i - 1] === "g" && w[i - 2] === "n"))))) { i++; continue; }
+      const two = w.slice(i, i + 2), diph = ["ae", "oe", "au"].includes(two);
+      nuc.push([i, i + (diph ? 2 : 1), diph]); i += diph ? 2 : 1;
+    }
+    if (!nuc.length) return { syl: [w], heavyPenult: false };
+    const cuts = [0], closed = [];
+    for (let k = 0; k < nuc.length - 1; k++) {
+      const a = nuc[k][1], b = nuc[k + 1][0], cl = w.slice(a, b).replace(/qu$/, "q").replace(/(ch|ph|th|rh)/g, "C");
+      let cut;
+      if (cl.length === 0) cut = a;
+      else if (cl.length === 1) cut = a;
+      else if (/[pbtdcgf][lr]$/.test(cl) && cl.length === 2) cut = a;
+      else cut = b - 1 - (/(ch|ph|th|rh)$/.test(w.slice(a, b)) ? 1 : 0) - (/qu$/.test(w.slice(a, b)) ? 1 : 0);
+      closed.push(cut > a || /x|z/.test(w[a] || "") );
+      cuts.push(cut);
+    }
+    cuts.push(n);
+    const syl = cuts.slice(0, -1).map((c, k) => w.slice(c, cuts[k + 1]));
+    const p = nuc.length - 2;
+    return { syl, heavyPenult: p >= 0 && (nuc[p][2] || closed[p]) };
+  }
+  function jsAcc(token) {
+    return readingOf(token).map(r => {
+      const { syl, heavyPenult } = jsSyllables(r), n = syl.length;
+      let pat = n <= 1 ? "m" : (n === 2 || heavyPenult ? "p" : "pp"), src = "browser";
+      if (pat === "pp" && n >= 3 && SUFFIX.some(rx => rx.test(r))) { pat = "p"; src = "browser-suffix"; }
+      return [r, n, pat, src, syl];
+    });
+  }
+  function patFromStress(n, s) { return n <= 1 ? "m" : (n - 1 - s === 1 ? "p" : "pp"); }
+  function stressIdx(a) { const n = a[4].length; return a[2] === "m" ? -1 : n - (a[2] === "p" ? 2 : 3); }
+  function shownText(li, wi) { const e = state.edits[keyOf(li, wi)]; return e ? e.corrected : D.lines[li].words[wi].text; }
+  function accOf(li, wi) {
+    const w = D.lines[li].words[wi], k = keyOf(li, wi), t = shownText(li, wi);
+    let acc;
+    if (t === w.text) acc = w.acc || jsAcc(t);
+    else { const c = (w.candidates || []).find(c => c.text === t); acc = c && c.acc ? c.acc : jsAcc(t); }
+    const ov = state.stress[k];
+    if (ov && acc.length && ov.text === t) acc = acc.map((a, i) => i === acc.length - 1 ? [a[0], a[4].length, patFromStress(a[4].length, ov.s), "editor", a[4]] : a);
+    return acc;
+  }
+  function cadence(words) {                                      // port of cadence_from_accents
+    if (!words.length) return null;
+    const acc = words.slice(-CR.tail_words);
+    let last = acc.length - 1, trailing = 0;
+    if (acc[last][2] === "m") {
+      if (!CR.final_mono) return { cadence: "none", janson: "", from: last };
+      trailing = 1; last--;
+      while (last >= 0 && acc[last][2] === "m") { trailing++; last--; }
+      if (last < 0) return { cadence: "none", janson: "", from: 0 };
+    }
+    const fa = acc[last], after = (fa[2] === "p" ? 1 : 2) + trailing;
+    const shape = { 1: "p", 2: "pp" }[after] || "ppp", before = fa[1] - (fa[2] === "p" ? 1 : 2) - 1;
+    let j = last - 1, mono = 0;
+    while (j >= 0 && acc[j][2] === "m") { mono += acc[j][1]; j--; }
+    if (j < 0) return { cadence: "none", janson: "", from: last };
+    const pa = acc[j], k = (pa[2] === "p" ? 1 : 2) + mono + before;
+    const jans = [pa[2], ...Array(last - j - 1).fill("m"), fa[1] + fa[2], ...Array(trailing).fill("m")].join(" ");
+    return { cadence: TYPE[k + shape] || "none", k, janson: jans, from: words.length - acc.length + j };
+  }
+  function clausulaNow(c) {
+    const i = GI[c.end.join(":")], win = FL.slice(Math.max(0, i - CR.window_tokens + 1), i + 1);
+    const toks = win.filter(([li, wi]) => /[\p{L}\p{N}_]/u.test(shownText(li, wi)));
+    if (toks.length < CR.min_tokens) return { cadence: "none", label: "non-canonical", janson: "" };
+    const r = cadence(toks.flatMap(([li, wi]) => accOf(li, wi)));
+    if (!r) return { cadence: "none", label: "non-canonical", janson: "" };
+    return { ...r, label: CR.canonical.includes(r.cadence) ? r.cadence : "non-canonical" };
+  }
+
+  // ------------------------------------------------------------ peers -> effective uncertainty
+  // Each independent editor who kept the displayed word divides P(error) by 10; a peer who chose
+  // another form makes the word likely wrong and puts that form first among the candidates;
+  // peers choosing different forms is a conflict. The model itself improves only by retraining.
+  function peerView(li, wi) {
+    const shown = shownText(li, wi), votes = [];
+    for (const p of state.peers) for (const c of p.changes)
+      if (lineIdx[c.line_id] === li && c.word_index === wi) votes.push({ editor: p.editor_id, text: c.corrected });
+    const agree = votes.filter(v => v.text === shown), other = votes.filter(v => v.text !== shown);
+    return { votes, agree, other, conflict: new Set(votes.map(v => v.text)).size > 1 };
+  }
+  function pErr(li, wi) {
+    const w = D.lines[li].words[wi], pv = peerView(li, wi);
+    if (state.edits[keyOf(li, wi)]) return 0.01;
+    if (pv.conflict) return 0.5;
+    if (pv.other.length) return Math.max(w.p_error, 0.9);
+    return w.p_error * Math.pow(0.1, pv.agree.length);
+  }
+  function level(li, wi) {
+    const w = D.lines[li].words[wi], p = pErr(li, wi);
+    return p >= TH.risk_high ? "low" : (p >= TH.risk_medium ? "med" : (w.is_oov && !peerView(li, wi).agree.length && !state.edits[keyOf(li, wi)] ? "name" : "high"));
+  }
+  function flaggedList() { return FL.filter(([li, wi]) => level(li, wi) !== "high" && !state.edits[keyOf(li, wi)]); }
+
+  // ------------------------------------------------------------ header / footer
+  $("src").textContent = `${S.shelfmark}, fol. ${S.folio} · ${S.pontificate}`;
+  $("who").innerHTML = `signed in as <b>@${esc(CFG.login)}</b>${CFG.mode === "local" ? " (local mode: edits stay in this browser)" : ""}${WB.readOnly ? " (read-only)" : ""}`;
+  $("foot").innerHTML =
+    `<p>${esc(M.name)} · ${esc(M.version)} · ${esc(M.decoding || "")}. On the 39 held-out test pages of Reg. Vat. 9: WER ${pct(M.wer_test_sigla)} (text as written), ${M.test_words.toLocaleString("en")} words.</p>` +
+    `<p>Highlighting shows the calibrated probability that a word is wrong (${esc(M.calibration)}; AUROC ${M.auroc}, calibration error ${pct(M.ece)} on the test pages). It is a triage aid, not an error count: about ${Math.round(D.stats.expected_errors)} errors are expected on this side.</p>` +
+    `<p>${D.notes.map(esc).join(" ")} Hand ${esc(D.hand || "?")}${D.est_cer_agreement != null ? `, estimated CER ${pct(D.est_cer_agreement)} (edition agreement)` : ""}${D.task_id ? ` · task ${esc(D.task_id)}` : ""}.</p>` +
+    `<p>Your work is saved to your own files in the data repository; other editors' corrections appear as agreement (✓) or disagreement marks. The image is read from your local folder and never uploaded.</p>`;
+  function stats() {
+    const f = flaggedList(), lows = f.filter(([li, wi]) => level(li, wi) === "low").length;
+    const exp = FL.reduce((a, [li, wi]) => a + pErr(li, wi), 0);
+    $("stats").textContent = `${D.lines.length} lines · ${lows} likely errors · ${f.length - lows} to check · expected errors ≈ ${Math.round(exp)} · ` +
+      `${state.apprE.size}/${state.apprD.size} lines approved (edition/diplomatic) · ${Object.keys(state.edits).length + Object.keys(state.dipl).length} edits · ${state.app.length} notes · ${state.ne.length} entities · ${state.peers.length} other editor(s)`;
+  }
+
+  // ------------------------------------------------------------ model progress
+  function modelProgress() {
+    if (!D.model_history || !(D.model_history.points || []).length) { $("mp").innerHTML = `<p class="note">No model history in the data repository yet (models/history.json).</p>`; return; }
+    const H = D.model_history, P = H.points, cur = P[P.length - 1], first = P[0];
+    const pending = Object.keys(state.edits).length + state.peers.reduce((a, p) => a + p.changes.filter(c => c.method !== "confirmed").length, 0);
+    const confirmed = state.peers.reduce((a, p) => a + p.changes.filter(c => c.method === "confirmed").length, 0);
+    const W = 300, Hh = 128, L = 40, R = 14, T = 10, B = 30, ymax = Math.ceil(Math.max(...P.map(p => p.wer)) * 10) / 10;
+    const xs = (i) => L + i * (W - L - R) / (P.length - 1), ys = (v) => T + (1 - v / ymax) * (Hh - T - B);
+    const grid = [0, ymax / 2, ymax].map(v => `<line class="axis" x1="${L}" x2="${W - R}" y1="${ys(v)}" y2="${ys(v)}"/><text x="${L - 6}" y="${ys(v) + 3.5}" text-anchor="end">${Math.round(v * 100)}%</text>`).join("");
+    const path = (k) => P.map((p, i) => `${i ? "L" : "M"}${xs(i).toFixed(1)},${ys(p[k]).toFixed(1)}`).join("");
+    const dots = (k, cls) => P.map((p, i) => `<circle class="dot" cx="${xs(i)}" cy="${ys(p[k])}" r="4" style="fill:var(${cls})"/>`).join("");
+    const xl = P.map((p, i) => `<text x="${xs(i)}" y="${Hh - 6}" text-anchor="middle">${p.version}</text>`).join("");
+    const hits = P.map((p, i) => `<rect class="hit" data-i="${i}" x="${xs(i) - 22}" y="${T}" width="44" height="${Hh - T - B + 6}"/>`).join("");
+    $("mp").innerHTML = `
+      <div class="mp-head"><span class="big">${pct(cur.wer)}</span><span>word error rate, model ${cur.version}</span>
+        <span class="delta">▼ ${((first.wer - cur.wer) * 100).toFixed(1)} points since ${first.version}</span></div>
+      <svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Word and character error rate by model version">
+        ${grid}<path class="ser s-wer" d="${path("wer")}"/><path class="ser s-cer" d="${path("cer")}"/>
+        ${dots("wer", "--planus")}${dots("cer", "--tardus")}${xl}
+        <line id="mpX" class="axis" x1="0" x2="0" y1="${T}" y2="${Hh - B}" style="stroke:var(--mute);display:none"/>${hits}</svg>
+      <div class="key"><span><i style="background:var(--planus)"></i>word error rate</span><span><i style="background:var(--tardus)"></i>character error rate</span></div>
+      <p class="note">${esc(H.note)}</p>
+      <p class="pending">Waiting for the next retraining: <b>${pending}</b> corrected word(s) and ${confirmed} confirmation(s) on this page (you and ${state.peers.length} other editor(s)).</p>
+      <details><summary>table</summary><table><tr><th>version</th><th>training lines</th><th>WER</th><th>CER</th><th>α</th><th>β</th></tr>
+        ${P.map(p => `<tr><td>${p.version}</td><td>${p.train_lines.toLocaleString("en")}</td><td>${pct(p.wer)}</td><td>${pct(p.cer)}</td><td>${p.alpha}</td><td>${p.beta}</td></tr>`).join("")}</table></details>`;
+    const tip = $("mpTip"), xl_ = $("mpX");
+    $("mp").querySelectorAll(".hit").forEach(h => {
+      h.addEventListener("mousemove", (e) => {
+        const p = P[+h.dataset.i]; tip.style.display = "block";
+        tip.innerHTML = `<b>${p.version}</b> · ${p.train_lines.toLocaleString("en")} training lines<br>WER ${pct(p.wer)} · CER ${pct(p.cer)}<br>cadence α ${p.alpha} · β ${p.beta}`;
+        tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = (e.clientY + 12) + "px";
+        xl_.setAttribute("x1", xs(+h.dataset.i)); xl_.setAttribute("x2", xs(+h.dataset.i)); xl_.style.display = "";
+      });
+      h.addEventListener("mouseleave", () => { tip.style.display = "none"; xl_.style.display = "none"; });
+    });
+  }
+
+  // ------------------------------------------------------------ page view
+  const VW = 1000, VH = Math.round(1000 * S.page_height_px / S.page_width_px), svg = $("page");
+  svg.setAttribute("viewBox", `0 0 ${VW} ${VH}`);
+  $("viewnote").textContent = `Line regions from the automatic segmentation. The image is loaded from your local image folder (button “image folder”); the word position within a line is approximate.`;
+  const DSCOL = { inscriptio: "#4f6bb8", arenga: "#8b5cc4", narratio: "#1f9a8b", dispositio: "#c7861a", sanctio: "#c4415e", datatio: "#7d7d7d", nota: "#a0784f", margo: "#b0a89a" };
+  let LINEPART = {};
+  function drawPage() {
+    const cs = getComputedStyle(document.documentElement), ink = cs.getPropertyValue("--ink").trim(), err = cs.getPropertyValue("--err").trim();
+    let h = state.hasImage ? "" : `<rect width="${VW}" height="${VH}" fill="none" stroke="${ink}" stroke-opacity=".25"/>`;
+    D.lines.forEach((l, li) => {
+      if (!l.polygon || !l.polygon.length) return;
+      const pts = l.polygon.map(p => `${(p[0] * VW).toFixed(1)},${(p[1] * VH).toFixed(1)}`).join(" ");
+      const act = li === state.active, lows = l.words.filter((w, wi) => level(li, wi) === "low").length;
+      let fill = !state.hasImage && !act && lows && !state.apprE.has(li) ? err : ink;
+      let op = state.hasImage ? (act ? .14 : 0) : (act ? .55 : (state.apprE.has(li) ? .05 : .08 + Math.min(.3, lows * .07)));
+      if (state.struct && LINEPART[li]) { fill = DSCOL[LINEPART[li]]; op = act ? .42 : .2; }
+      h += `<polygon points="${pts}" fill="${fill}" fill-opacity="${op}" stroke="${ink}" stroke-opacity="${act ? .9 : .18}" stroke-width="${act ? 1.6 : .8}" data-li="${li}" style="cursor:pointer"/>`;
+    });
+    if (state.focus && D.lines[state.focus[0]].bbox) {
+      const [li, wi] = state.focus, l = D.lines[li], b = l.bbox;
+      const lens = l.words.map(w => w.text.length + 1), tot = lens.reduce((a, c) => a + c, 0);
+      const x0 = lens.slice(0, wi).reduce((a, c) => a + c, 0) / tot, x1 = x0 + lens[wi] / tot;
+      h += `<rect class="wordbox" x="${((b[0] + b[2] * x0) * VW).toFixed(1)}" y="${(b[1] * VH - 3).toFixed(1)}" width="${(b[2] * (x1 - x0) * VW).toFixed(1)}" height="${(b[3] * VH + 6).toFixed(1)}" fill="none" stroke="${err}" stroke-width="2"/>`;
+    }
+    svg.innerHTML = h;
+  }
+  // expanded word -> diplomatic token of the same line: global alignment on letter similarity
+  // (abbreviation marks dropped, common sigla resolved, u/v and i/j merged)
+  const SIG = { "ꝑ": "p", "ꝓ": "p", "ꝗ": "q", "ꝙ": "q", "⁊": "et", "ł": "uel", "ꝯ": "con", "ꝰ": "us", "ꝫ": "que", "ꝭ": "is", "ꝵ": "rum" };
+  const nrm = (t) => [...t.normalize("NFD")].map(c => SIG[c] || c).join("").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z]/g, "").replace(/v/g, "u").replace(/j/g, "i");
+  function alignWD(E, Dt) {
+    const e = E.map(nrm), d = Dt.map(nrm), n = e.length, m = d.length;
+    const sc = (a, b) => !a || !b ? 0 : a === b ? 3 : (a.startsWith(b) || b.startsWith(a.slice(0, Math.min(3, a.length)))) ? 2 : a[0] === b[0] ? 1 : 0;
+    const S_ = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i = 1; i <= n; i++) for (let k = 1; k <= m; k++) S_[i][k] = Math.max(S_[i - 1][k], S_[i][k - 1], S_[i - 1][k - 1] + sc(e[i - 1], d[k - 1]));
+    const map = new Array(n).fill(-1); let i = n, k = m;
+    while (i > 0 && k > 0) {
+      if (S_[i][k] === S_[i - 1][k - 1] + sc(e[i - 1], d[k - 1]) && sc(e[i - 1], d[k - 1]) > 0) { map[i - 1] = k - 1; i--; k--; }
+      else if (S_[i][k] === S_[i - 1][k]) i--; else k--;
+    }
+    // unaligned words: nearest aligned neighbour, else proportional
+    return map.map((v, q) => { if (v >= 0) return v; for (let r = 1; r < n; r++) { if (map[q - r] >= 0) return Math.min(m - 1, map[q - r] + 1); if (map[q + r] >= 0) return Math.max(0, map[q + r] - 1); }
+      return Math.min(m - 1, Math.round(n > 1 ? q * (m - 1) / (n - 1) : 0)); });
+  }
+  // simulated picture-in-picture: the diplomatic reading of the current line stands in for the image crop
+  function drawPip() {
+    const f = state.focus || (state.active !== null ? [state.active, 0] : null);
+    if (!f) return;
+    const [li, wi] = f, l = D.lines[li], words = l.words;
+    const dipl = ((state.dipl[li] ? state.dipl[li].text : l.diplomatic_text) || "").normalize("NFC").split(/\s+/).filter(Boolean);
+    const nW = words.length, nD = dipl.length;
+    const j = nD ? alignWD(words.map((w, k) => shownText(li, k)), dipl)[wi] : -1;
+    const lo = Math.max(0, j - 2), hi = Math.min(nD, j + 3);
+    if (state.hasImage && l.bbox && S.iiif) {
+      const IW = S.iiif.width, IH = S.iiif.height, b = l.bbox;
+      const lens2 = words.map(w => w.text.length + 1), tot2 = lens2.reduce((a, c) => a + c, 0);
+      const fx0 = lens2.slice(0, wi).reduce((a, c) => a + c, 0) / tot2, fx1 = fx0 + lens2[wi] / tot2;
+      const lh = b[3] * IH, cx = (b[0] + b[2] * (fx0 + fx1) / 2) * IW, cy = (b[1] + b[3] / 2) * IH;
+      const rw = Math.max((fx1 - fx0) * b[2] * IW * 2.6, lh * 7), rh = lh * 2.4;
+      const rx = Math.max(0, Math.round(cx - rw / 2)), ry = Math.max(0, Math.round(cy - rh / 2)), RW = Math.round(Math.min(rw, IW - rx)), RH = Math.round(Math.min(rh, IH - ry));
+      const box = $("pipMs"), cw = box.clientWidth || 400, ch = box.clientHeight || 118;
+      box.innerHTML = `<canvas width="${cw * 2}" height="${ch * 2}" style="width:100%;height:100%"></canvas><span class="wm">synthetic · IIIF region</span>`;
+      const cv = box.querySelector("canvas"), g = cv.getContext("2d"), sc = Math.min(cv.width / RW, cv.height / RH);
+      const dw = RW * sc, dh = RH * sc, ox = (cv.width - dw) / 2, oy = (cv.height - dh) / 2;
+      g.fillStyle = "#e6d6b0"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, rx, ry, RW, RH, ox, oy, dw, dh);
+      const wx0 = (b[0] + b[2] * fx0) * IW, wx1 = (b[0] + b[2] * fx1) * IW;      // frame of the word
+      g.strokeStyle = "#b42318"; g.lineWidth = 3; g.strokeRect(ox + (wx0 - rx) * sc - 3, oy + (b[1] * IH - ry) * sc + lh * sc * 0.02, (wx1 - wx0) * sc + 6, lh * sc * 1.1);
+      $("pipUrl").textContent = `${S.iiif.id}/${rx},${ry},${RW},${RH}/!${cw},${ch}/0/default.jpg`;
+    } else
+    $("pipMs").innerHTML = nD ? `<span class="rule" style="top:28%"></span><span class="rule" style="top:76%"></span>` +
+      dipl.slice(lo, hi).map((t, k) => `<span class="tk${lo + k === j ? " cur" : ""}">${esc(t)}</span>`).join("") + `<span class="wm">simulated</span>`
+      : `<span class="empty">no diplomatic reading for this line</span>`;
+    $("pipHd").innerHTML = `<b>${esc(shownText(li, wi))}</b>`;
+    $("pipPos").textContent = `fol. ${S.folio} · line ${li + 1} · word ${wi + 1}/${nW}`;
+    const lens_ = words.map(w => w.text.length + 1), tot = lens_.reduce((a, c) => a + c, 0), x0 = lens_.slice(0, wi).reduce((a, c) => a + c, 0) / tot;
+    $("pipBar").style.left = (100 * x0).toFixed(1) + "%"; $("pipBar").style.width = Math.max(3, 100 * lens_[wi] / tot).toFixed(1) + "%";
+    $("pipLine").textContent = `P(error) ${pct(pErr(li, wi), 0)}`;
+  }
+  // text size (kept in the browser)
+  let FS = 1; try { FS = Math.min(1.6, Math.max(.8, +localStorage.getItem("paprg.fs") || 1)); } catch (e) {}
+  function setFs(v) { FS = Math.round(Math.min(1.6, Math.max(.8, v)) * 10) / 10; document.documentElement.style.setProperty("--fs", FS); $("fsVal").textContent = Math.round(FS * 100) + "%"; try { localStorage.setItem("paprg.fs", FS); } catch (e) {} }
+  setFs(FS);
+  $("fsDown").onclick = (e) => { e.stopPropagation(); setFs(FS - .1); };
+  $("fsUp").onclick = (e) => { e.stopPropagation(); setFs(FS + .1); };
+  svg.addEventListener("click", (e) => { const li = e.target.getAttribute && e.target.getAttribute("data-li"); if (li !== null && li !== undefined) setActive(+li, true); });
+
+  // ------------------------------------------------------------ transcription
+  const fnLetter = (i) => (i >= 26 ? fnLetter(Math.floor(i / 26) - 1) : "") + String.fromCharCode(97 + i % 26);
+  const spanGis = (x) => Array.from({ length: x.span }, (_, j) => x.gi + j);
+  function sortedApp() { return state.app.slice().sort((a, b) => (a.gi + a.span) - (b.gi + b.span) || a.id - b.id); }
+  function wordHTML(li, wi, inCad, stressShow) {
+    const t = shownText(li, wi);
+    if (!stressShow) return esc(t);
+    const acc = accOf(li, wi); if (acc.length !== 1) return esc(t);
+    const a = acc[0], syl = a[4], si = stressIdx(a);
+    // map syllables onto the displayed letters when the letter counts agree
+    const letters = [...t].map((ch, i) => /\p{L}/u.test(ch) ? i : -1).filter(i => i >= 0);
+    if (letters.length !== syl.join("").length || syl.length < 2) return esc(t);
+    let out = "", pos = 0, chars = [...t];
+    const lead = chars.slice(0, letters[0]).join(""); out += esc(lead);
+    syl.forEach((s, k) => {
+      const from = letters[pos], to = letters[pos + s.length - 1]; pos += s.length;
+      const piece = chars.slice(from, to + 1).join("");
+      out += (k ? `<span class="sy">·</span>` : "") + (k === si ? `<span class="st">${esc(piece)}</span>` : esc(piece));
+    });
+    return out + esc(chars.slice(letters[letters.length - 1] + 1).join(""));
+  }
+  // ------------------------------------------------------------ diplomatic structure (rule-based on formula openings)
+  // Entries start at the top of the page, after a datatio and after a registration note. Inside an entry the part
+  // changes only at a clause start (after . ; ? !) whose first words carry a cue; otherwise the previous part goes on.
+  const DS = ["inscriptio", "arenga", "narratio", "dispositio", "sanctio", "datatio", "nota", "margo"];
+  const rd = (t) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z ]/g, "").replace(/v/g, "u").replace(/j/g, "i");
+  const CUE = {
+    datatio: /^(datum|dat|data)\b/,
+    nota: /^(in eundem|in e m\b|in eodem|scriptum est|in eundem fere)/,
+    sanctio: /^(nulli ergo|nulli omnino|si quis autem|si quis igitur|decernimus ergo)/,
+    dispositio: /^(quocir|quo circa|ideoque|eapropter|propter quod|hinc est quod|nos igitur|nos ergo|quapropter|per apostolica|discretioni uestr|fraternitati uestr|mandamus|precipimus|concedimus|confirmamus|statuimus|indulgemus|auctoritate presentium|quod si non omnes|tuis supplicationibus|uestris supplicationibus|tuis precibus|precibus inclinati|supplicationibus inclinati)/,
+    dispverb: /^(mandamus|precipimus|concedimus|confirmamus|statuimus|indulgemus|dispensamus|dispensandum|committimus|decernimus)$/,
+    narratio: /^(ex parte|ex litteris|accepimus|significauit|significarunt|sua nobis|qua nobis|intelleximus|ad audientiam|exposuit|insinuauit|conquestus|querelam|cum igitur|cum itaque|cum olim|cum dilect|cum uenerabil|dilecti filii|dilectus filius|uenerabilis frater|peruenit|lecta)/,
+    arenga: /^(quoniam|licet|iustis|sicut|ea que|quotiens|decet|solet|apostolice|religiosam|sacrosancta|pastoralis|ad hoc|inter cetera|officii nostri|quanto|cum a nobis|cum sit)/,
+  };
+  // marginal lines (rubrics, notes, fragments outside the main column)
+  const MAIN_X = (() => { const xs = D.lines.filter(l => l.bbox).map(l => l.bbox[0]).sort((a, b) => a - b); return xs[Math.floor(xs.length / 2)] || .35; })();
+  const MAIN_W = (() => { const ws = D.lines.filter(l => l.bbox).map(l => l.bbox[2]).sort((a, b) => a - b); return ws[Math.floor(ws.length * .75)] || .5; })();
+  const isMargin = (l) => !l.bbox || l.bbox[0] < MAIN_X - .06 || l.bbox[0] > MAIN_X + .12 || l.bbox[2] < MAIN_W * .3;
+  function computeParts() {
+    const n = FL.length, part = new Array(n), toks = FL.map(([li, wi]) => shownText(li, wi)), rds = toks.map(rd);
+    const margin = FL.map(([li]) => isMargin(D.lines[li]));
+    const hard = toks.map(t => /[.?;!]$/.test(t) && !/^(\.\.|[A-Z]\.,?|[IVXLC]+\.|(Kal|Non|Id|etc)\.)$/.test(t));
+    const soft = toks.map((t, k) => hard[k] || /[,:]$/.test(t));
+    const head = (k) => { const out = []; for (let q = k; q < n && out.length < 5; q++) if (!margin[q]) out.push(rds[q]); return out.join(" "); };
+    let cur = null, afterDat = true, segStart = true;
+    for (let k = 0; k < n; k++) {
+      if (margin[k]) { part[k] = "margo"; continue; }
+      const h = head(k), cap = /^\p{Lu}/u.test(toks[k]);
+      if (segStart) {
+        if (CUE.datatio.test(h)) cur = "datatio";
+        else if (CUE.nota.test(h)) cur = "nota";
+        else if (CUE.sanctio.test(h)) cur = "sanctio";
+        else if (CUE.dispositio.test(h)) cur = "dispositio";
+        else if (CUE.narratio.test(h) && cur !== "dispositio" && cur !== "sanctio") cur = "narratio";
+        else if (afterDat && (cur === null || cur === "inscriptio")) cur = "inscriptio";
+        else if (cur === "inscriptio") cur = CUE.arenga.test(h) ? "arenga" : "narratio";
+      } else if (cur === "inscriptio" && cap && k > 0 && (CUE.arenga.test(h) || CUE.narratio.test(h))) {
+        cur = CUE.arenga.test(h) ? "arenga" : "narratio";                 // address without a full stop
+      }
+      if ((cur === "narratio" || cur === "arenga") && CUE.dispverb.test(rds[k])) {   // dispositive verb: the segment turns dispositive
+        let q = k; while (q > 0 && !soft[q - 1] && !margin[q - 1]) q--;
+        for (let r = q; r < k; r++) part[r] = "dispositio";
+        cur = "dispositio";
+      }
+      if (cur !== "inscriptio" && cur !== null) afterDat = false;
+      part[k] = cur || "narratio";
+      if (hard[k]) { afterDat = cur === "datatio" || cur === "nota"; if (afterDat) cur = null; }
+      if (afterDat && cur === "inscriptio" && hard[k]) afterDat = false;
+      segStart = soft[k];
+    }
+    return part;
+  }
+  // segmentation = list of [first word, part] for the main text; the rules propose it, the editor moves or relabels it
+  const DS_NAME = (pt) => pt === "nota" ? "reg. note" : pt === "margo" ? "margin" : pt;
+  const DS_PARTS = ["inscriptio", "arenga", "narratio", "dispositio", "sanctio", "datatio", "nota"];
+  let dsDrag = null;
+  function autoSeg(part) { const seg = []; let prev = null; part.forEach((p, g) => { if (p === "margo") return; if (p !== prev) seg.push([g, p]); prev = p; }); return seg; }
+  function structure() {
+    const auto = computeParts(), seg = state.dsSeg || autoSeg(auto), part = auto.slice(), start = {}, endBar = {};
+    let j = -1, lastMain = null;
+    for (let g = 0; g < part.length; g++) {
+      if (auto[g] === "margo") { if (g === 0 || auto[g - 1] !== "margo") start[g] = true; continue; }
+      while (j + 1 < seg.length && seg[j + 1][0] <= g) { j++; if (lastMain !== null && (j === 0 || seg[j][1] !== part[lastMain])) start[g] = "b"; }
+      part[g] = seg[Math.max(0, j)][1];
+      if (lastMain === null) start[g] = true;
+      if (start[g] === "b" && lastMain !== null) endBar[lastMain] = g;
+      lastMain = g;
+    }
+    return { part, start, endBar, seg };
+  }
+  function dsEdit(f) { mutate(() => { const seg = (state.dsSeg || structure().seg).map(x => x.slice()); f(seg); seg.sort((a, b) => a[0] - b[0]);
+    state.dsSeg = seg.filter((x, i) => i === 0 || x[1] !== seg[i - 1][1]); }); render(); }
+  function dsMove(from, to) {
+    const DS = structure(); let g = to + 1; while (g < DS.part.length && DS.part[g] === "margo") g++;   // the boundary goes after the word it is dropped on
+    const seg = DS.seg, i = seg.findIndex(x => x[0] === from); if (i < 0) return;
+    const lo = i > 0 ? seg[i - 1][0] : -1, hi = i + 1 < seg.length ? seg[i + 1][0] : DS.part.length;
+    if (g <= lo || g >= hi || g === from) { toast("a boundary can move only between its neighbours"); return; }
+    dsEdit(s => { s.find(x => x[0] === from)[0] = g; }); toast(`${seg[i][1]} now starts at “${shownText(...FL[g])}”`);
+  }
+  function dsMenu(e, g) {
+    closeDsMenu(); const DS = structure(), cur = DS.part[g], isStart = DS.seg.some(x => x[0] === g), m = document.createElement("div"); m.id = "dsMenu";
+    m.innerHTML = `<div class="h">${isStart ? "part starting at" : "start a new part at"} “${esc(shownText(...FL[g]))}”</div>` +
+      DS_PARTS.map(p => `<button class="ds-${p}${p === cur && isStart ? " cur" : ""}" data-p="${p}"><i class="dsk"></i>${DS_NAME(p)}</button>`).join("") +
+      (isStart && DS.seg[0][0] !== g ? `<div class="h">—</div><button data-p="">remove this boundary</button>` : "") +
+      (state.dsSeg ? `<button data-p="!">reset to the rule-based structure</button>` : "");
+    document.body.appendChild(m);
+    const r = m.getBoundingClientRect(); m.style.left = Math.min(e.clientX, innerWidth - r.width - 8) + "px"; m.style.top = Math.min(e.clientY + 6, innerHeight - r.height - 8) + "px";
+    m.onclick = (ev) => { const b = ev.target.closest("button"); if (!b) return; ev.stopPropagation(); const p = b.dataset.p; closeDsMenu();
+      if (p === "!") { mutate(() => state.dsSeg = null); render(); toast("rule-based structure restored"); return; }
+      dsEdit(s => { const k = s.findIndex(x => x[0] === g); if (p === "") s.splice(k, 1); else if (k >= 0) s[k][1] = p; else s.push([g, p]); });
+      toast(p === "" ? "boundary removed" : `${p} from “${shownText(...FL[g])}”`); };
+  }
+  function closeDsMenu() { const m = $("dsMenu"); m && m.remove(); }
+  document.addEventListener("click", closeDsMenu); document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDsMenu(); });
+  // entries (one register entry = one letter): a new entry starts with the first part after a datatio / registration note;
+  // marginal lines are shown apart, after the text, each with the main line it stands beside
+  function pageLayout(DS) {
+    const PART = DS.part, entryAt = {}; let eNo = 0;
+    DS.seg.forEach((x, i) => { const pv = i ? DS.seg[i - 1][1] : null;
+      if (i === 0 || ((pv === "datatio" || pv === "nota") && x[1] !== "datatio" && x[1] !== "nota")) entryAt[x[0]] = { n: ++eNo, cont: i === 0 && x[1] !== "inscriptio" }; });
+    const yc = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0, isM = (li) => D.lines[li].words.length > 0 && D.lines[li].words.every((w, wi) => PART[GI[keyOf(li, wi)]] === "margo");
+    const mainL = D.lines.map((l, li) => li).filter(li => !isM(li)), margL = D.lines.map((l, li) => li).filter(isM);
+    const beside = (li) => mainL.reduce((b, m) => Math.abs(yc(D.lines[m]) - yc(D.lines[li])) < Math.abs(yc(D.lines[b]) - yc(D.lines[li])) ? m : b, mainL[0]);
+    return { entryAt, mainL, margL, isM, beside, entries: eNo };
+  }
+  const fmTitle = (F) => (F.kind === "herde" ? "Legal / procedural formula" : "Chancery formula") +
+    (F.herde_n ? ` · Herde, Audientia litterarum: ${[...new Set(F.herde.map(x => x.label))].slice(0, 6).join("; ")}${F.herde_n > 1 ? ` (${F.herde_n} record${F.herde_n > 1 ? "s" : ""})` : ""}` +
+      (F.herde.some(x => x.branch === "a" || x.branch === "b") ? " · calibrated match" : " · exact fragment of ≥ 4 words") : "") +
+    (F.register_letters ? ` · recurs in ≥ ${F.register_letters} of ${(D.formula_source && D.formula_source.register.letters) || "?"} other register letters` : "");
+  function render() {
+    const root = $("lines"); root.innerHTML = "";
+    const DS = structure(), PART = DS.part;
+    LINEPART = {}; D.lines.forEach((l, li) => { const c = {}; l.words.forEach((w, wi) => { const p_ = PART[GI[keyOf(li, wi)]]; c[p_] = (c[p_] || 0) + 1; }); LINEPART[li] = Object.keys(c).sort((a, b) => c[b] - c[a])[0]; });
+    document.body.classList.toggle("ds-on-root", state.struct);
+    const app = sortedApp(), appEnd = {}; app.forEach((a, i) => (appEnd[a.gi + a.span - 1] = appEnd[a.gi + a.span - 1] || []).push([a, fnLetter(i)]));
+    const neAt = {}, neEnd = {}; if (state.ner) state.ne.forEach(n => { spanGis(n).forEach(g => neAt[g] = n); neEnd[n.gi + n.span - 1] = n; });
+    const cNow = {}; D.clausulae.forEach(c => cNow[c.clausula_id] = clausulaNow(c));
+    const sgAt = state.ner ? SUGG_AT() : {};
+    const fmAt = {}; if (state.fml) (D.formulas || []).forEach(f => { for (let g = f.gi; g < f.gi + f.span; g++) fmAt[g] = f; });
+    const { entryAt, mainL, margL, isM, beside } = pageLayout(DS);
+    mainL.concat(margL).forEach((li) => {
+      const l = D.lines[li];
+      if (li === margL[0]) root.insertAdjacentHTML("beforeend", `<div class="msec">Marginalia<span>${margL.length} line(s) outside the text column, in page order; the reference gives the text line beside them</span></div>`);
+      const row = document.createElement("div"), g00 = l.words.length ? GI[keyOf(li, 0)] : -1;
+      row.className = "line" + (li === state.active ? " active" : "") + (state.clausOnly && !lineHasClaus.has(li) ? " dim" : "") + (isM(li) ? " marg" : "") + (entryAt[g00] && entryAt[g00].n > 1 ? " entry" : "");
+      row.dataset.li = li;
+      const ln = document.createElement("div"); ln.className = "ln"; ln.textContent = li + 1; ln.onclick = () => setActive(li, false);
+      { const starts = []; l.words.forEach((w, wi) => { const g0 = GI[keyOf(li, wi)]; if (DS.start[g0] && PART[g0] !== "margo") starts.push(g0); });
+        starts.forEach(g0 => { const pt = PART[g0], d = document.createElement("div"); d.className = "dsl ds-" + pt; d.textContent = DS_NAME(pt);
+          if (pt !== "margo") { d.title = "Click to change the part that starts here"; d.onclick = (e) => { e.stopPropagation(); dsMenu(e, g0); }; }
+          ln.appendChild(d); }); }
+      const body = document.createElement("div");
+      // diplomatic layer
+      const dp = document.createElement("div"); dp.className = "dipl" + (state.dipl[li] ? " changed" : ""); dp.dataset.li = li;
+      dp.innerHTML = (state.layer === "both" ? `<span class="tag">dipl.</span>` : "") + esc((state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || "—")).normalize("NFC"));
+      dp.title = "Click or press D to edit the diplomatic transcription of this line";
+      dp.onclick = (e) => { e.stopPropagation(); editDipl(li); };
+      // edition layer
+      const t = document.createElement("div"); t.className = "txt" + (state.heat ? " on" : "") + (state.struct ? " ds-on" : "");
+      let host = t;
+      l.words.forEach((w, wi) => {
+        const k = keyOf(li, wi), g = GI[k], ed = state.edits[k], pv = peerView(li, wi), lv = level(li, wi), ne = neAt[g];
+        if (entryAt[g]) { const E = entryAt[g]; host = t;
+          if (wi > 0) t.appendChild(Object.assign(document.createElement("span"), { className: "ebr" }));
+          t.insertAdjacentHTML("beforeend", `<span class="eno" title="register entry ${E.n}${E.cont ? ", continued from the previous folio" : ""}">¶ ${E.n}${E.cont ? " (cont.)" : ""}</span>`); }
+        if (fmAt[g] && host.fm !== fmAt[g]) { const F = fmAt[g];
+          host = document.createElement("span"); host.fm = F; host.className = "fm fm-" + F.kind + (g > F.gi ? " cont" : "");
+          host.title = fmTitle(F); t.appendChild(host); }
+        const s = document.createElement("span");
+        const sg = !ne && sgAt[g];
+        s.className = "w " + lv + (w.in_cadence ? " cad" : "") + (ed ? " edited" : "") + (ne ? " ne c-" + ne.type : "") + (sg ? " sg c-" + sg.x.type : "") + "";
+        if (state.struct) s.title = PART[g] + " · " + (s.title || "");
+        if (state.clausOnly && !w.in_cadence) s.style.opacity = .3;
+        s.innerHTML = wordHTML(li, wi, w.in_cadence, state.acc && w.in_cadence);
+        if (ed) s.insertAdjacentHTML("beforeend", `<sup class="e">✓</sup>`);
+        else if (pv.conflict) s.insertAdjacentHTML("beforeend", `<sup class="x">≠</sup>`);
+        else if (pv.other.length) s.insertAdjacentHTML("beforeend", `<sup class="x">→</sup>`);
+        else if (pv.agree.length) s.insertAdjacentHTML("beforeend", `<sup class="p">✓${pv.agree.length}</sup>`);
+        s.tabIndex = lv !== "high" || w.in_cadence ? 0 : -1; s.dataset.k = k;
+        s.title = `P(error) ${pct(pErr(li, wi), 0)}` + (pv.votes.length ? ` · other editors: ${pv.votes.map(v => v.editor + " → " + v.text).join("; ")}` : "") + (ne ? ` · ${NE_TYPES[ne.type][1]}` : "");
+        s.onclick = (e) => {
+          e.stopPropagation();
+          if (sg && !e.shiftKey) { const r = s.getBoundingClientRect(); decideSugg(sg.x, e.clientX >= r.left + r.width / 2, g); return; }
+          if (e.shiftKey && state.focus) { extendFrom(li, wi); return; } focusWord(li, wi, true);
+        };
+        if (sg) {
+          s.title = `Suggested ${NE_TYPES[sg.x.type][1]}: click the right half to accept, the left half to reject` + " · " + s.title;
+          s.onmousemove = (e) => { const r = s.getBoundingClientRect(), right = e.clientX >= r.left + r.width / 2; s.classList.toggle("hr", right); s.classList.toggle("hl", !right); };
+          s.onmouseleave = () => s.classList.remove("hr", "hl");
+          s.onkeydown = (e) => { if (e.key === "ArrowRight" && e.altKey) { e.preventDefault(); decideSugg(sg.x, true, g); } if (e.key === "ArrowLeft" && e.altKey) { e.preventDefault(); decideSugg(sg.x, false, g); } };
+        }
+        if (sg && sg.first) {
+          const wrap = document.createElement("span"); wrap.className = "sgw c-" + sg.x.type;
+          wrap.insertAdjacentHTML("beforeend", `<span class="sgc" aria-hidden="true">${NE_TYPES[sg.x.type][0]}?</span>`);
+          wrap.appendChild(s); host.appendChild(wrap);
+        } else host.appendChild(s);
+        if (DS.endBar[g]) {
+          const b = document.createElement("span"); b.className = "dsb ds-" + PART[g]; b.draggable = true; b.dataset.g = DS.endBar[g];
+          b.title = `end of the ${PART[g]} · drag to another word to move the boundary, click to change the next part`;
+          b.onclick = (e) => { e.stopPropagation(); dsMenu(e, DS.endBar[g]); };
+          b.ondragstart = (e) => { dsDrag = DS.endBar[g]; b.classList.add("drag"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", "ds"); };
+          b.ondragend = () => { dsDrag = null; b.classList.remove("drag"); };
+          host.appendChild(b);
+        }
+        if (state.struct && PART[g] !== "margo") {
+          s.ondragover = (e) => { if (dsDrag === null) return; e.preventDefault(); s.classList.add("dsdrop"); s.style.setProperty("--dsc", DSCOL[PART[g]]); };
+          s.ondragleave = () => s.classList.remove("dsdrop");
+          s.ondrop = (e) => { e.preventDefault(); s.classList.remove("dsdrop"); const from = dsDrag; dsDrag = null; if (from !== null) dsMove(from, g); };
+          s.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); dsMenu(e, g); };
+        }
+        if (neEnd[g]) host.insertAdjacentHTML("beforeend", `<span class="net c-${neEnd[g].type}">${NE_TYPES[neEnd[g].type][0]}</span>`);
+        (appEnd[g] || []).forEach(([a, letter]) => {
+          const f = document.createElement("span"); f.className = "fn"; f.textContent = letter; f.title = `${a.type} ${a.text}`;
+          f.onclick = (e) => { e.stopPropagation(); const [fl, fw] = FL[a.gi]; focusWord(fl, fw, true); openForm("app", a); };
+          host.appendChild(f);
+        });
+        if (host !== t && g === host.fm.gi + host.fm.span - 1) host = t;
+        host.appendChild(document.createTextNode(" "));
+        const c = clausAt[k];
+        if (c) {
+          const now = cNow[c.clausula_id], risk = c.risk_tokens.some(([a, b]) => level(a, b) === "low");
+          const b = document.createElement("span");
+          b.className = "cl " + now.label + (risk ? " risk" : "") + (now.label !== c.cursus ? " changed" : "");
+          b.innerHTML = esc(now.label) + (state.acc && now.janson ? `<span class="jn">${esc(now.janson)}</span>` : "");
+          b.title = `${now.cadence}${now.k !== undefined ? `, ${now.k} unstressed syllable(s) between the last two accents` : ""}` + (risk ? " — a likely error in the cadence window may change the class" : "") + (now.label !== c.cursus ? ` · model reading: ${c.cursus}` : "");
+          host.appendChild(b); host.appendChild(document.createTextNode(" "));
+        }
+      });
+      if (isM(li) && mainL.length) t.insertAdjacentHTML("beforeend", `<span class="mref">beside line ${beside(li) + 1}</span>`);
+      body.append(dp, t);
+      const mk = document.createElement("div"); mk.className = "marks";
+      mk.innerHTML = `<div class="${state.apprD.has(li) ? "y" : ""}" title="diplomatic layer approved">${state.apprD.has(li) ? "D✓" : ""}</div><div class="${state.apprE.has(li) ? "y" : ""}" title="edition approved">${state.apprE.has(li) ? "E✓" : ""}</div>`;
+      row.append(ln, body, mk); root.appendChild(row);
+    });
+    // apparatus and entity lists
+    const lemma = (x) => spanGis(x).map(g => shownText(...FL[g])).join(" ").replace(/[.,;:]$/, "");
+    $("appList").innerHTML = app.length ? app.map((a, i) => `<li data-id="${a.id}"><b>${fnLetter(i)}</b> <span class="lm">${esc(lemma(a))}</span>] <span class="ty">${esc(a.type)}</span> ${esc(a.text)}${a.hand ? ` <span class="meta">(${esc(a.hand)})</span>` : ""} <span class="meta">line ${FL[a.gi][0] + 1}</span></li>`).join("") : `<li class="empty">No notes yet: select a word and press A.</li>`;
+    $("neList").innerHTML = (state.ne.length ? state.ne.slice().sort((a, b) => a.gi - b.gi).map(n => `<li data-id="${n.id}" class="c-${n.type}"><span class="net">${NE_TYPES[n.type][0]}</span> ${esc(lemma(n))} <span class="meta">${NE_TYPES[n.type][1]} · line ${FL[n.gi][0] + 1}</span></li>`).join("") : `<li class="empty">No entities yet: select a word and press N (Shift+click extends the span).</li>`) + suggList();
+    $("appList").querySelectorAll("li[data-id]").forEach(n => n.onclick = (e) => { e.stopPropagation(); const a = state.app.find(x => x.id === +n.dataset.id); focusWord(...FL[a.gi], true); openForm("app", a); });
+    $("neList").querySelectorAll("li[data-id]").forEach(n => n.onclick = (e) => { e.stopPropagation(); const a = state.ne.find(x => x.id === +n.dataset.id); focusWord(...FL[a.gi], true); openForm("ne", a); });
+    stats(); drawPage(); drawPip(); modelProgress();
+  }
+  function setActive(li, scroll) { state.active = li; render(); if (scroll) { const r = document.querySelector(`.line[data-li="${li}"]`); r && r.scrollIntoView({ block: "center", behavior: "smooth" }); } }
+
+  // ------------------------------------------------------------ undo (snapshots of the editable state)
+  const snap = () => JSON.stringify({ edits: state.edits, dipl: state.dipl, apprE: [...state.apprE], apprD: [...state.apprD], app: state.app, ne: state.ne, stress: state.stress, rej: [...state.rej], dsSeg: state.dsSeg });
+  function mutate(f) { state.history.push(snap()); $("bUndo").disabled = false; f(); state.dirty = true; syncStatus(); WB.tele("edit"); }
+  function undo() {
+    const h = state.history.pop(); if (!h) return;
+    const s = JSON.parse(h); Object.assign(state, { edits: s.edits, dipl: s.dipl, apprE: new Set(s.apprE), apprD: new Set(s.apprD), app: s.app, ne: s.ne, stress: s.stress, rej: new Set(s.rej || []), dsSeg: s.dsSeg || null });
+    $("bUndo").disabled = !state.history.length; state.dirty = true; closePop(); syncStatus(); render(); toast("undone");
+  }
+  $("bUndo").onclick = undo;
+
+  // ------------------------------------------------------------ popover: corrections, stress, apparatus, entities
+  const pop = $("pop");
+  function candidatesFor(li, wi) {
+    const w = D.lines[li].words[wi], pv = peerView(li, wi), out = [], seen = new Set();
+    pv.other.concat(pv.agree).forEach(v => { if (!seen.has(v.text)) { seen.add(v.text); out.push({ text: v.text, label: v.editor, peer: true }); } });
+    (w.candidates || [{ text: w.text, p: 1, source: "beam" }]).forEach(c => { if (!seen.has(c.text)) { seen.add(c.text); out.push({ text: c.text, label: c.source === "lexicon" ? "lexicon" : pct(c.p, 0), cursus: c.cursus }); } });
+    return out.slice(0, 3);
+  }
+  function focusWord(li, wi, open) {
+    state.active = li; state.focus = [li, wi]; render();
+    const el = document.querySelector(`.w[data-k="${keyOf(li, wi)}"]`); if (!el) return;
+    el.focus({ preventScroll: true }); el.scrollIntoView({ block: "center" });
+    if (open) openPop(li, wi);
+  }
+  function place() {
+    if (!state.pop) return;
+    const el = document.querySelector(`.w[data-k="${keyOf(...state.pop)}"]`); if (!el) return;
+    const r = el.getBoundingClientRect(); pop.style.display = "block";
+    pop.style.top = (window.scrollY + r.bottom + 6) + "px";
+    pop.style.left = Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - pop.offsetWidth - 8)) + "px";
+  }
+  function openPop(li, wi) {
+    state.pop = [li, wi]; state.form = null;
+    const w = D.lines[li].words[wi], k = keyOf(li, wi), cands = candidatesFor(li, wi), c = w.in_cadence ? D.clausulae[w.clausula] : null;
+    const acc = accOf(li, wi), a = acc.length === 1 ? acc[0] : null, g = GI[k];
+    const hasApp = state.app.filter(x => spanGis(x).includes(g)), hasNe = state.ne.find(x => spanGis(x).includes(g));
+    pop.innerHTML = `<h3>${esc(shownText(li, wi))}</h3>
+      <div class="m">P(error) ${pct(pErr(li, wi), 0)} · model alone ${pct(w.p_error, 0)}${w.is_oov ? " · not in lexicon" : ""}${c ? ` · cadence: ${esc(clausulaNow(c).label)}` : ""}</div>
+      <ol>${cands.map((cd, i) => `<li data-i="${i}"><span class="k">${i + 1}</span><span class="c">${esc(cd.text)}</span><span class="s ${cd.peer ? "peer" : ""}">${esc(cd.label)}${cd.cursus ? " · " + esc(cd.cursus) : ""}</span></li>`).join("")}</ol>
+      <input type="text" id="manual" placeholder="type a correction, Enter" aria-label="manual correction" value="${esc((state.edits[k] || {}).corrected || "")}">
+      ${a && a[4].length > 1 ? `<div class="sec"><span class="m">stress (${esc(a[3])}):</span><br>${a[4].map((s, i) => `<button class="sylb ${i === stressIdx(a) ? "on" : ""}" data-s="${i}" ${a[4].length - 1 - i > 2 || i === a[4].length - 1 ? "disabled" : ""}>${esc(s)}</button>`).join("")}${state.stress[k] ? ` <button class="t" id="stReset">reset</button>` : ""}</div>` : ""}
+      <div class="acts">
+        <button class="t" id="bApp">${hasApp.length ? "apparatus (" + hasApp.length + ")" : "apparatus note"} <kbd>A</kbd></button>
+        <button class="t" id="bNe">${hasNe ? "entity: " + NE_TYPES[hasNe.type][1] : "named entity"} <kbd>N</kbd></button>
+        ${state.edits[k] ? `<button class="t" id="revert">revert to “${esc(w.text)}”</button>` : ""}
+        <button class="t" id="closep">close</button></div>`;
+    place();
+    pop.querySelectorAll("li").forEach(n => n.onclick = (e) => { e.stopPropagation(); accept(li, wi, +n.dataset.i); });
+    pop.querySelectorAll(".sylb").forEach(b => b.onclick = (e) => { e.stopPropagation(); setStress(li, wi, +b.dataset.s); });
+    if ($("stReset")) $("stReset").onclick = (e) => { e.stopPropagation(); mutate(() => delete state.stress[k]); render(); openPop(li, wi); };
+    $("manual").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); manual(li, wi); } if (e.key === "Escape") closePop(); e.stopPropagation(); };
+    $("bApp").onclick = (e) => { e.stopPropagation(); openForm("app", hasApp[0] || null); };
+    $("bNe").onclick = (e) => { e.stopPropagation(); openForm("ne", hasNe || null); };
+    if ($("revert")) $("revert").onclick = (e) => { e.stopPropagation(); revert(li, wi); };
+    $("closep").onclick = closePop;
+  }
+  function closePop() { pop.style.display = "none"; state.pop = null; state.form = null; }
+  document.addEventListener("click", (e) => { if (!pop.contains(e.target) && !$("chars").contains(e.target)) closePop(); });
+  function setStress(li, wi, s) {
+    const k = keyOf(li, wi);
+    mutate(() => state.stress[k] = { s, text: shownText(li, wi), at: new Date().toISOString() });
+    render(); focusWord(li, wi, true); toast("stress set; cursus recomputed");
+  }
+  function extendFrom(li, wi) {                                    // Shift+click: span from the focused word
+    const a = GI[keyOf(...state.focus)], b = GI[keyOf(li, wi)];
+    state.selSpan = [Math.min(a, b), Math.abs(b - a) + 1];
+    focusWord(...FL[state.selSpan[0]], true); openForm("ne", null, state.selSpan);
+  }
+  // apparatus / entity form (span = consecutive words from the anchor, possibly across lines)
+  function openForm(kind, item, span) {
+    if (!state.pop) return;
+    const g0 = item ? item.gi : (span ? span[0] : GI[keyOf(...state.pop)]);
+    const f = state.form = { kind, item, gi: g0, span: item ? item.span : (span ? span[1] : 1), type: item ? item.type : (kind === "app" ? APP_TYPES[0] : "person"), text: item ? item.text : "", hand: item ? item.hand : "" };
+    const lem = () => Array.from({ length: f.span }, (_, j) => shownText(...FL[f.gi + j])).join(" ");
+    const draw = () => {
+      pop.innerHTML = `<h3>${kind === "app" ? "Apparatus note" : "Named entity"}</h3>
+        <div class="span"><span class="m">lemma</span> <span class="lem">${esc(lem())}</span>
+          <button class="b sm" id="spM" ${f.span <= 1 ? "disabled" : ""} title="shorter">−</button><button class="b sm" id="spP" ${f.gi + f.span >= FL.length ? "disabled" : ""} title="one more word">+</button></div>
+        ${kind === "app" ? `<div class="grid" style="margin-top:8px">
+            <span class="m">type</span><select id="fType">${APP_TYPES.map(t => `<option ${t === f.type ? "selected" : ""}>${t}</option>`).join("")}</select>
+            <span class="m">reading / note</span><input type="text" id="fText" value="${esc(f.text)}" placeholder="e.g. scolario">
+            <span class="m">hand</span><input type="text" id="fHand" value="${esc(f.hand)}" placeholder="optional, e.g. m2"></div>`
+        : `<div class="types" style="margin-top:8px">${Object.entries(NE_TYPES).map(([t, v], i) => `<button class="c-${t}" data-t="${t}" aria-pressed="${t === f.type}">${i + 1} ${v[1]}</button>`).join("")}</div>`}
+        <div class="acts">${item ? `<button class="t" id="fDel">delete</button>` : "<span></span>"}<span><button class="t" id="fCancel">cancel</button> &nbsp; <button class="b sm" id="fSave">save</button></span></div>`;
+      place();
+      $("spM").onclick = (e) => { e.stopPropagation(); keep(); f.span--; draw(); };
+      $("spP").onclick = (e) => { e.stopPropagation(); keep(); f.span++; draw(); };
+      pop.querySelectorAll(".types button").forEach(b => b.onclick = (e) => { e.stopPropagation(); f.type = b.dataset.t; draw(); });
+      $("fCancel").onclick = (e) => { e.stopPropagation(); openPop(...state.pop); };
+      $("fSave").onclick = (e) => { e.stopPropagation(); keep(); save(); };
+      if ($("fDel")) $("fDel").onclick = (e) => { e.stopPropagation(); mutate(() => { const L = kind === "app" ? state.app : state.ne; L.splice(L.indexOf(item), 1); }); closePop(); render(); toast("deleted"); };
+      pop.querySelectorAll("input,select").forEach(n => n.onkeydown = (e) => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); keep(); save(); } if (e.key === "Escape") openPop(...state.pop); });
+      pop.onkeydown = (e) => { if (kind === "ne" && /^[1-4]$/.test(e.key) && e.target.tagName !== "INPUT") { f.type = Object.keys(NE_TYPES)[+e.key - 1]; draw(); } };
+      if ($("fText")) $("fText").focus();
+    };
+    const keep = () => { if ($("fType")) { f.type = $("fType").value; f.text = $("fText").value.trim(); f.hand = $("fHand").value.trim(); } };
+    const save = () => {
+      if (kind === "app" && !f.text && !["del.", "om.", "sic", "lectio dubia", "in ras."].includes(f.type)) { toast("add the reading or note"); return; }
+      mutate(() => {
+        const L = kind === "app" ? state.app : state.ne;
+        const rec = { id: item ? item.id : ++state.seq, gi: f.gi, span: f.span, type: f.type, ...(kind === "app" ? { text: f.text, hand: f.hand } : {}), at: new Date().toISOString() };
+        if (item) L[L.indexOf(item)] = rec; else L.push(rec);
+      });
+      closePop(); render(); toast(kind === "app" ? "apparatus note saved" : "entity saved");
+    };
+    draw();
+  }
+  function record(li, wi, corrected, method) {
+    mutate(() => state.edits[keyOf(li, wi)] = { corrected, method, at: new Date().toISOString() });
+    closePop(); render(); next(1, false);
+  }
+  function accept(li, wi, i) {
+    const w = D.lines[li].words[wi], cd = candidatesFor(li, wi)[i]; if (!cd) return;
+    record(li, wi, cd.text, cd.peer ? "peer" : (cd.text === w.text ? "confirmed" : "candidate"));
+    toast(`${w.text} → ${cd.text}`);
+  }
+  function manual(li, wi) {
+    const v = $("manual").value.trim().normalize("NFC"); if (!v) return;
+    const w = D.lines[li].words[wi]; record(li, wi, v, "manual"); toast(`${w.text} → ${v}`);
+  }
+  function revert(li, wi) {
+    const w = D.lines[li].words[wi];
+    mutate(() => delete state.edits[keyOf(li, wi)]); closePop(); render(); toast(`reverted to ${w.text}`);
+  }
+  // diplomatic layer: line-level editing
+  function editDipl(li) {
+    if (state.layer === "edit") { state.layer = "both"; setLayerButtons(); render(); }
+    state.active = li;
+    const dp = document.querySelector(`.dipl[data-li="${li}"]`); if (!dp) return;
+    const cur = (state.dipl[li] ? state.dipl[li].text : (D.lines[li].diplomatic_text || "")).normalize("NFC");
+    dp.innerHTML = `<input type="text" aria-label="diplomatic transcription, line ${li + 1}" value="${esc(cur)}">`;
+    const inp = dp.querySelector("input"); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+    inp.onclick = (e) => e.stopPropagation();
+    inp.onkeydown = (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") { e.preventDefault(); const v = inp.value.normalize("NFC"); if (v !== cur) mutate(() => { if (v === (D.lines[li].diplomatic_text || "").normalize("NFC")) delete state.dipl[li]; else state.dipl[li] = { text: v, at: new Date().toISOString() }; }); render(); toast(`diplomatic line ${li + 1} saved`); }
+      if (e.key === "Escape") render();
+    };
+    inp.onblur = () => setTimeout(() => { if (document.activeElement !== inp && !$("chars").matches(":hover")) render(); }, 150);
+  }
+
+  // ------------------------------------------------------------ special characters
+  const CHARS = [["ę", "e caudata"], ["⁊", "et (Tironian)"], ["ꝯ", "con / com"], ["ꝰ", "us"], ["ꝑ", "per"], ["ꝓ", "pro"], ["ꝗ", "quod / que"], ["ꝙ", "quod"],
+    ["ꝝ", "rum"], ["ꝫ", "et / -que"], ["ſ", "long s"], ["ꝛ", "r rotunda"], ["÷", "est"], ["̄", "combining macron (abbreviation)"], ["̃", "combining tilde"],
+    ["ͤ", "combining small e"], ["\uf1ac", "-que / -bus sign (MUFI U+F1AC)"], ["æ", "ae"], ["œ", "oe"], ["@", "@"], ["†", "crux"], ["¶", "pilcrow"], ["⸗", "line-break hyphen"], ["·", "punctus"]];
+  let own = ""; try { own = localStorage.getItem("paprg.chars") || ""; } catch (e) {}
+  let lastInput = null;
+  function drawChars() {
+    const all = CHARS.concat([...own].filter(c => c.trim()).map(c => [c, "own"]));
+    $("chars").innerHTML = `<span class="lb">Characters</span>` + all.map(([c, n]) => `<button class="ch" data-c="${esc(c)}" title="${esc(n)} (U+${c.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")})">${/\p{M}/u.test(c) ? "◌" + c : esc(c)}</button>`).join("") +
+      `<input type="text" id="ownChars" placeholder="add your own…" value="${esc(own)}" title="characters typed here are added to the palette (stored in this browser)">`;
+    $("chars").querySelectorAll("button.ch").forEach(b => {
+      b.onmousedown = (e) => e.preventDefault();
+      b.onclick = (e) => { e.stopPropagation(); insertChar(b.dataset.c); };
+    });
+    $("ownChars").onkeydown = (e) => { e.stopPropagation(); if (e.key === "Enter") { own = e.target.value; try { localStorage.setItem("paprg.chars", own); } catch (x) {} drawChars(); } };
+  }
+  function insertChar(c) {
+    const el = lastInput; if (!el || !document.body.contains(el)) { toast("click into a text field first"); return; }
+    const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? a;
+    el.value = el.value.slice(0, a) + c + el.value.slice(b); el.focus(); el.setSelectionRange(a + c.length, a + c.length);
+  }
+  document.addEventListener("focusin", (e) => { if (e.target.matches("input[type=text]") && e.target.id !== "ownChars") { lastInput = e.target; $("chars").classList.add("show"); } });
+  document.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!(a && a.matches && a.matches("input[type=text]"))) $("chars").classList.remove("show"); }, 200));
+  drawChars();
+
+  // ------------------------------------------------------------ keyboard and toggles
+  function next(dir, open) {
+    const f = flaggedList(); if (!f.length) { toast("all flagged words reviewed"); return; }
+    const cmp = (x) => GI[keyOf(...x)], cur = state.focus ? GI[keyOf(...state.focus)] : -1;
+    let t = dir > 0 ? (f.find(x => cmp(x) > cur) || f[0]) : (f.slice().reverse().find(x => cur < 0 || cmp(x) < cur) || f[f.length - 1]);
+    focusWord(t[0], t[1], open);
+  }
+  document.addEventListener("keydown", (e) => {
+    if ($("modal").style.display === "flex") { if (e.key === "Escape") $("modal").style.display = "none"; return; }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && e.target.tagName !== "INPUT") { e.preventDefault(); undo(); return; }
+    if (["INPUT", "SELECT"].includes(e.target.tagName)) return;
+    if (state.form) { if (e.key === "Escape") openPop(...state.pop); return; }
+    const k = e.key.toLowerCase();
+    if (e.key === "Tab") { e.preventDefault(); closePop(); next(e.shiftKey ? -1 : 1, true); }
+    else if (["1", "2", "3"].includes(e.key) && state.pop) { e.preventDefault(); accept(state.pop[0], state.pop[1], +e.key - 1); }
+    else if (k === "a" && state.pop) { e.preventDefault(); $("bApp").click(); }
+    else if (k === "n" && state.pop) { e.preventDefault(); $("bNe").click(); }
+    else if (k === "d" && state.active !== null) { e.preventDefault(); closePop(); editDipl(state.active); }
+    else if (e.key === "Enter" && state.active !== null) {
+      e.preventDefault(); const li = state.active, set = e.shiftKey ? state.apprD : state.apprE;
+      mutate(() => set.add(li)); closePop(); render(); toast(`line ${li + 1}: ${e.shiftKey ? "diplomatic" : "edition"} approved`);
+    }
+    else if (e.key === "Escape") closePop();
+  });
+  const tog = (id, f) => $(id).onclick = (e) => { e.stopPropagation(); f(); closePop(); render(); };
+  tog("bHeat", () => { state.heat = !state.heat; $("bHeat").setAttribute("aria-pressed", state.heat); });
+  tog("bAcc", () => { state.acc = !state.acc; $("bAcc").setAttribute("aria-pressed", state.acc); });
+  tog("bClaus", () => { state.clausOnly = !state.clausOnly; $("bClaus").setAttribute("aria-pressed", state.clausOnly); });
+  tog("bForm", () => { state.fml = !state.fml; $("bForm").setAttribute("aria-pressed", state.fml); $("fmLegend").style.opacity = state.fml ? 1 : .4; });
+  tog("bNer", () => { state.ner = !state.ner; $("bNer").setAttribute("aria-pressed", state.ner); });
+  tog("bStruct", () => { state.struct = !state.struct; $("bStruct").setAttribute("aria-pressed", state.struct); $("dsLegend").style.opacity = state.struct ? 1 : .4; });
+  if (CFG.mode !== "demo") $("bPeers").style.display = "none";
+  $("bPeers").onclick = (e) => { e.stopPropagation(); state.showPeers = !state.showPeers; $("bPeers").setAttribute("aria-pressed", state.showPeers); closePop(); pull().then(render); };
+  function setLayerButtons() { document.querySelectorAll("[data-layer]").forEach(b => b.setAttribute("aria-pressed", b.dataset.layer === state.layer)); $("editor").className = "editor layer-" + state.layer; }
+  document.querySelectorAll("[data-layer]").forEach(b => b.onclick = (e) => { e.stopPropagation(); state.layer = b.dataset.layer; setLayerButtons(); closePop(); render(); });
+
+  // ------------------------------------------------------------ audit record, TEI and sync
+  const ref = (g) => { const [li, wi] = FL[g]; return { line_id: D.lines[li].line_id, word_index: wi }; };
+  function audit() {
+    const changes = Object.entries(state.edits).map(([k, e]) => {
+      const [li, wi] = k.split(":").map(Number), l = D.lines[li], w = l.words[wi], c = w.in_cadence ? D.clausulae[w.clausula] : null;
+      return { layer: "edition", line_id: l.line_id, word_index: wi, original: w.text, corrected: e.corrected, method: e.method, at: e.at,
+        model_p_error: w.p_error, other_editors: peerView(li, wi).votes.map(v => ({ editor: v.editor, text: v.text })),
+        clausula_id: c ? c.clausula_id : null, cursus_before: c ? c.cursus : null, cursus_after: c ? clausulaNow(c).label : null };
+    });
+    return { schema: "paprg.htr-review/0.2", editor_id: CFG.login, timestamp: new Date().toISOString(),
+      source: { shelfmark: S.shelfmark, folio: S.folio }, model: { name: M.name, version: M.version },
+      approved: { edition: [...state.apprE].sort((a, b) => a - b).map(i => D.lines[i].line_id), diplomatic: [...state.apprD].sort((a, b) => a - b).map(i => D.lines[i].line_id) },
+      changes,
+      diplomatic_changes: Object.entries(state.dipl).map(([li, d]) => ({ line_id: D.lines[li].line_id, original: D.lines[li].diplomatic_text || "", corrected: d.text, at: d.at })),
+      apparatus: sortedApp().map((a, i) => ({ siglum: fnLetter(i), from: ref(a.gi), to: ref(a.gi + a.span - 1), lemma: spanGis(a).map(g => shownText(...FL[g])).join(" "), type: a.type, text: a.text, hand: a.hand || null, at: a.at })),
+      entities: state.ne.map(n => ({ from: ref(n.gi), to: ref(n.gi + n.span - 1), text: spanGis(n).map(g => shownText(...FL[g])).join(" "), type: NE_TYPES[n.type][1], at: n.at })),
+      accent_overrides: Object.entries(state.stress).map(([k, s]) => { const [li, wi] = k.split(":").map(Number), a = accOf(li, wi); return { line_id: D.lines[li].line_id, word_index: wi, word: s.text, syllables: a.length ? a[a.length - 1][4] : [], stressed_syllable: s.s, pattern: a.length ? a[a.length - 1][2] : null, at: s.at }; }) };
+  }
+  const xml = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  function tei() {
+    const DS = structure(), PART = DS.part, L = pageLayout(DS), now = new Date().toISOString();
+    const app = sortedApp(), appEnd = {}; app.forEach((a, i) => (appEnd[a.gi + a.span - 1] = appEnd[a.gi + a.span - 1] || []).push([a, fnLetter(i)]));
+    // a name is tagged only when it lies inside one structural part (or one marginal line), so that the XML stays well formed
+    const segOf = (g) => PART[g] === "margo" ? "m" + FL[g][0] : "s" + DS.seg.filter(x => x[0] <= g).length;
+    const neStart = {}, neEnd = {}; state.ne.forEach(n => { if (segOf(n.gi) === segOf(n.gi + n.span - 1)) { neStart[n.gi] = n; neEnd[n.gi + n.span - 1] = n; } });
+    // formulae: a seg inside one part, not cutting through a tagged name
+    const cut = (a, b) => state.ne.some(n => neStart[n.gi] && ((n.gi < a && n.gi + n.span - 1 >= a) || (n.gi <= b && n.gi + n.span - 1 > b)));
+    const fmStart = {}, fmEnd = {}; (D.formulas || []).forEach(f => { const e = f.gi + f.span - 1; if (segOf(f.gi) === segOf(e) && !cut(f.gi, e)) { fmStart[f.gi] = f; fmEnd[e] = f; } });
+    const fmSrc = (f) => [...new Set(f.herde.map(x => "Herde " + x.label))].slice(0, 6).concat(f.register_letters ? [`register: ${f.register_letters} letters`] : []).join("; ");
+    const word = (g) => { const [li, wi] = FL[g]; let o = "";
+      if (fmStart[g]) o += `<seg type="formula" subtype="${fmStart[g].kind === "herde" ? "legal" : "chancery"}" resp="#formulae" n="${xml(fmSrc(fmStart[g]))}">`;
+      if (neStart[g]) o += `<${NE_TYPES[neStart[g].type][1]}>`;
+      o += xml(shownText(li, wi));
+      if (neEnd[g]) o += `</${NE_TYPES[neEnd[g].type][1]}>`;
+      (appEnd[g] || []).forEach(([a, s]) => o += `<note type="apparatus" n="${s}"${a.hand ? ` hand="${xml(a.hand)}"` : ""}><term>${xml(a.type)}</term> ${xml(a.text)}</note>`);
+      const c = clausAt[keyOf(li, wi)]; if (c) o += `<note type="cursus">${xml(clausulaNow(c).label)}</note>`;
+      if (fmEnd[g]) o += `</seg>`;
+      return o; };
+    const lb = (li, id) => `<lb n="${li + 1}"${id ? ` xml:id="l${li + 1}"` : ""} facs="#${xml(D.lines[li].line_id)}"/>`;
+    const resp = state.dsSeg ? "#editor" : "#rules", I = (n) => "\n" + "  ".repeat(n);
+    // edition: entry > structural part > ab, lines as milestones
+    let ed = "", open = 0, segI = -1, prevLi = -1;
+    for (let g = 0; g < FL.length; g++) {
+      if (PART[g] === "margo") continue;
+      const [li] = FL[g];
+      if (DS.seg[segI + 1] && DS.seg[segI + 1][0] === g) {
+        segI++;
+        if (segI > 0) ed += `</ab>${I(5)}</div>`;
+        if (L.entryAt[g]) { const E = L.entryAt[g]; if (open) ed += `${I(4)}</div>`;
+          ed += `${I(4)}<div type="entry" n="${E.n}"${E.cont ? ` part="F"` : ""}>` + (E.cont ? `${I(5)}<note type="editorial">continued from the previous folio</note>` : ""); open = 1; }
+        const pt = DS.seg[segI][1];
+        ed += `${I(5)}<div type="${pt === "nota" ? "registration-note" : pt}" resp="${resp}">${I(6)}<ab>`;
+      }
+      if (li !== prevLi) { ed += (FL[g][1] === 0 ? `${I(6)}` : "") + lb(li, true); prevLi = li; }
+      ed += word(g) + " ";
+    }
+    if (segI >= 0) ed += `</ab>${I(5)}</div>${I(4)}</div>`;
+    ed = ed.replace(/ (<\/ab>)/g, "$1");
+    // marginalia: one ab per marginal line, pointing to the text line beside it
+    const mg = L.margL.map(li => `${I(4)}<ab type="marginal" n="${li + 1}" corresp="#l${L.beside(li) + 1}">${lb(li)}` +
+      D.lines[li].words.map((w, wi) => word(GI[keyOf(li, wi)])).join(" ") + `</ab>`).join("");
+    const dp = D.lines.map((l, li) => `${I(5)}<lb n="${li + 1}"/>${xml(state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || ""))}`).join("");
+    const parts = DS_PARTS.map(p => `${I(5)}<item><term>${p === "nota" ? "registration-note" : p}</term></item>`).join("");
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0" xml:lang="la">
+  <teiHeader>
+    <fileDesc>
+      <titleStmt>
+        <title>${xml(S.shelfmark)}, fol. ${xml(S.folio)} (${xml(S.pontificate)}): review export</title>
+        <respStmt xml:id="editor"><resp>review and correction</resp><name>@${xml(CFG.login)}</name></respStmt>
+        <respStmt xml:id="model"><resp>automatic transcription and name suggestions</resp><name>${xml(M.name)} ${xml(M.version)}</name></respStmt>
+        <respStmt xml:id="formulae"><resp>formula detection: Herde, Audientia litterarum contradictarum (FLAME containment and exact fragments) and recurrence in the Honorius III register</resp><name>PAPREG workbench, scripts/108</name></respStmt>
+        <respStmt xml:id="rules"><resp>rule-based diplomatic structure (formula openings, sentence boundaries, column geometry)</resp><name>PAPREG workbench</name></respStmt>
+      </titleStmt>
+      <publicationStmt><p>PAPREG workbench demo export, <date when="${now}">${now.slice(0, 10)}</date>; not for redistribution.</p></publicationStmt>
+      <sourceDesc>
+        <msDesc><msIdentifier><idno>${xml(S.shelfmark)}</idno></msIdentifier><physDesc><objectDesc><p><locus>fol. ${xml(S.folio)}</locus></p></objectDesc></physDesc></msDesc>
+      </sourceDesc>
+    </fileDesc>
+    <encodingDesc>
+      <projectDesc><p>Edition layer: expanded and punctuated text. Diplomatic layer: abbreviations and spelling as written.</p></projectDesc>
+      <editorialDecl>
+        <segmentation><p>Each register entry is a div type="entry"; part="F" marks an entry continued from the previous folio. Inside an entry each div carries the diplomatic part. A part's resp is #rules while the structure is the rule-based proposal and #editor once the editor has moved or relabelled a boundary. Lines are lb milestones whose facs points to the line region; marginal lines are given apart, with corresp to the text line they stand beside. Parts:</p>
+          <p><list type="parts">${parts}${I(5)}</list></p></segmentation>
+      </editorialDecl>
+    </encodingDesc>
+    <revisionDesc><change when="${now}" who="#editor">${state.dsSeg ? "structure edited; " : ""}${Object.keys(state.edits).length} edition and ${Object.keys(state.dipl).length} diplomatic correction(s), ${state.ne.length} entities, ${app.length} apparatus note(s)</change></revisionDesc>
+  </teiHeader>
+  <text>
+    <body>
+      <div type="transcription" subtype="diplomatic">
+        <ab>${dp}
+        </ab>
+      </div>
+      <div type="edition">
+        <div type="text" subtype="main">${ed}
+        </div>
+        <div type="marginalia">${mg}
+        </div>
+      </div>
+    </body>
+  </text>
+</TEI>`;
+  }
+  // ------------------------------------------------------------ saving and peers (js/wb.js: one file per editor and type, branch "annotations")
+  function payload(a) { return { files: WB.describe(), summary: `${a.changes.length} edition and ${a.diplomatic_changes.length} diplomatic change(s), ${a.apparatus.length} apparatus note(s), ${a.entities.length} entities` }; }
+  async function push() {
+    if (!state.dirty) return;
+    const a = audit();
+    await WB.save(JSON.parse(snap()), a);
+    state.syncLog.push({ at: a.timestamp, saved: WB.describe().files });
+    state.dirty = false; state.lastPush = new Date(); syncStatus();
+  }
+  async function pull() {
+    const peers = await WB.peers(D);
+    const sig = JSON.stringify(peers.map(p => [p.editor_id, p.timestamp, p.changes.length]));
+    state.syncLog.push({ at: new Date().toISOString(), pulled: peers.map(p => `${p.editor_id}: ${p.changes.length} change(s)`) });
+    if (sig !== state.peerSig) { state.peerSig = sig; state.peers = peers; if (!state.form && !document.querySelector(".dipl input")) render(); }
+  }
+  function syncStatus() {
+    const el = $("sync");
+    el.className = state.dirty ? "dirty" : "clean";
+    el.textContent = state.dirty ? `unsaved changes · autosave every ${CFG.syncSeconds} s` :
+      (state.lastPush ? `saved ${state.lastPush.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}${CFG.mode === "demo" ? " (simulated)" : ""}` : "up to date");
+  }
+  async function tick() { try { await push(); await pull(); } catch (e) { $("sync").className = "dirty"; $("sync").textContent = "sync failed: " + e.message; } }
+  window.__wbTick = tick;
+  setInterval(tick, CFG.syncSeconds * 1000);
+  window.addEventListener("beforeunload", (e) => { if (state.dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+  let mode = "audit", cur = null;
+  function show(m) {
+    mode = m; document.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tab === m));
+    $("mBody").textContent = m === "tei" ? cur.tei : JSON.stringify(cur[m], null, 2);
+    $("mFoot").textContent = { audit: `${cur.audit.changes.length} edition and ${cur.audit.diplomatic_changes.length} diplomatic change(s), ${cur.audit.apparatus.length} apparatus note(s), ${cur.audit.entities.length} entities, editor @${CFG.login}.`,
+      tei: `TEI P5 document: diplomatic layer; edition by register entry (${pageLayout(structure()).entries}) and diplomatic part (inscriptio … datatio); marginalia apart; formulae (seg type="formula", legal / chancery); persName / placeName / orgName / date, apparatus and cursus notes.`,
+      git: `Saved by the autosave (60 s after the last change, or at once from 25 changes): one file per editor and type in the branch ${WB.describe().branch}.`,
+      sync: "Push and pull events of this session." }[m];
+  }
+  $("bExport").onclick = async (e) => {
+    e.stopPropagation();
+    if (state.active !== null && !state.apprE.has(state.active)) mutate(() => state.apprE.add(state.active));
+    state.dirty = true; await tick(); render();
+    const a = audit(); cur = { audit: a, tei: tei(), git: payload(a), sync: state.syncLog };
+    $("modal").style.display = "flex"; show("audit");
+  };
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => show(b.dataset.tab));
+  $("mClose").onclick = () => $("modal").style.display = "none";
+  $("mCopy").onclick = async () => { try { await navigator.clipboard.writeText($("mBody").textContent); toast("copied"); } catch (e) { toast("copy not permitted"); } };
+  $("mDown").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([$("mBody").textContent], { type: mode === "tei" ? "application/xml" : "application/json" })); a.download = `review_${S.volume}_${S.folio}_${CFG.login}_${mode}.${mode === "tei" ? "xml" : "json"}`; a.click(); };
+
+  // ------------------------------------------------------------ image and magnifier
+  const stage = $("stage"), img = $("pageImg"), lens = $("lens"); let zoom = 3;
+  function setImage(src) { img.onload = () => { state.hasImage = true; img.hidden = false; drawPage(); drawPip(); }; img.src = src; }
+  window.__wbSetImage = setImage;
+  WB.image(D).then(u => u && setImage(u));                        // local folder or URL template (never GitHub)
+  function lensAt(e) {
+    const r = stage.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    const l = state.active !== null ? D.lines[state.active] : null, b = l && l.bbox;
+    const inside = b && x >= b[0] - .01 && x <= b[0] + b[2] + .01 && y >= b[1] - .012 && y <= b[1] + b[3] + .012;
+    if (!inside || !state.hasImage) { lens.hidden = true; return; }
+    const L = lens.offsetWidth || 200; lens.hidden = false;
+    lens.style.left = (e.clientX - r.left - L / 2) + "px"; lens.style.top = (e.clientY - r.top - L / 2) + "px";
+    lens.style.backgroundImage = `url("${img.src}")`;
+    lens.style.backgroundSize = `${r.width * zoom}px ${r.height * zoom}px`;
+    lens.style.backgroundPosition = `${-(x * r.width * zoom - L / 2)}px ${-(y * r.height * zoom - L / 2)}px`;
+  }
+  stage.addEventListener("mousemove", lensAt);
+  stage.addEventListener("mouseleave", () => lens.hidden = true);
+  stage.addEventListener("wheel", (e) => { if (lens.hidden) return; e.preventDefault(); zoom = Math.min(8, Math.max(2, zoom + (e.deltaY < 0 ? .5 : -.5))); lensAt(e); }, { passive: false });
+
+  function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 1500); }
+  window.__wb = { clausulaNow, accOf, jsAcc, cadence, state };          // for automated tests
+
+  const hdr = () => document.documentElement.style.setProperty("--hdr", document.querySelector("header").offsetHeight + "px");
+  addEventListener("resize", hdr); hdr();
+  await pull(); render(); syncStatus();
+})();
+</script>
+</body>
+</html>

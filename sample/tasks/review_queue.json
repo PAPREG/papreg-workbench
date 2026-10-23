@@ -1,0 +1,20 @@
+{
+ "round": 0,
+ "generated": "2026-10-23",
+ "tasks": [
+  {
+   "task_id": "T00-001",
+   "round": 0,
+   "page_id": "RV10/4r",
+   "hand": "RV10-H1",
+   "priority": 1,
+   "est_cer": 0.21311492332786935,
+   "coverage": 0,
+   "lines": 45,
+   "difficulty": "medium",
+   "double_key": 1,
+   "assignee": null,
+   "reason": "test task (setup check)"
+  }
+ ]
+}

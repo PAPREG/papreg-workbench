@@ -1,0 +1,13 @@
+{
+  "mode": "local",
+  "localData": "../workbench-data/",
+  "branch": "main",
+  "dataBranch": "annotations",
+  "annotationsDir": "annotations",
+  "pageDir": "pages",
+  "pagesIndex": "pages/index.json",
+  "tasks": "tasks/review_queue.json",
+  "syncSeconds": 60,
+  "claimBatch": 5,
+  "images": { "mode": "local-folder", "pattern": "{file}" }
+}

@@ -1,0 +1,18 @@
+{
+"generated": "2026-10-23",
+"volumes": [
+"Reg. Vat. 10 (one test side)"
+],
+"pages": [
+{
+"page_id": "RV10/4r",
+"volume": "10",
+"folio": "4r",
+"lines": 45,
+"words": 530,
+"hand": "RV10-H1",
+"expected_errors": 70.2,
+"task_id": "T00-001"
+}
+]
+}
