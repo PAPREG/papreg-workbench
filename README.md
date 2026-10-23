@@ -45,7 +45,10 @@ the others' corrections of the same side are shown as agreement (✓) and disagr
 ## Try it without login
 
 The login page has "Open the test side": one side shipped with the app (`sample/`, machine reading only), no login, edits kept in
-the browser. Direct link: `?test=1&page=RV10/4r`.
+the browser. Direct link: `?test=1&page=RV10/4r`. A guided tour (`js/tour.js`) starts on the first visit and shows, step by step, the
+reading and its uncertainty marks, Tab / 1–3 / Ctrl+Z / Enter (each practised before the tour goes on), the cadence marks, the views,
+apparatus, names and special characters, the page panel, saving and tasks; "Guided tour" in the header restarts it
+(`&tour=1` forces it). Tests: `tests/smoke_local.mjs`, `tests/tour_test.mjs`.
 
 ## Local test without GitHub (development)
 
