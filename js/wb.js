@@ -102,7 +102,7 @@
       G.mine[t] = emptyFile(t);
       const local = LS.get(`wb:${G.owner}/${G.repo}:${G.login}:${t}`, null);
       if (local) merge(t, local);
-      if (G.cfg.mode !== "local") { try { merge(t, JSON.parse(await ghRaw(myPath(t), G.cfg.dataBranch))); } catch (e) { if (e.status !== 404) console.warn(e); } }
+      if (!OFFLINE()) { try { merge(t, JSON.parse(await ghRaw(myPath(t), G.cfg.dataBranch))); } catch (e) { if (e.status !== 404) console.warn(e); } }
     }
   }
   function backup(t) { LS.set(`wb:${G.owner}/${G.repo}:${G.login}:${t}`, G.mine[t]); }
@@ -183,7 +183,7 @@
   async function loadTasks() {
     QUEUE = await data(G.cfg.tasks);
     CLAIMS = {};
-    if (G.cfg.mode !== "local") {
+    if (!OFFLINE()) {
       for (const f of await ghList(`${G.cfg.annotationsDir}/tasks`, G.cfg.dataBranch)) {
         if (f.type !== "file" || !f.name.endsWith(".json") || f.name === G.login + ".json") continue;
         try { const j = JSON.parse(await ghRaw(f.path, G.cfg.dataBranch)); CLAIMS[j.login || f.name.slice(0, -5)] = j.pages || {}; } catch (e) {}
