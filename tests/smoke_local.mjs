@@ -34,7 +34,7 @@ try {
   const tv = await evalJS(`document.querySelector(".wb-tasks h2") ? document.querySelector(".wb-tasks h2").textContent : ""`); check(/My tasks/.test(tv || ""), `task view: ${tv}`);
   await evalJS(`document.getElementById("wbTake") && document.getElementById("wbTake").click()`); await sleep(1500);
   const mine = await evalJS(`document.querySelector(".wb-tasks h2").textContent`); check(/My tasks \([1-9]/.test(mine || ""), `tasks taken: ${mine}`);
-  if (MODE === "test") { await open("http://127.0.0.1:8090/papreg_workbench/"); const lg = await evalJS(`!!document.getElementById("wbTry") && !/PAPREG\//.test(document.body.innerText)`); check(lg, "login page offers the test side and names no data repository"); }
+  if (MODE === "test") { await open("http://127.0.0.1:8090/papreg_workbench/"); const lg = await evalJS(`!!document.getElementById("wbTry") && !document.body.innerText.includes("PAPREG/")`); check(lg, "login page offers the test side and names no data repository"); }
 } catch (e) { console.log("FAIL exception", e); ok = false; }
 finally { try { ws && ws.close(); } catch (e) {} chrome.kill(); }
 console.log(ok ? "SMOKE OK" : "SMOKE FAILED"); process.exit(ok ? 0 : 1);
