@@ -395,10 +395,13 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   const SUGG = (D.entity_suggestions || []).map((x, k) => ({ ...x, type: NE_ALIAS[x.type] || x.type, k, gi: GI[keyOf(x.line_index, x.word_index)] })).filter(x => x.gi !== undefined);
   const suggOpen = () => SUGG.filter(x => !state.rej.has(x.k) && !state.ne.some(n => n.gi <= x.gi && x.gi < n.gi + n.span));
   const SUGG_AT = () => { const m = {}; suggOpen().forEach(x => { for (let j = 0; j < x.span; j++) m[x.gi + j] = { x, first: j === 0 }; }); return m; };
+  const suggText = (x) => FL.slice(x.gi, x.gi + x.span).map(([li, wi]) => D.lines[li].words[wi].text).join(" ");
+  const suggKey = (x) => x.type + "|" + suggText(x).toLowerCase();
+  const suggSame = (x) => suggOpen().filter(y => suggKey(y) === suggKey(x));
   function suggList() {
-    const open = suggOpen(); if (!SUGG.length) return `<li class="empty">entity suggestions: not run on this page</li>`;
-    return `<li class="empty">Suggestions (${esc(D.entity_suggestion_source || "model")}; not checked): ${open.length}</li>` + open.map(x =>
-      `<li class="c-${x.type} sugg"><span class="net">${NE_TYPES[x.type][0]}?</span> ${esc(FL.slice(x.gi, x.gi + x.span).map(([li, wi]) => D.lines[li].words[wi].text).join(" "))} <span class="meta">line ${LNUM[FL[x.gi][0]]}</span> <button class="t" data-sugg="${x.k}">accept</button> <button class="t" data-srej="${x.k}">reject</button></li>`).join("") + (state.rej.size ? `<li class="empty">${state.rej.size} suggestion(s) rejected</li>` : "");
+    const open = suggOpen(), grp = {}; open.forEach(x => grp[suggKey(x)] = (grp[suggKey(x)] || 0) + 1); if (!SUGG.length) return `<li class="empty">entity suggestions: not run on this page</li>`;
+    return `<li class="empty">Suggestions (${esc((D.entity_suggestion_source || "model").replace(/ERCDiDip\//g, ""))}; not checked): ${open.length}</li>` + open.map(x =>
+      `<li class="c-${x.type} sugg"><span class="net">${NE_TYPES[x.type][0]}?</span> ${esc(FL.slice(x.gi, x.gi + x.span).map(([li, wi]) => D.lines[li].words[wi].text).join(" "))} <span class="meta">line ${LNUM[FL[x.gi][0]]}</span> <button class="t" data-sugg="${x.k}">accept</button> <button class="t" data-srej="${x.k}">reject</button>${grp[suggKey(x)] > 1 ? ` <button class="t" data-sugg-all="${x.k}" data-tip="accept every open suggestion of this word as ${NE_TYPES[x.type][2]}">accept all ${grp[suggKey(x)]}</button> <button class="t" data-srej-all="${x.k}">reject all</button>` : ""}</li>`).join("") + (state.rej.size ? `<li class="empty">${state.rej.size} suggestion(s) rejected</li>` : "");
   }
   function decideSugg(x, accept, g) {
     if (accept) mutate(() => state.ne.push({ id: ++state.seq, gi: x.gi, span: x.span, type: x.type, role: x.type === "actor" ? roleFor(x.gi) : "", sub: x.label === "NAT" ? "natural" : "", at: new Date().toISOString(), source: "suggestion" }));
@@ -407,6 +410,11 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     for (let j = 0; j < x.span; j++) { const [a, b] = FL[x.gi + j], el = document.querySelector(`.w[data-k="${keyOf(a, b)}"]`); if (el) { el.classList.add(accept ? "fl-ok" : "fl-no"); } }
   }
   document.addEventListener("click", (e) => {
+    const ga = e.target.closest && e.target.closest("[data-sugg-all],[data-srej-all]");
+    if (ga) { e.stopPropagation(); const acc = ga.dataset.suggAll !== undefined, x = SUGG[+(acc ? ga.dataset.suggAll : ga.dataset.srejAll)], all = suggSame(x); let n = 0;
+      mutate(() => all.forEach(y => { if (!acc) { state.rej.add(y.k); n++; return; } if (state.ne.some(z => z.gi < y.gi + y.span && y.gi < z.gi + z.span)) return;
+        state.ne.push({ id: ++state.seq, gi: y.gi, span: y.span, type: y.type, role: y.type === "actor" ? roleFor(y.gi) : "", sub: y.label === "NAT" ? "natural" : "", at: new Date().toISOString(), source: "suggestion" }); n++; }));
+      render(); toast(`${n} suggestions ${acc ? "accepted" : "rejected"}: ${suggText(x)}`); return; }
     const r = e.target.closest && e.target.closest("[data-srej]");
     if (r) { e.stopPropagation(); const k = +r.dataset.srej; mutate(() => state.rej.add(k)); render(); toast("suggestion rejected"); return; }
     const b = e.target.closest && e.target.closest("[data-sugg]"); if (!b) return;
