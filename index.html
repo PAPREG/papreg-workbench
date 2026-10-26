@@ -199,6 +199,10 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 .wrows{display:block} .wrow{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;margin:1px 0} .wrow .sig{font:600 9px var(--sans);letter-spacing:.05em;color:var(--mute);min-width:26px;cursor:help}
 .wrow .wc.same{color:var(--mute);opacity:.55} .wrow .wc.df{background:rgba(180,35,24,.16);border-radius:2px;padding:0 2px;color:var(--ink)} .wrow .wc.ms{color:var(--mute);opacity:.5} .wrow .wc.oc{color:#999;font-style:italic;opacity:.7}
 .wrow .chip.pl{border-color:#2f7d5b;color:#2f7d5b;margin:0} .wrow .wc.fm{background:rgba(199,134,26,.18);border-radius:2px;padding:0 3px;color:var(--ink)} .band .cov{font-weight:600;color:var(--ink)} .band .cite{display:block;font-size:11px;color:var(--mute);font-style:italic}
+.pair{display:inline-block;vertical-align:top;text-align:left;margin-right:.32em} .pair .reg{display:block} .pair .wit{display:block;font:11px/1.3 var(--sans);white-space:nowrap;min-height:1.3em;color:var(--mute)}
+.pair .wit.same{opacity:.5} .pair .wit.differs{background:rgba(180,35,24,.16);border-radius:2px;color:var(--ink);opacity:1} .pair .wit.missing{opacity:.5} .pair .wit.ocr{color:#999;font-style:italic} .pair .wit.fm{background:rgba(199,134,26,.2);border-radius:2px;color:var(--ink)}
+.pair .wit.siglum{font:600 9px var(--sans);letter-spacing:.05em;cursor:help} .pair .wit .chip.pl{border-color:#2f7d5b;color:#2f7d5b;margin:0} .pair.plus{margin-right:.25em}
+i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical-align:-.15em;border-radius:1px} i.bt.ok{background:#bbb} i.bt.bad{background:#c0392b}
 .chip.sim{border-color:#9a8f7a;color:#7b705c;font-weight:500} .lvw .dipl{font-family:"Junicode",var(--mono)} .lvw .dim{color:var(--mute);font-style:italic}
 .w.modecur{outline:2px solid #2f5d8a;outline-offset:1px;border-radius:3px} .line.modecur{background:rgba(47,93,138,.08)} #modeWrap b{font-weight:600;color:var(--ink)} #modeAsk input{font:12px var(--sans)}
 .mctl{margin-left:10px;font:11px var(--sans)} .mctl .mst{color:var(--mute);margin-right:6px} .mctl button{font:11px var(--sans);padding:1px 6px;margin-left:4px;cursor:pointer}
@@ -947,6 +951,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       // edition layer
       const t = document.createElement("div"); t.className = "txt" + (state.heat ? " on" : "") + (state.struct ? " ds-on" : "");
       let host = t;
+      const WS = lineWit(li), SHOW = !!WS && effViews().includes("legacy");
+      const slot = (txt, cls, title) => { const e = document.createElement("span"); e.className = "wit " + cls; if (title) e.title = title; if (txt instanceof Node) e.appendChild(txt); else e.textContent = txt; return e; };
+      const tick = (st) => { const i_ = document.createElement("i"); i_.className = "bt " + (st === "agree" ? "ok" : "bad"); i_.title = st === "agree" ? "clause end in the reading and in the witness" : st === "witness-only" ? "boundary · witness: the witness has a clause end the reading lacks" : "boundary · reading: the reading has a clause end the witness lacks"; return i_; };
+      const plusPairs = (cellsOf) => { const n = Math.max(...WS.rows.map(r => cellsOf(r).length)); const out = []; for (let q = 0; q < n; q++) { const pr = document.createElement("span"); pr.className = "pair plus"; const rg = document.createElement("span"); rg.className = "reg"; rg.innerHTML = "&nbsp;"; pr.appendChild(rg);
+          let bd = null; WS.rows.forEach(r => { const c = cellsOf(r)[q]; if (c) { const ch = document.createElement("span"); ch.className = c.k === "ocr" ? "wc oc" : "chip pl"; ch.textContent = c.k === "ocr" ? c.form : "+" + c.form; pr.appendChild(slot(ch, "plus", "only in the witness")); if (c.bd) bd = c.bd; } else pr.appendChild(slot("\u00a0", "none")); });
+          out.push(pr); if (bd) out.push(tick(bd)); } return out; };
+      const sigPair = () => { const pr = document.createElement("span"); pr.className = "pair sig"; const rg = document.createElement("span"); rg.className = "reg"; rg.innerHTML = "&nbsp;"; pr.appendChild(rg); WS.rows.forEach(r => pr.appendChild(slot(r.sig, "siglum", r.cite))); return pr; };
       l.words.forEach((w, wi) => {
         const k = keyOf(li, wi), g = GI[k], ed = state.edits[k], pv = peerView(li, wi), lv = level(li, wi), ne = neAt[g];
         if (entryAt[g]) { const E = entryAt[g]; host = t; t.appendChild(bandEl(E)); }
@@ -990,6 +1001,14 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           wrap.insertAdjacentHTML("beforeend", `<span class="sgc" aria-hidden="true">${NE_TYPES[sg.x.type][0]}?</span>`);
           wrap.appendChild(s); host.appendChild(wrap);
         } else host.appendChild(s);
+        if (SHOW) {                                                    // the register token and its witness tokens as one unit: the witness word under the register word
+          const unit = (sg && sg.first) ? host.lastChild : s, pr = document.createElement("span"); pr.className = "pair"; const rg = document.createElement("span"); rg.className = "reg";
+          host.replaceChild(pr, unit); rg.appendChild(unit); pr.appendChild(rg);
+          WS.rows.forEach(r => { const c = r.by[wi]; pr.appendChild(c ? slot(c.k === "missing" ? "—" : c.form, c.k === "fm" ? "fm" : c.k, c.k === "differs" ? "reading: " + shownText(li, wi) : c.k === "missing" ? "absent in the witness" : c.k === "ocr" ? "OCR?" : c.title || "") : slot("\u00a0", "none")); });
+          const pre = plusPairs(r => r.before[wi] || []); pre.forEach(n => host.insertBefore(n, pr)); if (wi === 0) host.insertBefore(sigPair(), pre[0] || pr);
+          const bds = WS.rows.map(r => r.bd[wi]).filter(Boolean); if (bds.length) host.appendChild(tick(bds.find(x => x !== "agree") || "agree"));
+          if (wi === l.words.length - 1) plusPairs(r => r.end).forEach(n => host.appendChild(n));
+        }
         if (DS.endBar[g]) {
           const b = document.createElement("span"); b.className = "dsb ds-" + PART[g]; b.draggable = true; b.dataset.g = DS.endBar[g];
           b.title = `end of the ${PART[g]} · drag to another word to move the boundary, click to change the next part`;
@@ -1017,7 +1036,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           const now = cNow[c.clausula_id], risk = c.risk_tokens.some(([a, b]) => level(a, b) === "low");
           const b = document.createElement("span");
           b.className = "cl " + now.label + (risk ? " risk" : "") + (now.label !== c.cursus ? " changed" : "");
-          b.innerHTML = esc(now.label) + (state.acc && now.janson ? `<span class="jn">${esc(now.janson)}</span>` : "");
+          const nw = WS ? WS.rows.filter(r => r.bd[wi] === "agree").length : 0;
+          b.innerHTML = esc(now.label) + (nw ? ` · ${nw} witness${nw > 1 ? "es" : ""}` : "") + (state.acc && now.janson ? `<span class="jn">${esc(now.janson)}</span>` : "");
           b.title = `${now.cadence}${now.k !== undefined ? `, ${now.k} unstressed syllable(s) between the last two accents` : ""}` + (risk ? " — a likely error in the cadence window may change the class" : "") + (now.label !== c.cursus ? ` · model reading: ${c.cursus}` : "");
           host.appendChild(b); host.appendChild(document.createTextNode(" "));
         }
@@ -1189,12 +1209,12 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     return ops.reverse();
   }
   // regT: [{t, ref}] register tokens (ref = index the cell points to); witT: [string]; -> cells in text order
-  function alignTokens(regT, witT, thr, keepMissing) {
+  function alignTokens(regT, witT, thr, keepMissing, noPlus) {
     const R = regT.map(x => normW(x.t)), W = witT.map(normW), ops = nwOps(R, W, thr), cells = [];
     ops.forEach((o, k) => {
       if (o[0] === "p") cells.push({ k: isOCR(witT[o[2]]) ? "ocr" : (R[o[1]] === W[o[2]] ? "same" : "differs"), i: o[1], ref: regT[o[1]].ref, form: witT[o[2]] });
       else if (o[0] === "r") { if (keepMissing) cells.push({ k: "missing", i: o[1], ref: regT[o[1]].ref }); }
-      else { const nx = ops.slice(k + 1).find(q => q[0] !== "w"); cells.push({ k: isOCR(witT[o[1]]) ? "ocr" : "plus", form: witT[o[1]], next: nx ? regT[nx[1]].ref : null }); }
+      else if (!noPlus) { const nx = ops.slice(k + 1).find(q => q[0] !== "w"); cells.push({ k: isOCR(witT[o[1]]) ? "ocr" : "plus", form: witT[o[1]], next: nx ? regT[nx[1]].ref : null }); }
     });
     return cells;
   }
@@ -1212,7 +1232,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const rs = (REG[String(E.n)] || []).filter(r => r.source === "Pressutti" && r.text); if (!rs.length) return null;
     const regT = []; for (let g = E.g0; g <= E.g1; g++) { const [li, wi] = FL[g]; if (L0().isM(li) || D.lines[li].words[wi].add) continue; regT.push({ t: shownText(li, wi), ref: g }); }
     const key = E.n + "|" + regT.map(x => x.t).join(" "); if (PCACHE.has(key)) return PCACHE.get(key);
-    const cells = alignTokens(regT, rs[0].text.replace(/^[^.]*\.\s*/, "").split(/\s+/).filter(Boolean), .75, false); PCACHE.set(key, { cells, n: rs[0].n }); return PCACHE.get(key);
+    const cells = alignTokens(regT, rs[0].text.replace(/^[^.]*\.\s*/, "").split(/\s+/).filter(Boolean), .75, false, true); PCACHE.set(key, { cells, n: rs[0].n }); return PCACHE.get(key);
   }
   function regestRow(li) {
     const E = L0().entList.find(e => { const f = FL[e.g0][0], l = FL[e.g1][0]; return li >= f && li <= l; }); if (!E) return null; const A = regestAlign(E); if (!A) return null;
@@ -1224,6 +1244,21 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   function formulaRow(li) {
     const fs = (D.formulas || []).filter(f => { for (let g = f.gi; g < f.gi + f.span; g++) if (FL[g][0] === li) return true; return false; }); if (!fs.length) return null;
     return { sig: "F", src: "formula", cite: "formula detector: Herde, Audientia litterarum contradictarum; recurrence in the register", formulas: fs.map(f => ({ label: f.kind === "herde" ? ([...new Set((f.herde || []).map(x => x.label))][0] || "legal formula") : "chancery formula", text: Array.from({ length: f.span }, (_, k) => f.gi + k).filter(g => FL[g][0] === li).map(g => shownText(...FL[g])).join(" ") })) };
+  }
+  // clause end by punctuation (. ; : ?), abbreviation points left out
+  const ABBR_TOK = /^(\.\.|\p{Lu}\.|[IVXLC]+\.|(kal|kl|non|id|nonas|idus|etc|fol|nr|ss|ven|dil|dat|octob|septemb|novemb|decemb|ianuar|februar|iun|iul|aug|apr|mart)\.)$/iu;
+  const clauseEnd = (t) => { const x = String(t).replace(/[\s»"'”’)\]]+$/, "").replace(/,$/, ""); return /[.;:?]$/.test(x) && !ABBR_TOK.test(x) && x.length > 1; };
+  // per line: the witness rows (edition, regest, formula) as maps from the register token to the aligned witness token, "+" tokens placed before their next register word, boundary comparison
+  function lineWit(li) {
+    const rows = []; [editionRow(li), regestRow(li), formulaRow(li)].filter(Boolean).forEach(r => {
+      const o = { sig: r.sig, src: r.src, cite: r.cite, by: {}, before: {}, end: [], bd: {}, edition: r.sig !== "P" && r.sig !== "F" };
+      if (r.formulas) { r.formulas.forEach(f => { const ws = Array.from({ length: f.span }, (_, k) => f.gi + k).filter(g => FL[g][0] === li).map(g => FL[g][1]); ws.forEach((wi, k) => { o.by[wi] = { k: "fm", form: k === 0 ? f.label : "·", title: f.label }; }); }); }
+      else r.cells.forEach(c => { if (c.ref === undefined) { if (c.next != null) (o.before[c.next] = o.before[c.next] || []).push(c); else o.end.push(c); } else o.by[c.ref] = c; });
+      if (o.edition) { Object.entries(o.by).forEach(([wi, c]) => { if (c.k !== "same" && c.k !== "differs") return; const bs = clauseEnd(c.form), rs = clauseEnd(shownText(li, +wi)); if (bs || rs) o.bd[wi] = bs && rs ? "agree" : bs ? "witness-only" : "reading-only"; });
+        Object.values(o.before).flat().concat(o.end).forEach(c => { if (c.k === "plus" && clauseEnd(c.form)) c.bd = "witness-only"; }); }
+      rows.push(o);
+    });
+    return rows.length ? { rows } : null;
   }
   function rowEl(row, li) {
     const el = document.createElement("div"); el.className = "lv wrow"; const sg = `<span class="sig" title="${esc(row.cite)}">${esc(row.sig)}</span>`;
@@ -1252,7 +1287,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       el.innerHTML = real ? (state.layer === "both" ? `<span class="tag">dipl.</span>` : "") + esc(real.normalize("NFC")) : "";
       el.onclick = (e) => { e.stopPropagation(); editDipl(li); };
     } else if (v === "legacy") {
-      el.className = "lv wrows"; [editionRow(li), regestRow(li), formulaRow(li)].filter(Boolean).forEach(row => el.appendChild(rowEl(row, li)));
+      el.className = "lv";                                            // the witnesses stand in the pairs of the text line, nowhere else
     } else if (v === "image") {                                       // strip of the original image, only when the image is loaded on this computer
       el.className = "lv strip"; const cv = document.createElement("canvas"), b = l.bbox;
       if (state.hasImage && b && img.naturalWidth && !hiddenLine(l)) { const sw = b[2] * img.naturalWidth, sh = b[3] * img.naturalHeight; cv.width = Math.min(900, sw); cv.height = Math.max(8, cv.width * sh / sw); cv.getContext("2d").drawImage(img, b[0] * img.naturalWidth, b[1] * img.naturalHeight, sw, sh, 0, 0, cv.width, cv.height); cv.style.maxWidth = "100%"; el.appendChild(cv); }
@@ -1362,7 +1397,10 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       if (m === "boundaries") { if (Ly.entList[0] && Ly.entList[0].cont) out.unshift(wItem("f:F", Ly.entList[0].g0, "part F: the page begins inside an entry")); const last = Ly.entList[Ly.entList.length - 1]; if (last && !["datatio", "nota"].includes(DS.seg[DS.seg.length - 1][1])) out.push(wItem("f:I", last.g0, "part I: the last entry goes on")); }
       return out;
     }
-    if (m === "cursus") { D.clausulae.forEach(c => { const g = GI[c.end.join(":")]; if (g === undefined) return; const nw = clausulaNow(c); out.push(wItem("c:" + c.clausula_id, g, `${nw.label}${nw.janson ? " · " + nw.janson : ""}`, { cl: c, cls: nw.label })); }); return out; }
+    if (m === "cursus") { D.lines.forEach((l, li) => { const W_ = lineWit(li); if (!W_) return; W_.rows.filter(r => r.edition).forEach(r => {
+        Object.entries(r.bd).forEach(([wi, st]) => { if (st !== "agree") out.push(wItem(`bd:${li}:${wi}:${r.sig}`, GI[keyOf(li, +wi)], `boundary · witness ${r.sig} (${st})`, { bd: st })); });
+        Object.values(r.before).flat().concat(r.end).forEach((c, q) => { if (c.bd) { const wi = c.next != null ? c.next : l.words.length - 1; out.push(wItem(`bd:${li}:+${wi}:${q}:${r.sig}`, GI[keyOf(li, wi)], `boundary · witness ${r.sig} (+${c.form})`, { bd: "witness-only" })); } }); }); });
+      D.clausulae.forEach(c => { const g = GI[c.end.join(":")]; if (g === undefined) return; const nw = clausulaNow(c); out.push(wItem("c:" + c.clausula_id, g, `${nw.label}${nw.janson ? " · " + nw.janson : ""}`, { cl: c, cls: nw.label })); }); return out.sort((a, b) => a.g - b.g); }
     if (m === "corrections") { sortedApp().filter(a => /^(add\.|del\.|corr\. ex|in ras\.)/.test(a.type)).forEach(a => out.push(wItem("a:" + a.id, a.gi, `${a.type}: ${spanGis(a).map(g => shownText(...FL[g])).join(" ")}`, { app: a }))); return out; }
     if (m === "ner") { suggOpen().forEach(x => out.push(wItem("g:" + x.k, x.gi, `${NE_TYPES[x.type][2]}? ${FL.slice(x.gi, x.gi + x.span).map(([li, wi]) => shownText(li, wi)).join(" ")}`, { sugg: x }))); return out.concat(suspects()); }
     if (m === "codicology") {
@@ -1430,7 +1468,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       e.preventDefault();
       if (m === "ner" && it.sugg) { decideSugg(it.sugg, true, it.g); setDone(m, it.id, "accept", "", [it.li, it.wi]); }
       else if (m === "ner") done("checked: no entity");
-      else if (m === "cursus") done("accept class", it.cls);
+      else if (m === "cursus") done(it.bd ? "boundary reviewed: " + it.bd : "accept class", it.cls);
       else done("confirm");
       modeNext(1); return true;
     }
@@ -1646,10 +1684,14 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       const a = r.a || [], tg = a[1] !== undefined && a[1] !== null && FL.length && GI[keyOf(a[0], a[1])] !== undefined && inl(GI[keyOf(a[0], a[1])]) ? "#" + wid(GI[keyOf(a[0], a[1])]) : (a[0] !== undefined && a[0] !== null && lnum[a[0]] ? "#" + lid(a[0]) : "");
       if (tg) modeNotes.push(`${I(4)}<annotation xml:id="mn-${mn}-${modeNotes.length + 1}" type="mode-note" subtype="${mn}" target="${tg}" at="${xml(r.at || "")}" resp="#editor">${xml(r.act + (r.val ? ": " + r.val : ""))}</annotation>`.replace(' at="', ' when="')); }));
     // witness rows stay standoff: the line of the edition, and per token the alignment with the reading (ana: same | differs | missing | ocr | plus; a plus token has no target and points to the following register word)
-    const wit = [], tgt = (li, wi) => "#" + wid(GI[keyOf(li, wi)]);
+    const wit = [], bnd = [], tgt = (li, wi) => "#" + wid(GI[keyOf(li, wi)]);
     D.lines.forEach((l, li) => { const wt = WIT[lnum[li]]; if (!wt || L.isM(li) || !l.words.length) return;
       wit.push(`${I(4)}<annotation xml:id="wt${li + 1}" type="witness" subtype="${xml(wt.align || "aligned")}" target="#${lid(li)}" source="#${xml(wt.source)}" resp="#rules">${xml(wt.text)}</annotation>`);
       (editionRow(li) || { cells: [] }).cells.forEach((c, k) => wit.push(`${I(5)}<annotation xml:id="wk${li + 1}_${k + 1}" type="witness-token" source="#${xml(wt.source)}"${c.ref !== undefined ? ` target="${tgt(li, c.ref)}"` : (c.next != null ? ` next="${tgt(li, c.next)}"` : "")} ana="#${c.ref === undefined ? "plus" : c.k}" resp="#rules">${c.k === "missing" ? "" : xml(c.form)}</annotation>`)); });
+    D.lines.forEach((l, li) => { const W_ = lineWit(li); if (!W_ || L.isM(li) || !l.words.length) return; W_.rows.filter(r => r.edition).forEach(r => {
+      Object.entries(r.bd).forEach(([wi, st]) => bnd.push(`${I(4)}<annotation xml:id="bd${li + 1}_${+wi + 1}_${r.sig}" type="boundary" target="${tgt(li, +wi)}" ana="#${st}" source="#${xml(r.src)}" resp="#rules"/>`));
+      Object.entries(r.before).forEach(([nx, cs]) => cs.forEach((c, q) => { if (c.bd) bnd.push(`${I(4)}<annotation xml:id="bdp${li + 1}_${nx}_${q}_${r.sig}" type="boundary" next="${tgt(li, +nx)}" ana="#witness-only" source="#${xml(r.src)}" resp="#rules">${xml(c.form)}</annotation>`); }));
+      r.end.forEach((c, q) => { const nl = L.mainL.find(m => m > li && D.lines[m].words.length); if (c.bd && nl !== undefined) bnd.push(`${I(4)}<annotation xml:id="bdq${li + 1}_${q}_${r.sig}" type="boundary" next="${tgt(nl, 0)}" ana="#witness-only" source="#${xml(r.src)}" resp="#rules">${xml(c.form)}</annotation>`); }); }); });
     L.entList.forEach(E => { const A = regestAlign(E); if (!A) return;
       A.cells.forEach((c, k) => wit.push(`${I(5)}<annotation xml:id="wp${E.n}_${k + 1}" type="witness-token" source="#Pressutti"${c.ref !== undefined ? ` target="#${wid(c.ref)}"` : (c.next != null ? ` next="#${wid(c.next)}"` : "")} ana="#${c.ref === undefined ? "plus" : c.k}" resp="#rules">${xml(c.form)}</annotation>`)); });
     const list = (type, resp, items) => items.length ? `${I(3)}<listAnnotation type="${type}">${items.join("")}${I(3)}</listAnnotation>` : "";
@@ -1710,7 +1752,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           <p>Standoff annotations (back to the text through <att>target</att>) hold what is not yet confirmed: the cursus class of each clause end (ana, class of the pilot-1 rule classifier on the text as it now stands), the model's word confidence (<att>cert</att> = calibrated probability that the word is read correctly, given for words at 0.80 or below), marginal text that may be an addition (the editor can confirm it as an add in the text after the word it follows, or as a marginal note), and siglum candidates. An editor's correction of a word is marked resp="#editor" on the w; the machine reading is kept in the audit record.</p>
         </interpretation>
       </editorialDecl>
-      <classDecl><taxonomy xml:id="witness-alignment">${["same", "differs", "missing", "ocr", "plus"].map(k => `${I(5)}<category xml:id="${k}"><catDesc>${{ same: "the witness token equals the register token after normalisation", differs: "aligned, the forms differ", missing: "register token absent in the witness", ocr: "witness token with non-letters: OCR noise, not a difference", plus: "witness token without a register token (next points to the following register word)" }[k]}</catDesc></category>`).join("")}
+      <classDecl><taxonomy xml:id="boundary-agreement">${["agree", "witness-only", "reading-only"].map(k => `${I(5)}<category xml:id="${k}"><catDesc>${{ agree: "clause end (. ; : ?) in the reading and in the witness", "witness-only": "the witness has a clause end the reading lacks", "reading-only": "the reading has a clause end the witness lacks" }[k]}</catDesc></category>`).join("")}
+      </taxonomy><taxonomy xml:id="witness-alignment">${["same", "differs", "missing", "ocr", "plus"].map(k => `${I(5)}<category xml:id="${k}"><catDesc>${{ same: "the witness token equals the register token after normalisation", differs: "aligned, the forms differ", missing: "register token absent in the witness", ocr: "witness token with non-letters: OCR noise, not a difference", plus: "witness token without a register token (next points to the following register word)" }[k]}</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="entity-classes">${NE_KEYS.map((t, i) => `${I(5)}<category xml:id="N${i + 1}"><catDesc>${NE_TYPES[t][2]}: ${NE_TYPES[t][1]}${t === "actor" ? ' type="actor" role="…"' : t === "obj" ? ' type="object"' : ""} (model labels: ${NE_FROM[t]})</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="actor-roles">${Object.entries(ROLES).map(([k, v]) => `${I(5)}<category xml:id="R-${k}"><catDesc>${v}</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="cursus"><category xml:id="cursus-class"><catDesc>cursus class of a clause end</catDesc>${cursusCats}
@@ -1729,7 +1772,7 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
       <graphic url="${xml(S.image_dir)}/${xml(S.image_file)}" width="${W}px" height="${H}px"/>${zones}
     </surface>
   </facsimile>
-  <standOff>${list("cursus", "rules", cur)}${list("word-confidence", "model", conf)}${list("marginal-text", "rules", marg.concat(nums))}${list("siglum", "rules", sig)}${list("ink", "rules", ink)}${list("entity", "model", ents)}${list("witness", "rules", wit)}${list("mode-note", "editor", modeNotes)}
+  <standOff>${list("cursus", "rules", cur)}${list("word-confidence", "model", conf)}${list("marginal-text", "rules", marg.concat(nums))}${list("siglum", "rules", sig)}${list("ink", "rules", ink)}${list("entity", "model", ents)}${list("witness", "rules", wit)}${list("boundary", "rules", bnd)}${list("mode-note", "editor", modeNotes)}
   </standOff>
   <text>
     <body>${dipl}

@@ -37,21 +37,21 @@ try {
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition&sources=tests/fixtures/` }); await sleep(3500);
   await ev(`localStorage.setItem("wb:tourSeen","1")`);
   const e1 = await ev(`document.getElementById("modeStat").textContent`); check(/\d+ stops/.test(e1) && +e1.match(/(\d+) stops/)[1] >= 1, `edition with a witness file: the differing tokens are the stops (${e1})`);
-  const lw = await ev(`document.querySelectorAll(".lvw .wrow").length + "|" + document.querySelectorAll(".lvw .wc.df").length`); check(/^[1-9]\d*\|[1-9]/.test(lw), `witness rows are the default view, differing tokens highlighted (${lw})`);
+  const lw = await ev(`document.querySelectorAll(".pair .wit.differs").length + "|" + document.querySelectorAll(".pair.plus").length`); check(/^[1-9]\d*\|[1-9]/.test(lw), `witness pairs are the default view, differing tokens highlighted (${lw})`);
   const band = await ev(`[...document.querySelectorAll(".band")][1].innerText`); check(/P TEST-1/.test(band) && /MGH|H |Horoy/.test(await ev(`document.querySelector(".band .cov") ? document.body.innerText : ""`)) || /P TEST-1/.test(band), "the coverage badge of the entry names the regest of the files");
   const tx = await ev(`window.__wb.tei()`); check(/<note type="regest" source="#Pressutti"/.test(tx) && /type="witness"[^>]*source="#Horoy"/.test(tx) && /<bibl xml:id="Pressutti">/.test(tx) && /<bibl xml:id="Horoy">/.test(tx), "TEI: regest notes, witness annotations, listBibl");
   const rl = await ev(`window.TEI_CHECKS.run(window.__wb.tei(), document.body.innerText).filter(r => !r.ok).map(r => r.id).join(",")`); check(rl === "", `rules met with witnesses loaded (${rl})`);
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&sources=tests/none/` }); await sleep(3500);
   const hd = await ev(`[!!document.getElementById("modeSel"), document.getElementById("viewSel").innerText, document.body.innerText.includes("simulated"), !!document.querySelector(".lvw .wd")].join("|")`);
   check(hd.startsWith("false|") && !/ink strip/.test(hd) && /false\|(true|false)$/.test(hd), `no mode dropdown; no ink option in the public build; no simulated text (${hd.replace(/\n/g, " ")})`);
-  const lg = await ev(`document.querySelectorAll(".lvw .wrow").length + "|" + document.querySelectorAll(".lvw .wc.df").length`); console.log("legacy lines shown:", lg);
+  const lg = await ev(`document.querySelectorAll(".pair .wit.differs").length + "|" + document.querySelectorAll(".pair.plus").length`); console.log("legacy lines shown:", lg);
   // without a task link the page is the plain review: no mode, Tab goes to the next flagged word
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&mode=ner&sources=tests/none/` }); await sleep(3500);
   await key("Tab"); await sleep(400); const pl = await ev(`[window.__wb.state.mode, !!window.__wb.state.focus, document.getElementById("modeStat").textContent].join("|")`);
   check(pl.startsWith("|true|"), `a mode without a task is ignored: plain review, Tab = next flagged word (${pl})`);
   // the public-domain witnesses of the sample (sample/154v/regests.json, witness.json)
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition` }); await sleep(3500);
-  const real = await ev(`JSON.stringify({ stat: document.getElementById("modeStat").textContent, witnessLines: document.querySelectorAll(".lvw .wrow").length, diffTokens: document.querySelectorAll(".lvw .wc.df").length, plus: document.querySelectorAll(".lvw .chip.pl").length, ocr: document.querySelectorAll(".lvw .wc.oc").length,
+  const real = await ev(`JSON.stringify({ stat: document.getElementById("modeStat").textContent, witnessLines: document.querySelectorAll(".pair .wit.siglum").length, diffTokens: document.querySelectorAll(".pair .wit.differs").length, plus: document.querySelectorAll(".pair.plus .chip.pl").length, ocr: document.querySelectorAll(".pair .wit.ocr").length,
     bands: [...document.querySelectorAll(".band")].map(b => (b.querySelector(".cov") ? b.querySelector(".cov").textContent : "-")) })`);
   console.log("sample witnesses:", real);
   const rr = JSON.parse(real); check(rr.witnessLines > 0 && /\d+ stops/.test(rr.stat), `the sample files load: ${rr.witnessLines} witness lines, ${rr.stat}`);
