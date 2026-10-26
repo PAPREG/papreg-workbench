@@ -1,0 +1,6 @@
+# never commit register images or the editors' data here: this repository is public
+*.jpg
+*.JPG
+*.tif
+/pages/
+/annotations/

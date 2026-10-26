@@ -1,0 +1,21 @@
+{
+  "mode": "github",
+  "org": "PAPREG",
+  "appRepo": "PAPREG/papreg-workbench",
+  "branch": "main",
+  "dataBranch": "annotations",
+  "annotationsDir": "annotations",
+  "pageDir": "pages",
+  "pagesIndex": "pages/index.json",
+  "tasks": "tasks/review_queue.json",
+  "syncSeconds": 60,
+  "claimBatch": 5,
+  "seniors": [],
+  "images": {
+    "mode": "local-folder",
+    "pattern": "{file}",
+    "note": "The editor chooses the folder that holds the RVAT<volume> image folders; images never leave the computer. Alternative: {\"mode\": \"url\", \"template\": \"http://localhost:8081/{dir}/{name}\"}"
+  },
+  "testPage": "RV9/154v",
+  "testData": "sample/"
+}
