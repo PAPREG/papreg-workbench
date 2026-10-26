@@ -190,6 +190,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 .inkbar{display:block;height:3px;border-radius:2px;margin:3px 0 0 auto;width:100%} .hs{font-size:10px;color:#7a4fa0;margin-left:2px}
 .gut{display:block;font:10px var(--sans);color:var(--mute);margin-top:3px;text-align:right;line-height:1.3;overflow-wrap:anywhere}.gut .chip{margin:0 0 2px;white-space:normal}
 .dropcap{font-size:1.9em;font-weight:600;line-height:.8;margin-right:1px;color:var(--ink)}
+.band{display:block;font:12px var(--sans);color:var(--mute);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:rgba(120,110,90,.06);padding:4px 8px;margin:2px 0 6px;line-height:1.7}
+.band.gap{margin-top:calc(34px * var(--fs))} .band .rc{color:var(--ink);font-weight:600} .band .dim{color:var(--mute);font-weight:400} .band .warn{color:#a8541a} .band .warn i{color:var(--ink)}
+.band .fold{padding:0 5px;margin-right:6px;cursor:pointer} .band .ty{text-transform:lowercase} .band .st{font-weight:600} .band .bgut{float:right;font-size:11px}
+.band.cur{outline:2px solid #2f5d8a} .w.ecol{display:none} .band button.t{font:11px var(--sans);padding:0 5px}
+.lvw .lv{font:calc(13px * var(--fs))/1.6 var(--mono);color:var(--mute);overflow-wrap:anywhere} .lvw .lv .tag,.lvw .dipl .tag{font:10px var(--sans);letter-spacing:.06em;text-transform:uppercase;margin-right:8px;color:var(--mute)}
+.chip.sim{border-color:#9a8f7a;color:#7b705c;font-weight:500} .lvw .dipl{font-family:"Junicode",var(--mono)} .lvw .dim{color:var(--mute);font-style:italic}
+.w.modecur{outline:2px solid #2f5d8a;outline-offset:1px;border-radius:3px} .line.modecur{background:rgba(47,93,138,.08)} #modeWrap b{font-weight:600;color:var(--ink)} #modeAsk input{font:12px var(--sans)}
 .mctl{margin-left:10px;font:11px var(--sans)} .mctl .mst{color:var(--mute);margin-right:6px} .mctl button{font:11px var(--sans);padding:1px 6px;margin-left:4px;cursor:pointer}
 .line.marg .txt{font-size:calc(15px * var(--fs))} .mref{font:11px var(--sans);color:var(--mute);margin-left:6px}
 .fm-herde{--fmc:#b5523b} .fm-chancery{--fmc:#3d6f9e}
@@ -262,6 +269,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     <button class="b" id="bExport">Approve &amp; save</button>
   </div>
   <div class="row2">
+    <span id="viewSel">line view <select id="lv1" aria-label="line view 1"></select> <select id="lv2" aria-label="second line view"></select></span><span class="sep">|</span>
     <span>layer
       <button class="t" data-layer="both" aria-pressed="true">both</button>
       <button class="t" data-layer="dipl" aria-pressed="false">diplomatic</button>
@@ -275,8 +283,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     <button class="t" id="bPeers" aria-pressed="false" title="Two SIMULATED editors, for illustrating the UI only: not checked palaeographically, not ground truth, with one deliberate wrong choice. Off by default, so that the page shows the model's own output and calibrated uncertainty.">simulated peers (UI demo)</button>
   </div>
   <div class="row2 row3">
+    <span id="modeWrap">mode <select id="modeSel" aria-label="task mode"></select> <b id="modeStat"></b> <span id="modeCur"></span> <span id="modeAsk" hidden></span></span><span class="sep">|</span>
     <span id="stats"></span><span class="sep">|</span>
-    <span class="keys"><kbd>Tab</kbd> next · <kbd>1–3</kbd> accept · <kbd>A</kbd> apparatus · <kbd>N</kbd><kbd>0–9</kbd> entity class · <kbd>R</kbd> role · name? right half ✓ left half ✗ · <kbd>D</kbd> edit diplomatic · <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> approve edition / diplomatic · <kbd>Ctrl+Z</kbd> undo</span>
+<span class="keys" id="keysLine"></span>
   </div>
 </header>
 
@@ -390,7 +399,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const APP_TYPES = ["corr. ex", "add. supra lin.", "add. in marg.", "del.", "in ras.", "om.", "sic", "lectio dubia", "alia manu", "nota"];
 
   const state = { showPeers: false, heat: true, acc: true, clausOnly: false, layer: "both", active: null, focus: null, pop: null, form: null,
-    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, history: [], seq: 0,
+    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, modes: {}, etype: {}, recip: {}, collapsed: {}, mode: "triage", views: ["dipl"], history: [], seq: 0,
     dirty: false, lastPush: null, peers: [], peerSig: "", syncLog: [], hasImage: false, rej: new Set(), struct: true, ner: true, fml: true };
   WB.restore(state, D);                                            // this editor's saved work on the page
   state.ne.forEach(n => { n.type = NE_ALIAS[n.type] || n.type; });  // entities saved with the earlier four classes
@@ -578,6 +587,10 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       if (state.struct && LINEPART[li]) { fill = DSCOL[LINEPART[li]]; op = act ? .42 : .2; }
       h += `<polygon points="${pts}" fill="${fill}" fill-opacity="${op}" stroke="${ink}" stroke-opacity="${act ? .9 : .18}" stroke-width="${act ? 1.6 : .8}" data-li="${li}" style="cursor:pointer"/>`;
     });
+    try { const Ls = L0(); Ls.entList.forEach(E => { const lis = new Set(); for (let g = E.g0; g <= E.g1; g++) { const [li_] = FL[g]; if (!Ls.isM(li_)) lis.add(li_); }
+      const bs = [...lis].map(i => D.lines[i].bbox).filter(Boolean); if (!bs.length) return;
+      const x0 = Math.min(...bs.map(b => b[0])), y0 = Math.min(...bs.map(b => b[1])), x1 = Math.max(...bs.map(b => b[0] + b[2])), y1 = Math.max(...bs.map(b => b[1] + b[3]));
+      h += `<rect x="${(x0 * VW - 3).toFixed(1)}" y="${(y0 * VH - 3).toFixed(1)}" width="${((x1 - x0) * VW + 6).toFixed(1)}" height="${((y1 - y0) * VH + 6).toFixed(1)}" fill="none" stroke="#2f5d8a" stroke-opacity=".55" stroke-width="1" stroke-dasharray="3 2"/><rect x="${(x0 * VW - 3).toFixed(1)}" y="${(y0 * VH - 3).toFixed(1)}" width="16" height="9" fill="#2f5d8a" fill-opacity=".8"/><text x="${(x0 * VW - 1).toFixed(1)}" y="${(y0 * VH + 4).toFixed(1)}" font-size="7" fill="#fff">¶${E.n}</text>`; }); } catch (e) {}
     if (state.focus && D.lines[state.focus[0]].bbox) {
       const [li, wi] = state.focus, l = D.lines[li], b = l.bbox;
       const lens = l.words.map(w => w.text.length + 1), tot = lens.reduce((a, c) => a + c, 0);
@@ -801,21 +814,114 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const iemAt = iemAtG;
     DS.seg.forEach((x, i) => { const pv = i ? DS.seg[i - 1][1] : null, iem = x[1] === "nota" && iemAt(x[0]);      // an in eundem modum entry is an entry of its own
       if (i === 0 || iem || ((pv === "datatio" || pv === "nota") && x[1] !== "datatio" && x[1] !== "nota")) entryAt[x[0]] = { n: ++eNo, cont: i === 0 && x[1] !== "inscriptio", iem }; });
+    const eg = Object.keys(entryAt).map(Number).sort((a, b) => a - b); eg.forEach((g, i) => { entryAt[g].g0 = g; entryAt[g].g1 = i + 1 < eg.length ? eg[i + 1] - 1 : FL.length - 1; });
     const yc = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0, isM = (li) => D.lines[li].words.length > 0 && D.lines[li].words.every((w, wi) => PART[GI[keyOf(li, wi)]] === "margo");
     const mainL = D.lines.map((l, li) => li).filter(li => !isM(li) && !hiddenLine(D.lines[li]) && !numeralLine(D.lines[li])), margL = D.lines.map((l, li) => li).filter(isM);
     const beside = (li) => mainL.reduce((b, m) => Math.abs(yc(D.lines[m]) - yc(D.lines[li])) < Math.abs(yc(D.lines[b]) - yc(D.lines[li])) ? m : b, mainL[0]);
-    return { entryAt, mainL, margL, isM, beside, entries: eNo };
+    return { entryAt, entList: eg.map(g => entryAt[g]), mainL, margL, isM, beside, entries: eNo };
   }
   const fmTitle = (F) => (F.kind === "herde" ? "Legal / procedural formula" : "Chancery formula") +
     (F.herde_n ? ` · Herde, Audientia litterarum: ${[...new Set(F.herde.map(x => x.label))].slice(0, 6).join("; ")}${F.herde_n > 1 ? ` (${F.herde_n} record${F.herde_n > 1 ? "s" : ""})` : ""}` +
       (F.herde.some(x => x.branch === "a" || x.branch === "b") ? " · calibrated match" : " · exact fragment of ≥ 4 words") : "") +
     (F.register_letters ? ` · recurs in ≥ ${F.register_letters} of ${(D.formula_source && D.formula_source.register.letters) || "?"} other register letters` : "");
   // a marginal line is undecided (machine detection), an addition that belongs to the text at a place the editor names, or a marginal note
+  // ------------------------------------------------------------ simulated diplomatic line: rule re-abbreviation of the expanded reading (NOT a reading)
+  // Whole words of the register's conventions (nomina sacra and the stock words of the chancery) and endings / prefixes; the table is the whole of the simulation.
+  const MAC = "̄";                                               // combining macron (the generic abbreviation stroke)
+  const ABBR_WORDS = { // folded form -> abbreviated form (lower case; the initial capital is kept)
+    apostolica: "aplica", apostolice: "aplice", apostolicam: "aplicam", apostolici: "aplici", apostolicis: "aplicis", apostolicum: "aplicum", apostolicorum: "aplicoꝝ",
+    ecclesia: "eccl" + MAC + "ia", ecclesie: "eccl" + MAC + "ie", ecclesiam: "eccl" + MAC + "iam", ecclesiis: "eccl" + MAC + "iis", ecclesiasticum: "eccl" + MAC + "icum", ecclesiastica: "eccl" + MAC + "ica", ecclesiasticam: "eccl" + MAC + "icam",
+    episcopus: "epc" + MAC + "s", episcopo: "epc" + MAC + "o", episcopi: "epc" + MAC + "i", episcopum: "epc" + MAC + "m", archiepiscopus: "archiepc" + MAC + "s", archiepiscopo: "archiepc" + MAC + "o", archiepiscopi: "archiepc" + MAC + "i",
+    littere: "lr" + MAC + "e", litteras: "lr" + MAC + "as", litteris: "lr" + MAC + "is", litterarum: "lr" + MAC + "arum",
+    nostri: "nr" + MAC + "i", nostro: "nr" + MAC + "o", nostra: "nr" + MAC + "a", nostre: "nr" + MAC + "e", nostrum: "nr" + MAC + "m", noster: "nr" + MAC, nostris: "nr" + MAC + "is", nostrorum: "nr" + MAC + "oꝝ",
+    vestri: "vr" + MAC + "i", vestro: "vr" + MAC + "o", vestra: "vr" + MAC + "a", vestre: "vr" + MAC + "e", vestram: "vr" + MAC + "am", vestrum: "vr" + MAC + "m", vester: "vr" + MAC, vestris: "vr" + MAC + "is",
+    tue: "tu" + MAC + "e", tuo: "tu" + MAC + "o",
+    gratia: "gr" + MAC + "a", gratiam: "gr" + MAC + "am", gratie: "gr" + MAC + "e",
+    dominus: "dn" + MAC + "s", domino: "dn" + MAC + "o", domini: "dn" + MAC + "i", dominum: "dn" + MAC + "m", deus: "d" + MAC + "s", deo: "d" + MAC + "o", dei: "d" + MAC + "i",
+    jesu: "ih" + MAC + "u", christi: "xp" + MAC + "i", christo: "xp" + MAC + "o",
+    sanctus: "sc" + MAC + "s", sancti: "sc" + MAC + "i", sancte: "sc" + MAC + "e", sanctam: "sc" + MAC + "am", sancta: "sc" + MAC + "a", sanctorum: "sc" + MAC + "oꝝ", sancto: "sc" + MAC + "o",
+    dilectus: "dilc" + MAC + "s", dilecti: "dilc" + MAC + "i", dilecto: "dilc" + MAC + "o", dilectis: "dilc" + MAC + "is", dilectum: "dilc" + MAC + "m", dilectos: "dilc" + MAC + "os",
+    venerabilis: "venl" + MAC + "is", venerabili: "venl" + MAC + "i", venerabilem: "venl" + MAC + "em",
+    frater: "fr" + MAC, fratrem: "fr" + MAC + "em", fratri: "fr" + MAC + "i", fratribus: "fr" + MAC + "ib;", fratres: "fr" + MAC + "es",
+    presbyteri: "pbr" + MAC + "i", presbyter: "pbr" + MAC, cardinalis: "cardl" + MAC + "is", cardinali: "cardl" + MAC + "i",
+    monasterio: "monast" + MAC + "io", monasterii: "monast" + MAC + "ii", monasterium: "monast" + MAC + "ium", capitulo: "cap" + MAC + "lo", capituli: "cap" + MAC + "li", capitulum: "cap" + MAC + "lm",
+    conventui: "conv" + MAC + "tui", abbati: "abb" + MAC + "i", abbas: "abb" + MAC + "s", abbatibus: "abb" + MAC + "ib;", decano: "dec" + MAC + "o", decanus: "dec" + MAC + "s", priori: "prior" + MAC + "i", prior: "prior" + MAC,
+    papa: "pp" + MAC, pape: "pp" + MAC + "e", pontificatus: "pontf" + MAC + "s", predecessor: "p" + MAC + "decessor", predecessoris: "p" + MAC + "decessoris", predecessore: "p" + MAC + "decessore",
+    et: "⁊", est: "÷", enim: "en" + MAC, non: "no" + MAC, quod: "qđ", quia: "qa", quam: "qm" + MAC, quoque: "qꝫ", quatinus: "qtin" + MAC + "s", etiam: "eti" + MAC, nobis: "nob;", vobis: "vob;", omnibus: "omib;", omnes: "oms", omnis: "omis",
+    scripta: "scripta", mandamus: "mandam" + MAC + "", precipiendo: "ꝓcipiendo", presentium: "ꝑsentium", per: "ꝑ", pro: "ꝓ", cum: "cū", sicut: "sicut", super: "sup", supra: "sup" + MAC + "a", ut: "ut", sed: "sed", nec: "nec", secundum: "sc" + MAC + "m", tamen: "tm" + MAC, igitur: "igit" + MAC, ergo: "erg" + MAC
+  };
+  const ABBR_RULES = [ // [pattern, replacement]: prefixes / endings, applied in order to words not in the table (words of 4 letters or more)
+    [/^per(?=[a-z]{3,})/, "ꝑ"], [/^pro(?=[a-z]{3,})/, "ꝓ"], [/^pre(?=[a-z]{3,})/, "p" + MAC], [/^con(?=[a-z]{3,})/, "ꝯ"],
+    [/orum$/, "oꝝ"], [/arum$/, "aꝝ"], [/bus$/, "b;"], [/que$/, "qꝫ"], [/us$/, "ꝰ"], [/([aeio])m$/, "$1" + MAC]
+  ];
+  const abbrWord = (w) => {
+    const m = w.match(/^([^\p{L}]*)([\p{L}]+)([^\p{L}]*)$/u); if (!m) return w; const [, a, core, z] = m, low = core.toLowerCase(), key = low.normalize("NFD").replace(/\p{M}/gu, "").replace(/v/g, "u").replace(/j/g, "i"), ukey = ABBR_WORDS[key] !== undefined ? key : null;
+    let out = ukey ? ABBR_WORDS[ukey] : null;
+    if (out === null && core.length >= 4) { out = low; for (const [re, rep] of ABBR_RULES) { if (re.test(out)) { out = out.replace(re, rep); break; } } if (out === low) out = core; }
+    if (out === null) out = core;
+    if (out !== core && /^\p{Lu}/u.test(core)) out = out[0].toUpperCase() + out.slice(1);
+    return a + out + z;
+  };
+  const simDipl = (li) => D.lines[li].words.map((w, wi) => abbrWord(shownText(li, wi))).join(" ").normalize("NFC");
+  const SIM_TABLE_SIZE = Object.keys(ABBR_WORDS).length + ABBR_RULES.length;
+  // ------------------------------------------------------------ entry bands: recipient, type, place and date (computed from the datatio), lines, regest, status
+  const ROMAN = (t) => { const v = { I: 1, V: 5, X: 10, L: 50, C: 100 }; t = t.toUpperCase().replace(/[^IVXLC]/g, ""); let n = 0; for (let i = 0; i < t.length; i++) { const a = v[t[i]], b = v[t[i + 1]] || 0; n += a < b ? -a : a; } return n; };
+  const MONTHS = ["ianuar", "februar", "mart", "april", "mai", "iuni", "iuli", "august", "septembr", "octobr", "novembr", "decembr"], MON_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const ORD = { primo: 1, secundo: 2, tertio: 3, quarto: 4, quinto: 5, sexto: 6, septimo: 7, octavo: 8, nono: 9, decimo: 10, undecimo: 11, duodecimo: 12 };
+  // Roman date -> day; the pontifical year counts from the consecration of Honorius III (24 July 1216)
+  function romanDate(tok) {
+    const t = tok.map(w => w.replace(/[,;.]+$/, "")), i = tok.findIndex(w => /^(kal|kl|non|id)\.?[,;]?$/i.test(w)); if (i < 1) return null;
+    const n = ROMAN(t[i - 1]), mi = MONTHS.findIndex(m => rd(t[i + 1] || "").startsWith(m)); if (!n || mi < 0) return null;
+    const kind = /^k/i.test(t[i]) ? 1 : /^n/i.test(t[i]) ? 2 : 3, day0 = kind === 1 ? 1 : kind === 2 ? ([2, 4, 6, 9].includes(mi) ? 7 : 5) : ([2, 4, 6, 9].includes(mi) ? 15 : 13);
+    const d = new Date(Date.UTC(2001, mi, day0) - (n - 1) * 864e5), m = d.getUTCMonth() + 1, day = d.getUTCDate();
+    const ai = t.findIndex(w => rd(w) === "anno"), yr = ai >= 0 ? ORD[rd(t[ai + 1] || "")] || ORD[rd(t[ai + 2] || "")] : 0;
+    const Y = yr ? ((m > 7 || (m === 7 && day >= 24)) ? 1215 + yr : 1216 + yr) : null, ki = ["Kal.", "Non.", "Id."][kind - 1];
+    const place = (tok[0] && /^dat/i.test(tok[0]) && tok[1] && !/^(kal|non|id|[ivxl]+)/i.test(tok[1])) ? tok[1].replace(/[,;.]+$/, "") : "";
+    return { text: `${place ? place + ", " : ""}${t[i - 1]} ${ki} ${MON_EN[mi]}.${yr ? ", a. " + ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][yr] : ""}`, iso: Y ? `${Y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}` : "", human: `${day} ${MON_EN[m - 1]}${Y ? " " + Y : ""}` };
+  }
+  const strip = (x) => x.replace(/[,;.:]+$/, "");
+  function entryInfo(E) {
+    const DS = structure(), segs = DS.seg.map((x, j) => [x, j]).filter(([x]) => x[0] >= E.g0 && x[0] <= E.g1), partWords = (part) => { const out = [];
+      segs.forEach(([x, j]) => { if (x[1] === part) { const end = DS.seg[j + 1] ? Math.min(DS.seg[j + 1][0], E.g1 + 1) : E.g1 + 1; for (let q = x[0]; q < end; q++) if (DS.part[q] !== "margo") out.push(shownText(...FL[q])); } }); return out; };
+    const dat = partWords("datatio"), main = []; for (let q = E.g0; q <= E.g1; q++) if (DS.part[q] !== "margo") main.push(q);
+    const lab = main.map(g => LNUM[FL[g][0]]).filter(x => /^\d+$/.test(x)).map(Number), li0 = main.length ? FL[main[0]][0] : FL[E.g0][0];
+    const gr = (D.address_groups || []).find(x => String(x.entry_line) === LNUM[li0] && x.add_lines.length);
+    let lineEnd = "", head = "";
+    if (gr) { lineEnd = gr.add_lines.map(la => { const ai = LNUM.indexOf(la); return D.lines[ai].words.map((w, wi) => w.add ? shownText(ai, wi) : null).filter(Boolean).join(" "); }).join(" ").trim();
+      const hw = []; let ok = true; gr.margin_lines.forEach(m => { const mi = LNUM.indexOf(m); D.lines[mi].words.forEach((w, wi) => { if (ok && w.p_error < TH.risk_medium && !w.is_oov) hw.push(shownText(mi, wi)); else ok = false; }); }); head = hw.join(" "); }
+    const rule = E.iem ? "in eundem modum" : /mandamus quatinus/.test(rd(partWords("dispositio").join(" "))) ? "mandate" : /(indulgem|concedim|confirmam|statuim)/.test(rd(partWords("dispositio").join(" "))) ? "privilege / indult" : "";
+    let eada = false; if (E.iem) for (let g = E.g0; g < E.g1; g++) if (rd(shownText(...FL[g])) === "datum" && rd(shownText(...FL[g + 1])).startsWith("eadem")) eada = true;
+    const date = eada ? { text: "same date (eadem)", iso: "", human: "" } : dat.length ? (/^eadem/i.test(dat[1] || "") ? { text: "same date (eadem)", iso: "", human: "" } : romanDate(dat)) : null;
+    const nums = D.lines.filter(z => numeralLine(z) && z.bbox).filter(z => { const ey = D.lines[li0].bbox ? D.lines[li0].bbox[1] + D.lines[li0].bbox[3] / 2 : 0, ez = z.bbox[1] + z.bbox[3] / 2, nxt = (L0().entList.find(e => e.g0 > E.g0) || null); const ny = nxt ? (D.lines[FL[nxt.g0][0]].bbox[1] + D.lines[FL[nxt.g0][0]].bbox[3] / 2) : 9; return ez >= ey - .004 && ez < ny - .004; });
+    return { gr, lineEnd, head, type: state.etype[E.n] || rule, typeRule: rule, date, from: lab.length ? Math.min(...lab) : null, to: lab.length ? Math.max(...lab) : null, li0, nums, margin: gr ? gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].expanded_text).join(" ") : "" };
+  }
+  const L0 = () => pageLayout(structure());
+  function bandEl(E) {
+    const I = entryInfo(E), b = document.createElement("div"), col = !!state.collapsed[E.n], chosen = state.recip[E.n];
+    b.className = "band" + (E.n > 1 ? " gap" : "") + (col ? " col" : ""); b.dataset.e = E.n; b.dataset.g = E.g0;
+    const norm = (x) => rd(x).replace(/ /g, ""), agree = I.gr && I.lineEnd && I.head && (norm(I.lineEnd) === norm(I.head));
+    let rec;
+    if (E.iem) rec = `<span class="rc dim">recipients not stated (the entry repeats an earlier one)</span>`;
+    else if (E.cont && !I.gr) rec = `<span class="rc dim">continues the entry of the previous folio</span>`;
+    else if (chosen) rec = `<span class="rc">${esc(chosen.text)}</span> <span class="dim">(${chosen.src}, confirmed)</span>`;
+    else if (!I.gr) rec = `<span class="rc dim">no address read</span>`;
+    else if (agree) rec = `<span class="rc">${esc(strip(I.head))}</span> <span class="dim">(line end = margin)</span>`;
+    else rec = `<span class="warn" title="the two witnesses of the recipient differ">line end: <i>${esc(strip(I.lineEnd))}</i> <button class="t" data-use="line">use</button> · margin: <i>${esc(I.head ? strip(I.head) : "(no confident reading)")}</i> <button class="t" data-use="margin">use</button> ⚠ disagree</span>`;
+    const gut = (I.gr ? `<span class="chip adr" title="address in the left margin (hand h2), belongs to this entry">margin · address</span> ${esc(strip(I.head))}` : "") + I.nums.map(() => ` <span class="chip num" title="later hand (h3), dark ink; the numeral is left to the editor">numeral · later hand</span>`).join("");
+    b.innerHTML = `<button class="t fold" title="collapse / expand this entry">${col ? "▸" : "▾"}</button><span class="eno">¶ ${E.n}</span> · ${rec} · <span class="ty" title="${I.typeRule ? "rule: " + I.typeRule : ""}">${esc(I.type || "type ?")}</span>` +
+      `${I.date ? ` · <span class="dt" title="computed from the datatio${I.date.iso ? ": " + I.date.iso : ""}">${esc(I.date.text)}${I.date.human ? ` (${I.date.human})` : ""}</span>` : ""}` +
+      `${I.from ? ` · l${I.from}${I.to > I.from ? "–" + I.to : ""}` : ""} · <span class="dim" title="Pressutti / Potthast regests: not loaded for this page">regest: not loaded</span> · <span class="st">${state.modes.boundaries && state.modes.boundaries.done["b:" + E.g0] ? "confirmed" : "proposed"}</span>` + (gut ? `<span class="bgut">${gut}</span>` : "");
+    b.querySelector(".fold").onclick = (e) => { e.stopPropagation(); state.collapsed[E.n] = !state.collapsed[E.n]; render(); };
+    b.querySelectorAll("[data-use]").forEach(x => x.onclick = (e) => { e.stopPropagation(); const src = x.dataset.use; mutate(() => state.recip[E.n] = { src: src === "line" ? "line end" : "margin", text: strip(src === "line" ? I.lineEnd : I.head) }); render(); });
+    return b;
+  }
+  function jumpEntry(dir) { const bs = [...document.querySelectorAll(".band")]; if (!bs.length) return; const cur = state.bandCur ?? -1, i = Math.max(0, Math.min(bs.length - 1, cur + dir)); state.bandCur = i; bs[i].scrollIntoView({ block: "start", behavior: "smooth" }); document.querySelectorAll(".band.cur").forEach(x => x.classList.remove("cur")); bs[i].classList.add("cur"); }
   // the address supplied later (hand h2): the left-margin zones of an address group and the entry they belong to
   const addrOf = (li) => { const g = (D.address_groups || []).find(x => String(x.entry_line) === LNUM[li]); return g ? g.margin_lines.map(m => D.lines[LNUM.indexOf(m)].expanded_text).join(" ").replace(/[.,;]$/, "") : ""; };
+  const colEntry = (g) => { if (!Object.values(state.collapsed).some(Boolean)) return false; const e = L0().entList.filter(x => x.g0 <= g).pop(); return !!(e && state.collapsed[e.n]); };
   function margCtl(li) {
     const m = state.marg[li], c = document.createElement("span"); c.className = "mctl";
-    const st = !m ? `undecided (${D.lines[li].zone_subtype || "margin"})` : m.as === "note" ? "marginal note" : m.after != null ? `${m.place === "above" ? "interlinear" : "margin"} addition after “${shownText(...FL[m.after])}”` : "addition: click the word it follows";
+    const st = !m ? `undecided (${D.lines[li].zone_subtype || "margin"})` : m.as === "note" ? "marginal note" : m.as === "numeral" ? "numeral (later hand)" : m.after != null ? `${m.place === "above" ? "interlinear" : "margin"} addition after “${shownText(...FL[m.after])}”` : "addition: click the word it follows";
     c.innerHTML = `<span class="mst">${esc(st)}</span>`;
     const b = (txt, title, f) => { const x = document.createElement("button"); x.className = "t"; x.textContent = txt; x.title = title; x.onclick = (e) => { e.stopPropagation(); f(); }; c.appendChild(x); };
     const add = (place) => () => { mutate(() => state.marg[li] = { as: "add", place, after: null }); state.pickMarg = li; render(); toast("click the word of the text after which this was added"); };
@@ -837,9 +943,6 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const sgAt = state.ner ? SUGG_AT() : {};
     const fmAt = {}; if (state.fml) (D.formulas || []).forEach(f => { for (let g = f.gi; g < f.gi + f.span; g++) fmAt[g] = f; });
     const { entryAt, mainL, margL, isM, beside } = pageLayout(DS);
-    const nearest = (z) => mainL.reduce((b, m) => Math.abs(yc0(D.lines[m]) - yc0(z)) < Math.abs(yc0(D.lines[b]) - yc0(z)) ? m : b, mainL[0]), yc0 = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0;
-    const numAt = {}, adrAt = {}; D.lines.forEach((z) => { if (mainL.length && numeralLine(z)) (numAt[nearest(z)] = numAt[nearest(z)] || []).push(z);
-      else if (mainL.length && z.zone_subtype === "address" && z.words.length) (adrAt[nearest(z)] = adrAt[nearest(z)] || []).push(z.expanded_text); });
     mainL.concat(margL).forEach((li) => {
       const l = D.lines[li];
       if (li === margL[0]) root.insertAdjacentHTML("beforeend", `<div class="msec">Marginalia<span>${margL.length} line(s) outside the text column, in page order; the reference gives the text line beside them</span></div>`);
@@ -851,27 +954,21 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
         const bar = document.createElement("span"); bar.className = "inkbar"; const sx = l.split ? l.split.x : 1;
         bar.style.background = l.split ? `linear-gradient(90deg,#4a3b2a ${sx * 100}%,#c9b6dc ${sx * 100}%)` : "#4a3b2a"; bar.title = l.split ? `ink changes at ${Math.round(sx * 100)}% of the line (ink ratio ${l.split.ink_ratio}${l.split.how === "forced" ? ", set by the editor" : ""}): hand h1, then h2` : "ink: hand h1";
         ln.appendChild(bar);
-        (numAt[li] || []).forEach(n => { const c = document.createElement("span"); c.className = "gut"; c.innerHTML = `<span class="chip num" title="later hand (h3), dark ink; the numeral is left to the editor">numeral · later hand</span>`; ln.appendChild(c); });
-        (adrAt[li] || []).forEach(a => { const c = document.createElement("span"); c.className = "gut"; c.innerHTML = `<span class="chip adr">margin · address</span> ${esc(a)}`; ln.appendChild(c); });
       }
       { const starts = []; l.words.forEach((w, wi) => { const g0 = GI[keyOf(li, wi)]; if (DS.start[g0] && PART[g0] !== "margo") starts.push(g0); });
         starts.forEach(g0 => { const pt = PART[g0], d = document.createElement("div"); d.className = "dsl ds-" + pt; d.textContent = DS_NAME(pt);
           if (pt !== "margo") { d.title = "Click to change the part that starts here"; d.onclick = (e) => { e.stopPropagation(); dsMenu(e, g0); }; }
           ln.appendChild(d); }); }
       const body = document.createElement("div");
-      // diplomatic layer
-      const dp = document.createElement("div"); dp.className = "dipl" + (state.dipl[li] ? " changed" : ""); dp.dataset.li = li;
-      dp.innerHTML = (state.layer === "both" ? `<span class="tag">dipl.</span>` : "") + esc((state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || "—")).normalize("NFC"));
-      dp.title = "Click or press D to edit the diplomatic transcription of this line";
-      dp.onclick = (e) => { e.stopPropagation(); editDipl(li); };
+      // line views (the slot of the diplomatic line): per editor, at most two
+      const dp = document.createElement("div"); dp.className = "lvw";
+      state.views.forEach(v => { dp.appendChild(lineView(v, li)); });
       // edition layer
       const t = document.createElement("div"); t.className = "txt" + (state.heat ? " on" : "") + (state.struct ? " ds-on" : "");
       let host = t;
       l.words.forEach((w, wi) => {
         const k = keyOf(li, wi), g = GI[k], ed = state.edits[k], pv = peerView(li, wi), lv = level(li, wi), ne = neAt[g];
-        if (entryAt[g]) { const E = entryAt[g]; host = t;
-          if (wi > 0) t.appendChild(Object.assign(document.createElement("span"), { className: "ebr" }));
-          t.insertAdjacentHTML("beforeend", `<span class="eno${E.iem ? " iem" : ""}" title="register entry ${E.n}${E.cont ? ", continued from the previous folio" : ""}${E.iem ? ", in eundem modum" : ""}">¶ ${E.n}${E.cont ? " (cont.)" : ""}${E.iem ? " · in eundem modum" : ""}${addrOf(li) ? ` → ${esc(addrOf(li))}` : ""}</span>`); }
+        if (entryAt[g]) { const E = entryAt[g]; host = t; t.appendChild(bandEl(E)); }
         if (fmAt[g] && host.fm !== fmAt[g]) { const F = fmAt[g];
           host = document.createElement("span"); host.fm = F; host.className = "fm fm-" + F.kind + (g > F.gi ? " cont" : "");
           host.title = fmTitle(F); t.appendChild(host); }
@@ -879,7 +976,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
         const sg = !ne && sgAt[g];
         if (D.initial_restored && li === D.initial_restored.line && wi === 0) host.insertAdjacentHTML("beforeend", `<span class="dropcap" title="initial of the entry, own zone: not read by the recogniser, supplied by the editor (guide letter ${esc(D.initial_restored.guide_letter)})">${esc(D.initial_restored.text)}</span> `);
         if (w.add && !(wi > 0 && l.words[wi - 1].add)) host.insertAdjacentHTML("beforeend", `<span class="chip add" title="added later in lighter ink (hand h2), repeated in the left margin">add · line end · h2</span>`);
-        s.className = "w " + lv + (w.add ? " addw" : "") + (w.in_cadence ? " cad" : "") + (ed ? " edited" : "") + (ne ? " ne c-" + ne.type : "") + (sg ? " sg c-" + sg.x.type : "") + "";
+        s.className = "w " + lv + (w.add ? " addw" : "") + (colEntry(g) ? " ecol" : "") + (w.in_cadence ? " cad" : "") + (ed ? " edited" : "") + (ne ? " ne c-" + ne.type : "") + (sg ? " sg c-" + sg.x.type : "") + "";
         if (state.struct) s.title = PART[g] + " · " + (s.title || "");
         if (state.clausOnly && !w.in_cadence) s.style.opacity = .3;
         s.innerHTML = wordHTML(li, wi, w.in_cadence, state.acc && w.in_cadence);
@@ -949,6 +1046,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       const mk = document.createElement("div"); mk.className = "marks";
       mk.innerHTML = `<div class="${state.apprD.has(li) ? "y" : ""}" title="diplomatic layer approved">${state.apprD.has(li) ? "D✓" : ""}</div><div class="${state.apprE.has(li) ? "y" : ""}" title="edition approved">${state.apprE.has(li) ? "E✓" : ""}</div>`;
       row.append(ln, body, mk); root.appendChild(row);
+      if (!t.querySelector(".band") && l.words.length && l.words.every((w_, wi_) => colEntry(GI[keyOf(li, wi_)]))) row.hidden = true;
     });
     // apparatus and entity lists
     const lemma = (x) => spanGis(x).map(g => shownText(...FL[g])).join(" ").replace(/[.,;:]$/, "");
@@ -961,11 +1059,11 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   function setActive(li, scroll) { state.active = li; render(); if (scroll) { const r = document.querySelector(`.line[data-li="${li}"]`); r && r.scrollIntoView({ block: "center", behavior: "smooth" }); } }
 
   // ------------------------------------------------------------ undo (snapshots of the editable state)
-  const snap = () => JSON.stringify({ edits: state.edits, dipl: state.dipl, apprE: [...state.apprE], apprD: [...state.apprD], app: state.app, ne: state.ne, stress: state.stress, rej: [...state.rej], dsSeg: state.dsSeg, marg: state.marg });
+  const snap = () => JSON.stringify({ edits: state.edits, dipl: state.dipl, apprE: [...state.apprE], apprD: [...state.apprD], app: state.app, ne: state.ne, stress: state.stress, rej: [...state.rej], dsSeg: state.dsSeg, marg: state.marg, modes: state.modes, etype: state.etype, recip: state.recip });
   function mutate(f) { state.history.push(snap()); $("bUndo").disabled = false; f(); state.dirty = true; syncStatus(); WB.tele("edit"); }
   function undo() {
     const h = state.history.pop(); if (!h) return;
-    const s = JSON.parse(h); Object.assign(state, { edits: s.edits, dipl: s.dipl, apprE: new Set(s.apprE), apprD: new Set(s.apprD), app: s.app, ne: s.ne, stress: s.stress, rej: new Set(s.rej || []), dsSeg: s.dsSeg || null, marg: s.marg || {} });
+    const s = JSON.parse(h); Object.assign(state, { edits: s.edits, dipl: s.dipl, apprE: new Set(s.apprE), apprD: new Set(s.apprD), app: s.app, ne: s.ne, stress: s.stress, rej: new Set(s.rej || []), dsSeg: s.dsSeg || null, marg: s.marg || {}, modes: s.modes || {}, etype: s.etype || {}, recip: s.recip || {} });
     $("bUndo").disabled = !state.history.length; state.dirty = true; closePop(); syncStatus(); render(); toast("undone");
   }
   $("bUndo").onclick = undo;
@@ -1092,17 +1190,39 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     mutate(() => delete state.edits[keyOf(li, wi)]); closePop(); render(); toast(`reverted to ${w.text}`);
   }
   // diplomatic layer: line-level editing
+  // sources of the line view: diplomatic (simulated unless the editor has corrected it), legacy witness (aligned line), regest (at entry level), image strip
+  function lineView(v, li) {
+    const l = D.lines[li], el = document.createElement("div");
+    if (v === "dipl") {
+      const real = state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || ""), sim = !real;
+      el.className = "dipl" + (state.dipl[li] ? " changed" : ""); el.dataset.li = li;
+      el.innerHTML = (state.layer === "both" ? `<span class="tag">dipl.</span>` : "") + esc((real || simDipl(li) || "—").normalize("NFC")) + (sim && l.words.length ? ` <span class="chip sim" title="simulated: rule re-abbreviation of the expanded reading, not a reading. Correct it to make it a real diplomatic line.">simulated</span>` : "");
+      el.title = "Click or press D to edit the diplomatic transcription of this line (the simulated line is only a starting point)";
+      el.onclick = (e) => { e.stopPropagation(); editDipl(li); };
+    } else if (v === "witness") {
+      const wt = D.witness && D.witness[l.line_id]; el.className = "lv witness";
+      el.innerHTML = wt ? `<span class="tag">witness · ${esc(wt.source)}</span>${esc(wt.text)}` : `<span class="tag">witness</span><span class="dim">no aligned witness line loaded for this page</span>`;
+    } else if (v === "pressutti" || v === "potthast") {
+      el.className = "lv regest"; const R = (D.regests || {})[LNUM[li]]; const r = R && R[v];
+      el.innerHTML = r ? `<span class="tag">${v === "pressutti" ? "Pressutti" : "Potthast"} ${esc(r.n)}</span>${esc(r.text)}` : (l.words.length && D.address_groups ? "" : "");
+    } else if (v === "image") {
+      el.className = "lv strip"; const cv = document.createElement("canvas"), b = l.bbox;
+      if (state.hasImage && b && img.naturalWidth) { const sw = b[2] * img.naturalWidth, sh = b[3] * img.naturalHeight; cv.width = Math.min(900, sw); cv.height = Math.max(8, cv.width * sh / sw); cv.getContext("2d").drawImage(img, b[0] * img.naturalWidth, b[1] * img.naturalHeight, sw, sh, 0, 0, cv.width, cv.height); cv.style.maxWidth = "100%"; el.appendChild(cv); }
+      else el.innerHTML = `<span class="dim">image strip: choose the image folder</span>`;
+    } else { el.className = "lv"; }
+    return el;
+  }
   function editDipl(li) {
     if (state.layer === "edit") { state.layer = "both"; setLayerButtons(); render(); }
     state.active = li;
     const dp = document.querySelector(`.dipl[data-li="${li}"]`); if (!dp) return;
-    const cur = (state.dipl[li] ? state.dipl[li].text : (D.lines[li].diplomatic_text || "")).normalize("NFC");
+    const cur = (state.dipl[li] ? state.dipl[li].text : (D.lines[li].diplomatic_text || simDipl(li))).normalize("NFC");
     dp.innerHTML = `<input type="text" aria-label="diplomatic transcription, line ${LNUM[li]}" value="${esc(cur)}">`;
     const inp = dp.querySelector("input"); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
     inp.onclick = (e) => e.stopPropagation();
     inp.onkeydown = (e) => {
       e.stopPropagation();
-      if (e.key === "Enter") { e.preventDefault(); const v = inp.value.normalize("NFC"); if (v !== cur) mutate(() => { if (v === (D.lines[li].diplomatic_text || "").normalize("NFC")) delete state.dipl[li]; else state.dipl[li] = { text: v, at: new Date().toISOString() }; }); render(); toast(`diplomatic line ${li + 1} saved`); }
+      if (e.key === "Enter") { e.preventDefault(); const v = inp.value.normalize("NFC"); if (v !== cur) mutate(() => { if (v === (D.lines[li].diplomatic_text || simDipl(li)).normalize("NFC")) delete state.dipl[li]; else state.dipl[li] = { text: v, at: new Date().toISOString() }; }); render(); toast(`diplomatic line ${li + 1} saved`); }
       if (e.key === "Escape") render();
     };
     inp.onblur = () => setTimeout(() => { if (document.activeElement !== inp && !$("chars").matches(":hover")) render(); }, 150);
@@ -1133,6 +1253,167 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   document.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!(a && a.matches && a.matches("input[type=text]"))) $("chars").classList.remove("show"); }, 200));
   drawChars();
 
+  // ------------------------------------------------------------ line-view choice (per editor, stored in this browser and with the editor's login)
+  const VIEW_OPTS = [["dipl", "diplomatic (simulated)"], ["witness", "legacy witness"], ["pressutti", "Pressutti regest"], ["potthast", "Potthast regest"], ["image", "image strip"], ["none", "none"]], VKEY = `paprg.views.${CFG.login}`;
+  try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v) && v.length) state.views = v.slice(0, 2); } catch (e) {}
+  const setViewSel = () => { ["lv1", "lv2"].forEach((id, i) => { const el = $(id); el.innerHTML = VIEW_OPTS.filter(o => i === 0 ? o[0] !== "none" || false : true).map(o => `<option value="${o[0]}" ${(state.views[i] || "none") === o[0] ? "selected" : ""}>${o[1]}</option>`).join(""); }); };
+  ["lv1", "lv2"].forEach((id, i) => $(id).onchange = (e) => { const v = state.views.slice(); v[i] = e.target.value; state.views = v.filter((x, k) => x !== "none" && (k < 2) && v.indexOf(x) === k); try { localStorage.setItem(VKEY, JSON.stringify(state.views)); } catch (x) {} setViewSel(); render(); });
+  setViewSel();
+  // ------------------------------------------------------------ task modes: one Tab queue, counters, keys and progress record per operation
+  const MODE_LIST = ["triage", "boundaries", "structure", "cursus", "corrections", "ner", "codicology", "legal", "arenga", "edition"];
+  const MODE_INFO = {
+    triage: ["T2.2 Tier 1–2", "words by error score, OOV, sigla", "<kbd>Enter</kbd> accept · <kbd>1–3</kbd> candidate · type to correct · <kbd>D</kbd> diplomatic · <kbd>G</kbd> mark siglum"],
+    boundaries: ["T2.2 Tier 0", "entry starts, part flags, i.e.m.", "<kbd>Enter</kbd> confirm · <kbd>S</kbd> split here · <kbd>M</kbd> merge with previous · <kbd>P</kbd> set part"],
+    structure: ["T2.2 zones", "part boundaries", "<kbd>Enter</kbd> confirm · <kbd>P</kbd> relabel · drag a bar"],
+    cursus: ["T3.2", "clause ends", "<kbd>Enter</kbd> accept class · <kbd>V</kbd> vowel clash · <kbd>X</kbd> proper-name abstain"],
+    corrections: ["T3.2 (paired test)", "scribal corrections", "<kbd>Enter</kbd> confirm · <kbd>R</kbd> rhythm · <kbd>S</kbd> sense · <kbd>C</kbd> copy"],
+    ner: ["T3.3", "suggestions, then suspect spans", "<kbd>Enter</kbd> accept · <kbd>X</kbd> reject · <kbd>N</kbd><kbd>0–9</kbd> class · <kbd>R</kbd> role"],
+    codicology: ["T5.1", "additions, margins, numerals, hands, ink, initials", "<kbd>Enter</kbd> confirm · <kbd>A</kbd> add · <kbd>N</kbd> note · <kbd>U</kbd> numeral · <kbd>H</kbd> hand · <kbd>C</kbd> comment"],
+    legal: ["T5.2", "per entry: dispositio, sanctio, formulae, executory clause", "<kbd>1</kbd> mandate · <kbd>2</kbd> privilege / indult · <kbd>3</kbd> i.e.m. · <kbd>G</kbd> gratia · <kbd>J</kbd> iustitia · <kbd>L</kbd> decretal link"],
+    arenga: ["T5.3", "arengae, citation suggestions, theological keywords", "<kbd>Enter</kbd> confirm · <kbd>R</kbd> citation ref · <kbd>C</kbd> comment"],
+    edition: ["T2.1", "lines where layers disagree", "<kbd>Enter</kbd> confirm · <kbd>C</kbd> note the harmonisation rule"]
+  };
+  const SIGLUM = /^\p{Lu}\.,?$/u, THEO = new Set(["deus", "dei", "deo", "dominus", "domini", "domino", "caritas", "caritatis", "fides", "fidei", "spes", "gratia", "gratie", "misericordia", "misericordie", "pietas", "pietatis", "ecclesia", "ecclesie", "salus", "salutis", "iustitia", "iustitie", "pax", "pacis", "religio", "religionis", "apostolice", "sedis"]);
+  const mdone = (m) => (state.modes[m] && state.modes[m].done) || {}, isDone = (m, id) => !!mdone(m)[id];
+  const setDone = (m, id, act, val, a) => mutate(() => { const M = state.modes[m] = state.modes[m] || { done: {} }; M.done[id] = { at: new Date().toISOString(), act, val: val || "", a: a || null }; });
+  const wItem = (id, g, label, extra) => ({ id, g, li: FL[g][0], wi: FL[g][1], label, ...(extra || {}) });
+  function suspects() {
+    const covered = new Set(); state.ne.forEach(n => spanGis(n).forEach(g => covered.add(g))); SUGG.forEach(x => { for (let j = 0; j < x.span; j++) covered.add(x.gi + j); });
+    const DS = structure(), out = [];
+    FL.forEach(([li, wi], g) => { if (covered.has(g) || DS.part[g] === "margo") return;
+      const tok = shownText(li, wi), r = rd(tok), pr = g ? rd(shownText(...FL[g - 1])) : "", pp = g > 1 ? shownText(...FL[g - 1]) : "", why = [];
+      if (/^\p{Lu}/u.test(tok) && g && !/[.?!;:]$/.test(shownText(...FL[g - 1])) && r.length > 1) why.push("capitalised");
+      if (["filio", "filiis", "fratri", "fratribus", "memorie"].includes(pr) && /^\p{Lu}|^[a-z]/u.test(tok)) why.push("after cue: " + pr);
+      if (["de", "in"].includes(pr) && /^\p{Lu}/u.test(tok)) why.push("after " + pr);
+      if (["diocesi", "diocesis", "dioc"].includes(pr)) why.push("after diocesi");
+      if (r.length > 6 && /ens(is|es|i|em|ibus)$/.test(r)) why.push("-ensis adjective");
+      if (SIGLUM.test(tok)) why.push("siglum");
+      if (!why.length && ["inscriptio", "datatio"].includes(DS.part[g]) && /\p{L}{3}/u.test(tok)) why.push("in " + DS.part[g]);
+      if (why.length) out.push(wItem("s:" + g, g, tok, { why: why.join(", "), suspect: true })); });
+    return out;
+  }
+  function modeItems(m) {
+    const DS = structure(), Ly = L0(), out = [];
+    if (m === "triage") {
+      FL.forEach(([li, wi], g) => { const w = D.lines[li].words[wi]; if (level(li, wi) !== "high" || w.is_oov || SIGLUM.test(w.text)) out.push(wItem(`w:${li}:${wi}`, g, shownText(li, wi), { score: pErr(li, wi), oov: w.is_oov })); });
+      return out.sort((a, b) => b.score - a.score);
+    }
+    if (m === "boundaries" || m === "structure") {
+      DS.seg.forEach((x, j) => { const E = Ly.entryAt[x[0]]; if (m === "structure" && E && E.iem) return;
+        out.push(wItem(`b:${x[0]}`, x[0], E ? `¶${E.n} starts · ${x[1] === "nota" ? "reg. note" : x[1]}${E.iem ? " · in eundem modum" : ""}` : `${x[1]} starts`, { part: x[1], entry: !!E })); });
+      if (m === "boundaries") { if (Ly.entList[0] && Ly.entList[0].cont) out.unshift(wItem("f:F", Ly.entList[0].g0, "part F: the page begins inside an entry")); const last = Ly.entList[Ly.entList.length - 1]; if (last && !["datatio", "nota"].includes(DS.seg[DS.seg.length - 1][1])) out.push(wItem("f:I", last.g0, "part I: the last entry goes on")); }
+      return out;
+    }
+    if (m === "cursus") { D.clausulae.forEach(c => { const g = GI[c.end.join(":")]; if (g === undefined) return; const nw = clausulaNow(c); out.push(wItem("c:" + c.clausula_id, g, `${nw.label}${nw.janson ? " · " + nw.janson : ""}`, { cl: c, cls: nw.label })); }); return out; }
+    if (m === "corrections") { D.lines.forEach((l, li) => l.words.forEach((w, wi) => { if (w.add && !(wi && l.words[wi - 1].add)) out.push(wItem(`a:add:${li}`, GI[keyOf(li, wi)], `add (line end, h2): ${l.words.slice(wi).map(x => x.text).join(" ")}`)); })); sortedApp().filter(a => /^(add\.|del\.|corr\. ex|in ras\.)/.test(a.type)).forEach(a => out.push(wItem("a:" + a.id, a.gi, `${a.type}: ${spanGis(a).map(g => shownText(...FL[g])).join(" ")}`, { app: a }))); return out; }
+    if (m === "ner") { suggOpen().forEach(x => out.push(wItem("g:" + x.k, x.gi, `${NE_TYPES[x.type][2]}? ${FL.slice(x.gi, x.gi + x.span).map(([li, wi]) => shownText(li, wi)).join(" ")}`, { sugg: x }))); return out.concat(suspects()); }
+    if (m === "codicology") {
+      D.lines.forEach((l, li) => { if (hiddenLine(l)) return;
+        if (numeralLine(l)) out.push({ id: "k:n:" + li, li, label: "numeral (later hand)", g: undefined });
+        else if (l.zone === "margin-left" && l.words.length) out.push({ id: "k:m:" + li, li, label: `margin · ${l.zone_subtype || "?"}: ${l.expanded_text}` });
+        if (l.split) out.push({ id: "k:i:" + li, li, label: `ink change at ${Math.round(l.split.x * 100)}% of line ${LNUM[li]}` });
+        l.words.forEach((w, wi) => { if (w.add && !(wi && l.words[wi - 1].add)) out.push(wItem(`k:add:${li}`, GI[keyOf(li, wi)], `line-end addition (h2): ${l.words.slice(wi).map(x => x.text).join(" ")}`)); }); });
+      if (D.initials) D.initials.forEach(q => out.push(wItem(`k:ini:${q.line}`, GI[keyOf(q.line, q.word)], `initial ${q.letter}`)));
+      if (D.initial_restored) out.push({ id: "k:ini:" + D.initial_restored.line, li: D.initial_restored.line, label: `initial ${D.initial_restored.text} (own zone, restored)` });
+      sortedApp().filter(a => ["alia manu", "del."].includes(a.type)).forEach(a => out.push(wItem("k:h:" + a.id, a.gi, `${a.type}${a.hand ? " · " + a.hand : ""}`)));
+      return out.sort((a, b) => a.li - b.li);
+    }
+    if (m === "legal") {
+      Ly.entList.forEach(E => { const ents = DS.seg.map((x, j) => [x, j]).filter(([x]) => x[0] >= E.g0 && x[0] <= E.g1);
+        ents.forEach(([x]) => { if (["dispositio", "sanctio"].includes(x[1])) out.push(wItem(`l:${E.n}:${x[1]}`, x[0], `¶${E.n} ${x[1]}`, { e: E.n })); });
+        (D.formulas || []).filter(f => f.gi >= E.g0 && f.gi <= E.g1).forEach((f, k) => out.push(wItem(`l:${E.n}:f${f.gi}`, f.gi, `¶${E.n} formula (${f.kind}) ${FL.slice(f.gi, f.gi + Math.min(f.span, 5)).map(([li, wi]) => shownText(li, wi)).join(" ")}…`, { e: E.n })));
+        for (let g = E.g0; g < E.g1; g++) if (rd(shownText(...FL[g])).replace(/[^a-z]/g, "") === "mandamus" && rd(shownText(...FL[g + 1])).startsWith("quatinus")) out.push(wItem(`l:${E.n}:x${g}`, g, `¶${E.n} executory clause`, { e: E.n })); });
+      return out;
+    }
+    if (m === "arenga") {
+      DS.seg.forEach((x, j) => { if (x[1] === "arenga") { out.push(wItem("r:" + x[0], x[0], "arenga")); const end = DS.seg[j + 1] ? DS.seg[j + 1][0] : FL.length; for (let g = x[0]; g < end; g++) if (THEO.has(rd(shownText(...FL[g])).replace(/[^a-z]/g, ""))) out.push(wItem("r:k" + g, g, `keyword: ${shownText(...FL[g])}`)); } });
+      SUGG.filter(x => x.type === "cit").forEach(x => out.push(wItem("r:c" + x.k, x.gi, "citation suggestion")));
+      return out;
+    }
+    if (m === "edition") { if (D.witness) D.lines.forEach((l, li) => { const wt = D.witness[l.line_id]; if (wt && rd(wt.text) !== rd(l.words.map(w => w.text).join(" "))) out.push({ id: "e:" + li, li, label: `line ${LNUM[li]}: witness differs` }); }); return out; }
+    return out;
+  }
+  const modeDone = (m, it) => isDone(m, it.id) || (m === "triage" && state.edits[keyOf(it.li, it.wi)]) || (m === "ner" && !it.suspect && it.sugg && !suggOpen().some(x => x.k === it.sugg.k));
+  function modeStatus() {
+    const m = state.mode, its = modeItems(m), left = its.filter(it => !modeDone(m, it));
+    if (m === "ner") return `ner: ${left.filter(i => !i.suspect).length} suggestions · ${left.filter(i => i.suspect).length} suspect · ${state.ne.length} confirmed`;
+    return `${m}: ${its.length} stops · ${its.length - left.length} done · ${left.length} left`;
+  }
+  function updateModeBar() { $("modeStat").textContent = modeStatus(); $("keysLine").innerHTML = `<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> next / previous stop · ${MODE_INFO[state.mode][2]} · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
+    const cur = modeItems(state.mode).find(i => i.id === state.modeCur); $("modeCur").textContent = cur ? "· " + cur.label + (cur.why ? " (" + cur.why + ")" : "") : ""; }
+  function focusItem(it) {
+    state.modeCur = it.id;
+    if (it.g !== undefined) focusWord(it.li, it.wi, ["triage", "ner"].includes(state.mode)); else { state.active = it.li; render(); const r = document.querySelector(`.line[data-li="${it.li}"]`); r && r.scrollIntoView({ block: "center" }); }
+    updateModeBar();
+  }
+  function modeNext(dir) {
+    const m = state.mode, all = modeItems(m), left = all.filter(it => !modeDone(m, it)); if (!left.length) { toast(`${m}: nothing left`); updateModeBar(); return; }
+    const ci = all.findIndex(i => i.id === state.modeCur); let pick;
+    if (dir > 0) pick = all.slice(ci + 1).find(it => !modeDone(m, it)) || left[0]; else pick = all.slice(0, Math.max(0, ci)).reverse().find(it => !modeDone(m, it)) || left[left.length - 1];
+    focusItem(pick);
+  }
+  function askText(label, cb) {
+    const w = $("modeAsk"); w.hidden = false; w.innerHTML = `${esc(label)} <input type="text" id="modeAskIn" size="40"> <button class="t" id="modeAskX">cancel</button>`; const inp = $("modeAskIn"); inp.focus();
+    inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === "Enter") { const v = inp.value.trim(); w.hidden = true; if (v) cb(v); } if (e.key === "Escape") w.hidden = true; }; $("modeAskX").onclick = () => { w.hidden = true; };
+  }
+  const curItem = () => modeItems(state.mode).find(i => i.id === state.modeCur) || null;
+  // returns true when the key was handled by the active mode
+  function modeKey(e) {
+    const m = state.mode, it = curItem(), k = e.key.toLowerCase(); if (!it) return false;
+    const done = (act, val) => { setDone(m, it.id, act, val, [it.li, it.wi]); toast(`${m}: ${act}${val ? " · " + val : ""}`); render(); updateModeBar(); };
+    if (e.key === "Enter" && !e.shiftKey && m !== "triage") {
+      e.preventDefault();
+      if (m === "ner" && it.sugg) { decideSugg(it.sugg, true, it.g); setDone(m, it.id, "accept", "", [it.li, it.wi]); }
+      else if (m === "ner") done("checked: no entity");
+      else if (m === "cursus") done("accept class", it.cls);
+      else done("confirm");
+      modeNext(1); return true;
+    }
+    if (m === "triage" && e.key === "Enter" && !e.shiftKey) { if (!state.edits[keyOf(it.li, it.wi)]) setDone(m, it.id, "accept as read"); return false; }   // the line is approved by the common rule below
+    if (m === "triage" && k === "g") { e.preventDefault(); done("siglum"); return true; }
+    if (m === "boundaries" || m === "structure") {
+      if (k === "p") { e.preventDefault(); const r = (document.querySelector(`.w[data-k="${keyOf(it.li, it.wi)}"]`) || document.body).getBoundingClientRect(); dsMenu({ clientX: r.left, clientY: r.bottom, preventDefault() {}, stopPropagation() {} }, it.g); return true; }
+      if (m === "boundaries" && k === "s") { e.preventDefault(); const pt = structure().part[it.g]; dsEdit(sg => { if (!sg.some(x => x[0] === it.g)) sg.push([it.g, pt]); }); toast("boundary set here"); return true; }
+      if (m === "boundaries" && k === "m") { e.preventDefault(); dsEdit(sg => { const i = sg.findIndex(x => x[0] === it.g); if (i > 0) sg.splice(i, 1); }); toast("merged with the previous part"); return true; }
+    }
+    if (m === "cursus") { if (k === "x") { e.preventDefault(); done("abstain: proper name"); modeNext(1); return true; } if (k === "v") { e.preventDefault(); done("vowel clash", it.cls); modeNext(1); return true; } }
+    if (m === "corrections" && ["r", "s", "c"].includes(k)) { e.preventDefault(); done("classified", { r: "rhythm", s: "sense", c: "copy" }[k]); modeNext(1); return true; }
+    if (m === "ner") {
+      if (k === "x" && it.sugg) { e.preventDefault(); mutate(() => state.rej.add(it.sugg.k)); render(); modeNext(1); return true; }
+      if (k === "x") { e.preventDefault(); done("rejected: no entity"); modeNext(1); return true; }
+      if (k === "n") { e.preventDefault(); focusWord(it.li, it.wi, true); $("bNe") && $("bNe").click(); return true; }
+    }
+    if (m === "codicology") {
+      const l = D.lines[it.li], isM_ = l.zone === "margin-left" && l.words.length;
+      if (k === "a" && isM_) { e.preventDefault(); mutate(() => state.marg[it.li] = { as: "add", place: "margin", after: null }); state.pickMarg = it.li; render(); toast("click the word of the text after which this was added"); return true; }
+      if (k === "n" && isM_) { e.preventDefault(); mutate(() => state.marg[it.li] = { as: "note" }); render(); done("note"); modeNext(1); return true; }
+      if (k === "u" && isM_) { e.preventDefault(); mutate(() => state.marg[it.li] = { as: "numeral" }); render(); done("numeral"); modeNext(1); return true; }
+      if (k === "h") { e.preventDefault(); askText("hand (e.g. h2, m2):", v => { done("hand", v); }); return true; }
+      if (k === "c") { e.preventDefault(); askText("comment:", v => { done("comment", v); }); return true; }
+    }
+    if (m === "legal") {
+      const E = it.e, set = (t) => { mutate(() => { state.etype[E] = t; }); done("document type", t); render(); };
+      if (E && k === "1") { e.preventDefault(); set("mandate"); return true; } if (E && k === "2") { e.preventDefault(); set("privilege / indult"); return true; } if (E && k === "3") { e.preventDefault(); set("in eundem modum"); return true; }
+      if (E && (k === "g" || k === "j")) { e.preventDefault(); done(k === "g" ? "de gratia" : "de iustitia"); return true; }
+      if (k === "l") { e.preventDefault(); askText("decretal link (incipit or reference):", v => { done("decretal link", v); }); return true; }
+    }
+    if (m === "arenga" || m === "edition") {
+      if (k === "r" && m === "arenga") { e.preventDefault(); askText("citation ref (Bible / canon):", v => { done("citation ref", v); }); return true; }
+      if (k === "c") { e.preventDefault(); askText(m === "edition" ? "harmonisation rule:" : "comment:", v => { done("comment", v); }); return true; }
+    }
+    return false;
+  }
+  function setMode(m, quiet) {
+    if (!MODE_INFO[m]) m = "triage"; state.mode = m; state.modeCur = null; $("modeSel").value = m;
+    try { const u = new URL(location.href); u.searchParams.set("mode", m); history.replaceState(null, "", u.pathname + u.search); } catch (e) {}
+    updateModeBar(); if (!quiet) { render(); modeNext(1); }
+  }
+  $("modeSel").innerHTML = MODE_LIST.map(m => `<option value="${m}">${m} · ${MODE_INFO[m][0]}</option>`).join("");
+  $("modeSel").onchange = (e) => setMode(e.target.value);
+  function modeAfterRender() { document.querySelectorAll(".modecur").forEach(n => n.classList.remove("modecur")); const it = state.modeCur && curItem(); if (!it) return;
+    const el = it.g !== undefined ? document.querySelector(`.w[data-k="${keyOf(it.li, it.wi)}"]`) : document.querySelector(`.line[data-li="${it.li}"]`); if (el) el.classList.add("modecur"); updateModeBar(); }
+  { const baseRender = render; render = function () { baseRender(); modeAfterRender(); }; }
+  setMode(new URLSearchParams(location.search).get("mode") || state.mode, true);
   // ------------------------------------------------------------ keyboard and toggles
   function next(dir, open) {
     const f = flaggedList(); if (!f.length) { toast("all flagged words reviewed"); return; }
@@ -1146,7 +1427,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     if (["INPUT", "SELECT"].includes(e.target.tagName)) return;
     if (state.form) { if (e.key === "Escape") openPop(...state.pop); return; }
     const k = e.key.toLowerCase();
-    if (e.key === "Tab") { e.preventDefault(); closePop(); next(e.shiftKey ? -1 : 1, true); }
+    if (modeKey(e)) return;
+    if (e.key === "Tab") { e.preventDefault(); closePop(); modeNext(e.shiftKey ? -1 : 1); }
     else if (["1", "2", "3"].includes(e.key) && state.pop) { e.preventDefault(); accept(state.pop[0], state.pop[1], +e.key - 1); }
     else if (k === "a" && state.pop) { e.preventDefault(); $("bApp").click(); }
     else if (k === "n" && state.pop) { e.preventDefault(); $("bNe").click(); }
@@ -1155,6 +1437,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       e.preventDefault(); const li = state.active, set = e.shiftKey ? state.apprD : state.apprE;
       mutate(() => set.add(li)); closePop(); render(); toast(`line ${LNUM[li]}: ${e.shiftKey ? "diplomatic" : "edition"} approved`);
     }
+    else if (e.key === "[") { e.preventDefault(); jumpEntry(-1); }
+    else if (e.key === "]") { e.preventDefault(); jumpEntry(1); }
     else if (e.key === "Escape") closePop();
   });
   const tog = (id, f) => $(id).onclick = (e) => { e.stopPropagation(); f(); closePop(); render(); };
@@ -1201,7 +1485,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     // the rule-based segmenter's own proposal; where the structure on the page differs (the editor's brief, or the editor's moves) the part is the editor's, with a note on what moved
     const autoR = autoSeg(computeParts()), gname = (g) => `line ${LNUM[FL[g][0]]}, “${shownText(...FL[g])}”`;
     const inRules = (j) => autoR.some(a => a[0] === DS.seg[j][0] && a[1] === DS.seg[j][1]);
-    const respSeg = (j) => inRules(j) ? "#rules" : "#editor";
+    const confSeg = (j) => isDone("boundaries", "b:" + DS.seg[j][0]) || isDone("structure", "b:" + DS.seg[j][0]);
+    const respSeg = (j) => inRules(j) && !confSeg(j) ? "#rules" : "#editor";
     const segNote = (j) => { if (inRules(j)) return ""; const x = DS.seg[j], same = autoR.find(a => a[0] === x[0]), near = autoR.filter(a => a[1] === x[1]).sort((a, b) => Math.abs(a[0] - x[0]) - Math.abs(b[0] - x[0]))[0];
       const what = same ? `the rules label this start ${same[1]}; set to ${x[1]}` : near && Math.abs(near[0] - x[0]) < 40 ? `${x[1]} moved from ${gname(near[0])} to ${gname(x[0])}` : `${x[1]} starts here (${gname(x[0])}); the rules propose no boundary`;
       return `<note type="editorial" resp="#editor">${xml(what)}</note>`; };
@@ -1234,7 +1519,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const lb = (li) => `<lb n="${lnum[li]}" xml:id="${lid(li)}"${L.isM(li) ? ` type="margin"` : ""} facs="${zone(li)}"/>`;
     const wordOut = (g) => { const [li, wi] = FL[g], e = state.edits[keyOf(li, wi)];
       const t_ = shownText(li, wi), ini = (D.initials || []).some(q => q.line === li && q.word === wi);
-      return (before[g] || "") + opens(g).map(s => s.open).join("") + `<w xml:id="${wid(g)}"${e ? ` resp="#editor"` : ""}>${ini ? `<hi rend="initial">${xml(t_[0])}</hi>${xml(t_.slice(1))}` : xml(t_)}</w>` + closes(g).map(s => s.close).join("") + (after[g] || "") + (noteAfter[g] || ""); };
+      return (before[g] || "") + opens(g).map(s => s.open).join("") + `<w xml:id="${wid(g)}"${e || isDone("triage", `w:${li}:${wi}`) ? ` resp="#editor"` : ""}>${ini ? `<hi rend="initial">${xml(t_[0])}</hi>${xml(t_.slice(1))}` : xml(t_)}</w>` + closes(g).map(s => s.close).join("") + (after[g] || "") + (noteAfter[g] || ""); };
     // an addition confirmed by the editor sits in the text after the word it follows
     const addAt = {}; L.margL.filter(inlineAdd).forEach(li => { const m = mg(li), g = m.after;
       put(addAt, g, `<add place="${m.place === "above" ? "above" : "margin"}" resp="#editor" facs="${zone(li)}">${lb(li)}` + D.lines[li].words.map((w, wi) => wordOut(GI[keyOf(li, wi)])).join(" ") + `</add>`); });
@@ -1259,7 +1544,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
         segI++; closeSeg(); const E = L.entryAt[g], pt = DS.seg[segI][1];
         if (E) { closeEntry(); nEntry++;
           const pF = E.cont, pI = nEntry === entryTotal && lastOpen && !E.iem, pa = pF && pI ? "M" : pF ? "F" : pI ? "I" : "";
-          ed += `${I(4)}<div type="entry"${E.iem ? ` subtype="in-eundem-modum"` : ""} n="${E.n}" xml:id="e${E.n}"${pa ? ` part="${pa}"` : ""} resp="${respSeg(segI)}">` + (E.cont ? `${I(5)}<note type="editorial">the page begins inside an entry of the previous folio</note>` : "") + (E.iem ? segNote(segI) : "") + inscriptio(E, li); entryOpen = true; }
+          ed += `${I(4)}<div type="entry"${E.iem ? ` subtype="in-eundem-modum"` : ""} n="${E.n}" xml:id="e${E.n}"${pa ? ` part="${pa}"` : ""} resp="${respSeg(segI)}">` + (E.cont ? `${I(5)}<note type="editorial">the page begins inside an entry of the previous folio</note>` : "") + (E.iem ? segNote(segI) : "") + (state.etype[E.n] ? `${I(5)}<note type="doctype" resp="#editor">${xml(state.etype[E.n])}</note>` : "") + (D.regests && D.regests[LNUM[li]] ? Object.entries(D.regests[LNUM[li]]).map(([k, r]) => `${I(5)}<note type="regest" source="#${k === "pressutti" ? "Pressutti" : "Potthast"}" n="${xml(r.n)}">${xml(r.text)}</note>`).join("") : "") + inscriptio(E, li); entryOpen = true; }
         if (E && E.iem) { segKind = "iem"; ed += `${I(5)}<ab>`; }
         else { segKind = "part"; ed += `${I(5)}<div type="${pt === "nota" ? "registration-note" : pt}" resp="${respSeg(segI)}">${segNote(segI)}${I(6)}<ab>`; }
       }
@@ -1272,25 +1557,31 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const notes = L.margL.filter(isNote).map(li => `${I(4)}<ab type="marginal" n="${lnum[li]}" corresp="#${lid(L.beside(li))}" resp="#editor">${lb(li)}` + D.lines[li].words.map((w, wi) => wordOut(GI[keyOf(li, wi)])).join(" ") + `</ab>`).join("");
     // standoff: machine suggestions that nobody has confirmed (cursus classes, word confidence, marginal text, siglum candidates)
     const inl = (g) => inlineLine(FL[g][0]), ann = [];
-    const cur = D.clausulae.map(c => { const nw = clausulaNow(c), ids = c.tokens.map(t => GI[t.join(":")]).filter(inl).map(g => "#" + wid(g));
-      return ids.length ? `${I(4)}<annotation xml:id="cur${c.clausula_id + 1}" type="cursus" ana="#${nw.label}"${nw.cadence && nw.cadence !== nw.label && nw.cadence !== "none" ? ` subtype="${xml(nw.cadence)}"` : ""} target="${ids.join(" ")}" resp="#rules"/>` : ""; }).filter(Boolean);
+    const cur = D.clausulae.map(c => { const nw = clausulaNow(c), ids = c.tokens.map(t => GI[t.join(":")]).filter(inl).map(g => "#" + wid(g)), dn = mdone("cursus")["c:" + c.clausula_id];
+      const nt = dn && dn.act !== "accept class" ? `<note type="editorial" resp="#editor">${xml(dn.act)}</note>` : "";
+      return ids.length ? `${I(4)}<annotation xml:id="cur${c.clausula_id + 1}" type="cursus" ana="#${nw.label}"${nw.cadence && nw.cadence !== nw.label && nw.cadence !== "none" ? ` subtype="${xml(nw.cadence)}"` : ""} target="${ids.join(" ")}" resp="${dn ? "#editor" : "#rules"}"${nt ? `>${nt}</annotation>` : "/>"}` : ""; }).filter(Boolean);
     const conf = []; FL.forEach(([li, wi], g) => { const w = D.lines[li].words[wi]; if (inl(g) && w.p_error >= 0.2 && !state.edits[keyOf(li, wi)])
       conf.push(`${I(4)}<annotation xml:id="cf${wid(g).slice(1)}" type="word-confidence" target="#${wid(g)}" resp="#model" cert="${(1 - w.p_error).toFixed(2)}"/>`); });
     const inGroup = (li) => (D.address_groups || []).some(x => x.entry_line && x.add_lines.length && x.margin_lines.includes(LNUM[li]));
     const nearestMain = (z) => L.mainL.reduce((b, m) => Math.abs(yc0(D.lines[m]) - yc0(z)) < Math.abs(yc0(D.lines[b]) - yc0(z)) ? m : b, L.mainL[0]), yc0 = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0;
-    const nums = D.lines.map((z, li) => numeralLine(z) ? `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(z))}" facs="${zone(li)}" hand="#h3" resp="${z.zone_how === "editor" ? "#editor" : "#rules"}"><gap reason="numeral unread"/>${mcNote(z)}</annotation>` : "").filter(Boolean);
-    const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li) && !inGroup(li)).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="${xml(D.lines[li].zone_subtype === "address" || D.lines[li].zone_subtype === "later-numbering" ? D.lines[li].zone_subtype : "addition-candidate")}" target="#${lid(L.beside(li))}" facs="${zone(li)}"${D.lines[li].zone_subtype === "address" ? ` hand="#h2"` : D.lines[li].zone_subtype === "later-numbering" ? ` hand="#h3"` : ""} resp="#rules">` + (D.lines[li].zone_subtype === "later-numbering" ? `<gap reason="numeral"/>` : D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ")) + `</annotation>`);
+    const numDec = L.margL.filter(li => mg(li) && mg(li).as === "numeral").map(li => `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(D.lines[li]))}" facs="${zone(li)}" hand="#h3" resp="#editor"><gap reason="numeral unread"/></annotation>`);
+    const nums = numDec.concat(D.lines.map((z, li) => numeralLine(z) ? `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(z))}" facs="${zone(li)}" hand="#h3" resp="${z.zone_how === "editor" ? "#editor" : "#rules"}"><gap reason="numeral unread"/>${mcNote(z)}</annotation>` : "").filter(Boolean));
+    const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li) && !inGroup(li) && !(mg(li) && mg(li).as === "numeral")).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="${xml(D.lines[li].zone_subtype === "address" || D.lines[li].zone_subtype === "later-numbering" ? D.lines[li].zone_subtype : "addition-candidate")}" target="#${lid(L.beside(li))}" facs="${zone(li)}"${D.lines[li].zone_subtype === "address" ? ` hand="#h2"` : D.lines[li].zone_subtype === "later-numbering" ? ` hand="#h3"` : ""} resp="#rules">` + (D.lines[li].zone_subtype === "later-numbering" ? `<gap reason="numeral"/>` : D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ")) + `</annotation>`);
     const sig = []; FL.forEach(([li, wi], g) => { const t = shownText(li, wi); if (inl(g) && /^\p{Lu}\.,?$/u.test(t) && !state.ne.some(n => spanGis(n).includes(g))) sig.push(`${I(4)}<annotation xml:id="sg${wid(g).slice(1)}" type="siglum" target="#${wid(g)}" resp="#rules">${xml(t)}${(D.lines[li].words[wi].sigla_candidates || []).map(c => `<note type="expansion-candidate" resp="#model-expanded">${xml(c.text)}</note>`).join("")}</annotation>`); });
     const mz = (id, m) => m ? `${I(4)}<annotation xml:id="ink-${id}" type="ink" target="#${id}" resp="#rules"><measure type="darkness" quantity="${m.darkness}" unit="grey-level"/><measure type="stroke-width" quantity="${m.stroke_width}" unit="px"/></annotation>` : "";
     const ink = D.lines.map(l => !l.ink ? "" : l.split ? mz(xml(l.line_id), l.ink.main) + mz(xml(l.line_id) + "-add", l.ink.add) : l.zone === "margin-left" ? mz(xml(l.line_id), l.ink.all) : "").filter(Boolean);
     const NK = (t) => "N" + (NE_KEYS.indexOf(t) + 1);
     const ents = suggOpen().filter(x => Array.from({ length: x.span }, (_, j) => x.gi + j).every(inl)).map((x, k) => { const ids = Array.from({ length: x.span }, (_, j) => "#" + wid(x.gi + j)), role = x.type === "actor" ? roleFor(x.gi) : "";
       return `${I(4)}<annotation xml:id="en${x.k + 1}" type="entity" ana="#${NK(x.type)}" target="${ids.join(" ")}" resp="#model" source="#${x.source === "ner-head" ? "model-ner-head" : "model-span-ner"}"${x.score != null ? ` cert="${x.score}"` : ""}>${xml(x.label || "")}${role ? `<note type="role-proposal" resp="#rules">${ROLES[role]}</note>` : ""}</annotation>`; });
+    const modeNotes = []; Object.keys(state.modes).forEach(mn => Object.entries(mdone(mn)).forEach(([id, r]) => { if (!r.val && !["siglum", "no entity"].some(x => (r.act || "").includes(x)) || mn === "boundaries" || mn === "structure") return;
+      const a = r.a || [], tg = a[1] !== undefined && a[1] !== null && FL.length && GI[keyOf(a[0], a[1])] !== undefined && inl(GI[keyOf(a[0], a[1])]) ? "#" + wid(GI[keyOf(a[0], a[1])]) : (a[0] !== undefined && a[0] !== null && lnum[a[0]] ? "#" + lid(a[0]) : "");
+      if (tg) modeNotes.push(`${I(4)}<annotation xml:id="mn-${mn}-${modeNotes.length + 1}" type="mode-note" subtype="${mn}" target="${tg}" at="${xml(r.at || "")}" resp="#editor">${xml(r.act + (r.val ? ": " + r.val : ""))}</annotation>`.replace(' at="', ' when="')); }));
+    const wit = D.witness ? D.lines.map((l, li) => D.witness[l.line_id] && lnum[li] && !L.isM(li) ? `${I(4)}<annotation xml:id="wt${li + 1}" type="witness" target="#${lid(li)}" source="#${xml(D.witness[l.line_id].source)}" resp="#rules">${xml(D.witness[l.line_id].text)}</annotation>` : "").filter(Boolean) : [];
     const list = (type, resp, items) => items.length ? `${I(3)}<listAnnotation type="${type}">${items.join("")}${I(3)}</listAnnotation>` : "";
     const folioMark = D.lines.map((l, li) => l.zone === "folio-mark" ? `${I(4)}<fw type="folio-mark" place="top-centre" facs="${zone(li)}" resp="#rules"/>` : "").join("");
     const nMargDec = D.lines.filter(z => z.zone_how === "editor").length;
-    const dipl = L.mainL.some(li => (state.dipl[li] ? state.dipl[li].text : D.lines[li].diplomatic_text)) ?
-      `${I(3)}<div type="transcription" subtype="diplomatic">${I(4)}<ab>` + D.lines.map((l, li) => `${I(5)}<lb n="${lnum[li]}" facs="${zone(li)}"/>${xml(state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || ""))}`).join("") + `${I(4)}</ab>${I(3)}</div>` : "";
+    const dipl = `${I(3)}<div type="transcription" subtype="diplomatic">${I(4)}<ab>` + L.mainL.map(li => { const real = state.dipl[li] ? state.dipl[li].text : (D.lines[li].diplomatic_text || "");
+      return `${I(5)}<lb n="${lnum[li]}" facs="${zone(li)}"/>` + (real ? `<seg resp="#editor">${xml(real)}</seg>` : `<seg resp="#rules" cert="low" ana="#simulated">${xml(simDipl(li))}</seg>`); }).join("") + `${I(4)}</ab>${I(3)}</div>`;
     const pts = (poly) => (poly || []).map(p => Math.round(p[0] * W) + "," + Math.round(p[1] * H)).join(" ");
     const zones = D.lines.map(l => l.zones ? l.zones.map(z => `${I(4)}<zone xml:id="${xml(l.line_id)}${z.type === "main" ? "" : "-" + z.type}" type="${z.type === "main" ? "line" : z.type}" points="${pts(z.polygon)}"/>`).join("")
       : `${I(4)}<zone xml:id="${xml(l.line_id)}"${l.zone === "facing-page" ? ` type="facing-page"` : l.zone === "margin-left" ? ` type="margin" subtype="${xml(l.zone_subtype || "address")}"` : ""} points="${pts(l.polygon)}"/>`).join("");
@@ -1329,7 +1620,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       </sourceDesc>
     </fileDesc>
     <encodingDesc>
-      <projectDesc><p>Edition layer: expanded and punctuated text. Diplomatic layer: abbreviations and spelling as written${dipl ? "" : " (not yet produced for this page)"}.</p></projectDesc>
+      <projectDesc><p>Edition layer: expanded and punctuated text. Diplomatic layer: a SIMULATION, not a reading: the expanded reading re-abbreviated by rule from a table of register conventions (${SIM_TABLE_SIZE} entries; resp #rules, cert low, ana #simulated); a line the editor has corrected carries resp #editor and is a real diplomatic line.</p></projectDesc>
       <editorialDecl>
         <segmentation><p>Each register entry is a div type="entry" (part="F": the page begins inside an entry of the previous folio; part="I": the entry goes on on the next folio; part="M": both); an entry that only refers to an earlier one is subtype="in-eundem-modum". Inside an entry each div carries a diplomatic part. Lines are lb milestones whose facs points to the zone of the line in the facsimile; text lines are numbered 1…n, marginal lines m1…mk.</p>
           <p>Diplomatic parts follow the register schema of the project: inscriptio, salutatio, arenga, narratio, dispositio, sanctio, datatio; and the register-internal units rubric, in-eundem-modum, nota-cancellariae, marginal-address, later-numbering, registration-note. The workbench rules propose inscriptio, arenga, narratio, dispositio, sanctio, datatio and registration-note, and the in-eundem-modum entry; marginal-address and later-numbering are the subtypes of marginal text on the left margin (a marginal-text annotation with hand h2 or, for a numeral, a gap with hand h3); salutatio, rubric and nota-cancellariae are not proposed yet.</p>
@@ -1341,7 +1632,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           <p>Standoff annotations (back to the text through <att>target</att>) hold what is not yet confirmed: the cursus class of each clause end (ana, class of the pilot-1 rule classifier on the text as it now stands), the model's word confidence (<att>cert</att> = calibrated probability that the word is read correctly, given for words at 0.80 or below), marginal text that may be an addition (the editor can confirm it as an add in the text after the word it follows, or as a marginal note), and siglum candidates. An editor's correction of a word is marked resp="#editor" on the w; the machine reading is kept in the audit record.</p>
         </interpretation>
       </editorialDecl>
-      <classDecl><taxonomy xml:id="entity-classes">${NE_KEYS.map((t, i) => `${I(5)}<category xml:id="N${i + 1}"><catDesc>${NE_TYPES[t][2]}: ${NE_TYPES[t][1]}${t === "actor" ? ' type="actor" role="…"' : t === "obj" ? ' type="object"' : ""} (model labels: ${NE_FROM[t]})</catDesc></category>`).join("")}
+      <classDecl><taxonomy xml:id="layer-status"><category xml:id="simulated"><catDesc>simulated: rule re-abbreviation of the expanded reading, not a reading</catDesc></category></taxonomy><taxonomy xml:id="entity-classes">${NE_KEYS.map((t, i) => `${I(5)}<category xml:id="N${i + 1}"><catDesc>${NE_TYPES[t][2]}: ${NE_TYPES[t][1]}${t === "actor" ? ' type="actor" role="…"' : t === "obj" ? ' type="object"' : ""} (model labels: ${NE_FROM[t]})</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="actor-roles">${Object.entries(ROLES).map(([k, v]) => `${I(5)}<category xml:id="R-${k}"><catDesc>${v}</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="cursus"><category xml:id="cursus-class"><catDesc>cursus class of a clause end</catDesc>${cursusCats}
       </category></taxonomy></classDecl>
@@ -1350,6 +1641,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       <change when="${now}" who="#model">machine reading (${xml(M.name)}) of ${S.folio}</change>${D.zone_split ? `
       <change when="${now}" who="#rules">zone classes: facing page (centre beyond the right edge of the text block), left margin (address / later numbering); line-end additions split off where the ink changes (darkness of the line's tail as a z-score against the page distribution, z at most ${D.zone_split.theta_z}${D.zone_split.forced_lines.length ? `; named by the editor: line ${D.zone_split.forced_lines.join(", ")}` : ""})</change>` : ""}
       <change when="${now}" who="#editor">${nDecisions + dropped + nMargDec + (IR ? 1 : 0)} decision(s) overrode the rule-based proposals: ${nDecisions} part boundary(ies) set, ${dropped} proposed boundary(ies) dropped, ${nMargDec} margin class(es), ${IR ? 1 : 0} restored initial; ${state.dsSeg ? "structure edited; " : ""}${Object.keys(state.edits).length} edition and ${Object.keys(state.dipl).length} diplomatic correction(s), ${state.ne.length} entities, ${app.length} apparatus note(s), ${Object.keys(state.marg).length} marginal line(s) decided</change>
+${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn => `
+      <change when="${now}" who="#editor" n="mode:${mn}">${mn}: ${Object.keys(mdone(mn)).length} stop(s) confirmed</change>`).join("")}
     </revisionDesc>
   </teiHeader>
   <facsimile>
@@ -1357,7 +1650,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       <graphic url="${xml(S.image_dir)}/${xml(S.image_file)}" width="${W}px" height="${H}px"/>${zones}
     </surface>
   </facsimile>
-  <standOff>${list("cursus", "rules", cur)}${list("word-confidence", "model", conf)}${list("marginal-text", "rules", marg.concat(nums))}${list("siglum", "rules", sig)}${list("ink", "rules", ink)}${list("entity", "model", ents)}
+  <standOff>${list("cursus", "rules", cur)}${list("word-confidence", "model", conf)}${list("marginal-text", "rules", marg.concat(nums))}${list("siglum", "rules", sig)}${list("ink", "rules", ink)}${list("entity", "model", ents)}${list("witness", "rules", wit)}${list("mode-note", "editor", modeNotes)}
   </standOff>
   <text>
     <body>${dipl}

@@ -27,6 +27,11 @@ the others' corrections of the same side are shown as agreement (✓) and disagr
    top-three candidates with the cadence each would give, accents and cursus recomputed in the browser after every change (port of
    the pilot-1 classifier M1), two layers (diplomatic / edition), apparatus, named entities, diplomatic structure, special
    characters, TEI export. A side's task is done when all its lines are approved.
+   **Task modes** (`?mode=` in the URL, selector in the header; tests: `tests/modes_test.mjs`): triage, boundaries, structure, cursus, corrections, ner,
+   codicology, legal, arenga, edition. Each has its own Tab queue (Tab / Shift+Tab skip what is confirmed in that mode), counters, key subset and progress
+   record (saved with the editor's structure file); every confirmation is `resp="#editor"` in the TEI and the mode is recorded in `revisionDesc`.
+   **Entry bands** (`[` / `]` jump between entries, the arrow collapses an entry) show recipient (line end and margin witnesses, disagreement flagged),
+   type, computed date, lines, regest and status. **Line views** (per editor): simulated diplomatic line, legacy witness, regest, image strip.
    The TEI export (tests: `tests/tei_test.mjs`) holds what the editor has decided in the text (names; `add`, `del`, `subst` from the apparatus
    types *add. supra lin.*, *add. in marg.*, *del.*, *corr. ex*, *in ras.*; hands as `handNote` / `handShift`; marginal lines the editor has
    marked as additions or notes) and, as standoff annotations, what is only proposed (cursus class of the clause ends, word confidence, marginal

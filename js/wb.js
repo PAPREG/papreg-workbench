@@ -109,8 +109,8 @@
 
   // ------------------------------------------------------------------ the page's state <-> per-type records
   // state snapshot fields of the editor engine: edits, dipl, apprE, apprD, stress (corrections), app (apparatus), ne, rej
-  // (entities), dsSeg (structure), marg (the editor's decision on each marginal line).
-  const SPLIT = { corrections: ["edits", "dipl", "apprE", "apprD", "stress"], apparatus: ["app", "marg"], entities: ["ne", "rej"], structure: ["dsSeg"] };
+  // (entities), dsSeg / modes / etype / recip (structure and task-mode progress), marg (the editor's decision on each marginal line).
+  const SPLIT = { corrections: ["edits", "dipl", "apprE", "apprD", "stress"], apparatus: ["app", "marg"], entities: ["ne", "rej"], structure: ["dsSeg", "modes", "etype", "recip"] };
   function restore(state, D) {
     if (!G.pageId) return;
     for (const [t, keys] of Object.entries(SPLIT)) {
@@ -277,18 +277,19 @@
     };
     document.getElementById("wbTry").onclick = () => { const u = new URL(location.href); u.searchParams.set("test", "1"); u.searchParams.set("page", G.cfg.testPage || "RV9/154v"); location.href = u.pathname + u.search; };
   }
+  const MODE_NAMES = ["triage", "boundaries", "structure", "cursus", "corrections", "ner", "codicology", "legal", "arenga", "edition"];   // task modes (index.html): ?mode= opens a page in one
   function pageUrl(id) { const u = new URL(location.href); if (id) u.searchParams.set("page", id); else u.searchParams.delete("page"); return u.pathname + u.search; }
   async function taskView() {
     await loadTasks();
     const IDX = await data(G.cfg.pagesIndex).catch(() => ({ pages: [] }));
     const my = mine(), st = (t) => (G.mine.tasks.pages[t.task_id] || { data: { status: "assigned" } }).data.status;
     const row = (t) => `<tr><td><a href="${pageUrl(t.page_id)}">${esc(t.page_id)}</a></td><td>${esc(t.hand)}</td><td>${t.priority}</td><td>${(100 * t.est_cer).toFixed(1)}%</td>
-      <td>${Math.round(100 * t.coverage)}%</td><td>${esc(t.difficulty)}</td><td>${t.double_key ? "two editors" : ""}</td><td>${esc(st(t))}</td><td>${esc(claimants(t).filter(x => x !== G.login).join(", "))}</td></tr>`;
+      <td>${Math.round(100 * t.coverage)}%</td><td>${esc(t.difficulty)}</td><td>${t.double_key ? "two editors" : ""}</td><td>${esc(st(t))}</td><td>${esc(claimants(t).filter(x => x !== G.login).join(", "))}</td><td class="wb-modes">${MODE_NAMES.map(m => `<a href="${pageUrl(t.page_id)}&mode=${m}">${m}</a>`).join(" ")}</td></tr>`;
     document.body.innerHTML = `<div class="wb-tasks"><header><h1>PAPREG Editorial Workbench</h1><span>signed in as <b>@${esc(G.login)}</b>${G.readOnly ? " (read-only)" : ""}${G.cfg.mode === "test" ? " · test mode: changes stay in this browser" : (G.cfg.mode === "local" ? " · local mode" : "")}</span>
       <span class="sp"></span><button id="wbOut">${G.cfg.mode === "test" ? "leave the test" : "sign out"}</button></header>
       <h2>My tasks (${my.length})</h2>
       <p class="note">Round ${esc(QUEUE.round)} of the review queue: sides chosen per hand, weak hands first (estimated error from the editions' agreement). Open a side, correct, and approve its lines; the task is done when every line is approved.</p>
-      ${my.length ? `<table><tr><th>side</th><th>hand</th><th>priority</th><th>est. CER</th><th>coverage</th><th>difficulty</th><th>keying</th><th>status</th><th>also with</th></tr>${my.map(row).join("")}</table>` : "<p>No task yet.</p>"}
+      ${my.length ? `<table><tr><th>side</th><th>hand</th><th>priority</th><th>est. CER</th><th>coverage</th><th>difficulty</th><th>keying</th><th>status</th><th>also with</th><th>open in mode</th></tr>${my.map(row).join("")}</table>` : "<p>No task yet.</p>"}
       <p>${G.readOnly ? "Read-only: ask the owner of the data repository for write access to take tasks." : `<button id="wbTake">take the next ${G.cfg.claimBatch || 5} tasks</button>`}</p>
       <h2>All sides</h2><p class="note">${IDX.pages.length} sides of ${esc((IDX.volumes || []).join(", "))}. Any side can be opened; work outside the tasks is saved in the same way.</p>
       <details><summary>browse</summary><div class="wb-grid">${(IDX.pages || []).map(p => `<a href="${pageUrl(p.page_id)}" title="${esc(p.hand)} · ${p.lines} lines">${esc(p.page_id)}</a>`).join(" ")}</div></details></div>`;
