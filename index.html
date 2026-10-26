@@ -79,7 +79,7 @@ main{display:grid;grid-template-columns:minmax(240px,32%) 1fr;max-width:1500px;m
 .editor{padding:18px 26px 80px;min-width:0}
 .legend{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--mute);font-size:12px;margin:0 0 14px}
 .legend i{font-style:normal;color:var(--ink);font-family:var(--serif);font-size:14px;padding:0 2px}
-.line{display:grid;grid-template-columns:70px 1fr 30px;gap:12px;padding:4px 0}
+.line{display:grid;grid-template-columns:124px 1fr 30px;gap:12px;padding:4px 0}
 .line.active{background:var(--sel)}
 .line.dim{opacity:.3}
 .ln{color:var(--mute);font:11px var(--sans);text-align:right;padding-top:6px;cursor:pointer;font-variant-numeric:tabular-nums}
@@ -165,6 +165,7 @@ footer p{margin:4px 0;max-width:110ch}
 .toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 12px;font-size:12px;opacity:0;transition:opacity .2s;z-index:80}
 .toast.show{opacity:1}
 kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
+.c-per{--nec:#b5472f} .c-title{--nec:#a8741a} .c-ins{--nec:#2f6f9f} .c-loc{--nec:#3c8d5a} .c-actor{--nec:#7a4fa0} .c-cit{--nec:#8a6d3b} .c-obj{--nec:#5d6d7e} .c-val{--nec:#a04f7a}
 .c-person{--nec:var(--person)} .c-place{--nec:var(--place)} .c-org{--nec:var(--org)} .c-date{--nec:var(--date)}
   header .msel { margin-left: 12px; font-size: 13px; color: var(--muted, #555); }
   header .msel select { margin-left: 4px; font: inherit; padding: 2px 4px; }
@@ -172,6 +173,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 /* diplomatic structure */
 .ds-inscriptio{--dsc:#4f6bb8} .ds-arenga{--dsc:#8b5cc4} .ds-narratio{--dsc:#1f9a8b} .ds-dispositio{--dsc:#c7861a}
 .ds-sanctio{--dsc:#c4415e} .ds-datatio{--dsc:#7d7d7d} .ds-nota{--dsc:#a0784f} .ds-margo{--dsc:#b0a89a}
+.ds-salutatio{--dsc:#6f8fd0} .ds-rubric{--dsc:#c0392b} .ds-nota-cancellariae{--dsc:#8a6d3b} .ds-marginal-address{--dsc:#9b7ab8} .ds-later-numbering{--dsc:#6b4f2a} .ds-in-eundem-modum{--dsc:#2f7d5b}
 .dsb{display:none}
 .ds-on .dsb{display:inline-block;width:1.5px;height:1.3em;vertical-align:-.3em;margin:0 6px 0 1px;border-radius:1px;background:var(--dsc);cursor:ew-resize}
 .ds-on .dsb:hover,.ds-on .dsb.drag{box-shadow:0 0 0 3px color-mix(in srgb,var(--dsc) 25%,transparent)}
@@ -181,6 +183,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 .eno{font:600 calc(10px * var(--fs)) var(--sans);color:var(--mute);letter-spacing:.04em;margin-right:8px;vertical-align:.15em}
 .msec{margin:calc(34px * var(--fs)) 0 6px;padding-top:10px;border-top:1px solid var(--rule);font:600 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
 .msec span{font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px}
+.net .role{opacity:.8;font-weight:600} .types.roles{flex-wrap:wrap}
+.chip{display:inline-block;font:600 10px var(--sans);letter-spacing:.02em;border:1px solid var(--rule);border-radius:9px;padding:0 6px;margin:0 4px;color:var(--mute);vertical-align:.12em;white-space:nowrap}
+.chip.add{border-color:#9b7ab8;color:#7a4fa0} .chip.num{border-color:#a0784f;color:#7a5a36} .chip.adr{border-color:#9b7ab8;color:#7a4fa0}
+.w.addw{background:rgba(155,122,184,.16);border-radius:3px} .eno.iem{color:#a0784f}
+.inkbar{display:block;height:3px;border-radius:2px;margin:3px 0 0 auto;width:100%} .hs{font-size:10px;color:#7a4fa0;margin-left:2px}
+.gut{display:block;font:10px var(--sans);color:var(--mute);margin-top:3px;text-align:right;line-height:1.3;overflow-wrap:anywhere}.gut .chip{margin:0 0 2px;white-space:normal}
+.dropcap{font-size:1.9em;font-weight:600;line-height:.8;margin-right:1px;color:var(--ink)}
 .mctl{margin-left:10px;font:11px var(--sans)} .mctl .mst{color:var(--mute);margin-right:6px} .mctl button{font:11px var(--sans);padding:1px 6px;margin-left:4px;cursor:pointer}
 .line.marg .txt{font-size:calc(15px * var(--fs))} .mref{font:11px var(--sans);color:var(--mute);margin-left:6px}
 .fm-herde{--fmc:#b5523b} .fm-chancery{--fmc:#3d6f9e}
@@ -267,7 +276,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   </div>
   <div class="row2 row3">
     <span id="stats"></span><span class="sep">|</span>
-    <span class="keys"><kbd>Tab</kbd> next · <kbd>1–3</kbd> accept · <kbd>A</kbd> apparatus · <kbd>N</kbd> entity · name? right half ✓ left half ✗ · <kbd>D</kbd> edit diplomatic · <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> approve edition / diplomatic · <kbd>Ctrl+Z</kbd> undo</span>
+    <span class="keys"><kbd>Tab</kbd> next · <kbd>1–3</kbd> accept · <kbd>A</kbd> apparatus · <kbd>N</kbd><kbd>0–9</kbd> entity class · <kbd>R</kbd> role · name? right half ✓ left half ✗ · <kbd>D</kbd> edit diplomatic · <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> approve edition / diplomatic · <kbd>Ctrl+Z</kbd> undo</span>
   </div>
 </header>
 
@@ -303,9 +312,10 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       <span><i style="box-shadow:inset 0 -1px 0 var(--mute)">dú<span class="sy">·</span>xi<span class="sy">·</span>mus</i> cadence window, stressed syllable</span>
       <span><span class="cl planus">planus</span> <span class="cl tardus">tardus</span> <span class="cl velox">velox</span></span>
       <span><sup style="color:var(--ok);font:600 9px var(--sans)">✓2</sup> confirmed by peers · <sup style="color:var(--err);font:600 9px var(--sans)">→ ≠</sup> peer correction / disagreement</span>
-      <span id="dsLegend">structure:<span class="ds-inscriptio"><i class="dsk"></i>inscriptio</span><span class="ds-arenga"><i class="dsk"></i>arenga</span><span class="ds-narratio"><i class="dsk"></i>narratio</span><span class="ds-dispositio"><i class="dsk"></i>dispositio</span><span class="ds-sanctio"><i class="dsk"></i>sanctio</span><span class="ds-datatio"><i class="dsk"></i>datatio</span><span class="ds-nota"><i class="dsk"></i>registration note</span><span class="ds-margo"><i class="dsk"></i>margin</span> <span class="meta">· drag a bar to move a boundary · click a label or bar to relabel · right-click a word to start a part</span></span>
+      <span id="dsLegend">structure:<span class="ds-inscriptio"><i class="dsk"></i>inscriptio</span><span class="ds-arenga"><i class="dsk"></i>arenga</span><span class="ds-narratio"><i class="dsk"></i>narratio</span><span class="ds-dispositio"><i class="dsk"></i>dispositio</span><span class="ds-sanctio"><i class="dsk"></i>sanctio</span><span class="ds-datatio"><i class="dsk"></i>datatio</span><span class="ds-nota"><i class="dsk"></i>registration note</span><span class="ds-salutatio"><i class="dsk"></i>salutatio</span><span class="ds-rubric"><i class="dsk"></i>rubric</span><span class="ds-nota-cancellariae"><i class="dsk"></i>nota cancellariae</span><span class="ds-in-eundem-modum"><i class="dsk"></i>in eundem modum (entry)</span><span class="ds-marginal-address"><i class="dsk"></i>marginal address</span><span class="ds-later-numbering"><i class="dsk"></i>later numbering</span><span class="ds-margo"><i class="dsk"></i>margin</span> <span class="meta">· drag a bar to move a boundary · click a label or bar to relabel · right-click a word to start a part</span></span>
+      <span><span class="chip add">add · line end · h2</span> later addition in lighter ink · <span class="chip adr">margin · address</span> · <span class="chip num">numeral · later hand</span> (h3) · ink bar: <i style="display:inline-block;width:26px;height:3px;vertical-align:middle;background:linear-gradient(90deg,#4a3b2a 70%,#c9b6dc 70%)"></i> h1 dark, h2 light · <span class="dropcap" style="font-size:1.3em">A</span> initial</span>
       <span id="fmLegend">formulae:<span class="fm-herde"><i class="fmk"></i>legal (Herde)</span><span class="fm-chancery"><i class="fmk"></i>chancery (register)</span> <span class="meta">· hover for the sources</span></span>
-      <span><span class="c-person"><span class="net">pers</span></span><span class="c-place"><span class="net">place</span></span><span class="c-org"><span class="net">inst</span></span><span class="c-date"><span class="net">date</span></span> named entities · <span class="fn">a</span> apparatus note</span>
+      <span><span class="c-per"><span class="net">pers</span></span><span class="c-title"><span class="net">title</span></span><span class="c-ins"><span class="net">inst</span></span><span class="c-loc"><span class="net">place</span></span><span class="c-actor"><span class="net">actor</span></span><span class="c-date"><span class="net">date</span></span><span class="c-cit"><span class="net">cit</span></span><span class="c-obj"><span class="net">obj</span></span><span class="c-val"><span class="net">val</span></span> entity classes (actor roles: R a p e x o d g) · named entities · <span class="fn">a</span> apparatus note</span>
     </div>
     <div id="lines"></div>
     <div class="panel"><p class="lbl">Critical apparatus</p><ol id="appList"></ol></div>
@@ -343,7 +353,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const FL = [], GI = {};                                       // flat word order across lines
   D.lines.forEach((l, li) => l.words.forEach((w, wi) => { GI[keyOf(li, wi)] = FL.length; FL.push([li, wi]); }));
   // entity suggestions (A28b NER head + algorithmic filter; model output, not checked) — shown separately, accepted one by one
-  const SUGG = (D.entity_suggestions || []).map((x, k) => ({ ...x, k, gi: GI[keyOf(x.line_index, x.word_index)] })).filter(x => x.gi !== undefined);
+  const NE_ALIAS = { person: "per", place: "loc", org: "ins" };
+  const SUGG = (D.entity_suggestions || []).map((x, k) => ({ ...x, type: NE_ALIAS[x.type] || x.type, k, gi: GI[keyOf(x.line_index, x.word_index)] })).filter(x => x.gi !== undefined);
   const suggOpen = () => SUGG.filter(x => !state.rej.has(x.k) && !state.ne.some(n => n.gi <= x.gi && x.gi < n.gi + n.span));
   const SUGG_AT = () => { const m = {}; suggOpen().forEach(x => { for (let j = 0; j < x.span; j++) m[x.gi + j] = { x, first: j === 0 }; }); return m; };
   function suggList() {
@@ -365,13 +376,23 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     mutate(() => state.ne.push({ id: ++state.seq, gi: x.gi, span: x.span, type: x.type, at: new Date().toISOString(), source: "suggestion" }));
     render(); toast("suggested entity accepted");
   });
-  const NE_TYPES = { person: ["pers", "persName"], place: ["place", "placeName"], org: ["inst", "orgName"], date: ["date", "date"] };
+  // editor-facing profile: nine classes (hotkeys N1…N9, N0 clears) projected from the 19 labels of the model; an ACTOR carries a role (R + letter)
+  const NE_TYPES = { per: ["pers", "persName", "PER", "Guillelmus"], title: ["title", "roleName", "TITLE", "episcopus"], ins: ["inst", "orgName", "INS", "monasterium Dolense"],
+    loc: ["place", "placeName", "LOC", "Alatri"], actor: ["actor", "rs", "ACTOR", "dilectus filius"], date: ["date", "date", "DATE", "XVI Kal. Octobris"],
+    cit: ["cit", "ref", "CIT", "Nulli ergo …"], obj: ["obj", "rs", "OBJ", "beneficium ecclesiasticum"], val: ["val", "measure", "VAL", "marcae argenti"] };
+  const NE_KEYS = Object.keys(NE_TYPES);
+  const NE_FROM = { per: "PER", title: "TITLE", ins: "INS", loc: "LOC, NAT", actor: "ACTOR (REL as attribute)", date: "DAT, TIM", cit: "new", obj: "EST, PROP", val: "MON, TAX, COM, NUM, MEA" };
+  const ROLES = { a: "recipient", p: "petitioner", e: "executor", x: "proctor", o: "opposing party", d: "deceased / predecessor", g: "third-party beneficiary" };
+  const roleFor = (g) => ({ inscriptio: "a", narratio: "p", dispositio: "e" })[structure().part[g]] || "";      // proposed from the zone; the editor confirms
+  const neTag = (n) => { const t = NE_TYPES[n.type][1], at = n.type === "actor" ? ` type="actor"${n.role ? ` role="${ROLES[n.role]}"` : ""}` : n.type === "obj" ? ` type="object"` : n.type === "cit" ? ` type="${n.sub === "canon" ? "canon" : "bible"}"` : n.type === "loc" && n.sub ? ` subtype="${xml(n.sub)}"` : "";
+    return { open: `<${t}${at} resp="#editor">`, close: `</${t}>` }; };
   const APP_TYPES = ["corr. ex", "add. supra lin.", "add. in marg.", "del.", "in ras.", "om.", "sic", "lectio dubia", "alia manu", "nota"];
 
   const state = { showPeers: false, heat: true, acc: true, clausOnly: false, layer: "both", active: null, focus: null, pop: null, form: null,
     edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, history: [], seq: 0,
     dirty: false, lastPush: null, peers: [], peerSig: "", syncLog: [], hasImage: false, rej: new Set(), struct: true, ner: true, fml: true };
   WB.restore(state, D);                                            // this editor's saved work on the page
+  state.ne.forEach(n => { n.type = NE_ALIAS[n.type] || n.type; });  // entities saved with the earlier four classes
   const lineHasClaus = new Set(D.clausulae.flatMap(c => c.tokens.map(t => t[0])));
   const clausAt = {}; D.clausulae.forEach(c => clausAt[c.end.join(":")] = c);
 
@@ -542,13 +563,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const VW = 1000, VH = Math.round(1000 * S.page_height_px / S.page_width_px), svg = $("page");
   svg.setAttribute("viewBox", `0 0 ${VW} ${VH}`);
   $("viewnote").textContent = `Line regions from the automatic segmentation. The image is loaded from your local image folder (button “image folder”); the word position within a line is approximate.`;
-  const DSCOL = { inscriptio: "#4f6bb8", arenga: "#8b5cc4", narratio: "#1f9a8b", dispositio: "#c7861a", sanctio: "#c4415e", datatio: "#7d7d7d", nota: "#a0784f", margo: "#b0a89a" };
+  const DSCOL = { salutatio: "#6f8fd0", rubric: "#c0392b", "nota-cancellariae": "#8a6d3b", inscriptio: "#4f6bb8", arenga: "#8b5cc4", narratio: "#1f9a8b", dispositio: "#c7861a", sanctio: "#c4415e", datatio: "#7d7d7d", nota: "#a0784f", margo: "#b0a89a" };
   let LINEPART = {};
   function drawPage() {
     const cs = getComputedStyle(document.documentElement), ink = cs.getPropertyValue("--ink").trim(), err = cs.getPropertyValue("--err").trim();
     let h = state.hasImage ? "" : `<rect width="${VW}" height="${VH}" fill="none" stroke="${ink}" stroke-opacity=".25"/>`;
     D.lines.forEach((l, li) => {
-      if (!l.polygon || !l.polygon.length) return;
+      if (!l.polygon || !l.polygon.length || hiddenLine(l)) return;
       const pts = l.polygon.map(p => `${(p[0] * VW).toFixed(1)},${(p[1] * VH).toFixed(1)}`).join(" ");
       const act = li === state.active, lows = l.words.filter((w, wi) => level(li, wi) === "low").length;
       let fill = !state.hasImage && !act && lows && !state.apprE.has(li) ? err : ink;
@@ -660,15 +681,16 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     arenga: /^(quoniam|licet|iustis|sicut|ea que|quotiens|decet|solet|apostolice|religiosam|sacrosancta|pastoralis|ad hoc|inter cetera|officii nostri|quanto|cum a nobis|cum sit)/,
   };
   // marginal lines (rubrics, notes, fragments outside the main column)
-  const hiddenLine = (l) => l.zone === "facing-page";          // a zone of the facing page: kept in the facsimile, not shown, not numbered
+  const hiddenLine = (l) => l.zone === "facing-page" || l.zone === "folio-mark";    // zones of the facing page and the folio mark: kept in the facsimile, not shown, not numbered
+  const numeralLine = (l) => l.zone_subtype === "later-numbering";                   // a later hand's number in the left margin: a gutter chip, never a text line
   const MAIN_X = (() => { const xs = D.lines.filter(l => l.bbox && !hiddenLine(l)).map(l => l.bbox[0]).sort((a, b) => a - b); return xs[Math.floor(xs.length / 2)] || .35; })();
   const MAIN_W = (() => { const ws = D.lines.filter(l => l.bbox && !hiddenLine(l)).map(l => l.bbox[2]).sort((a, b) => a - b); return ws[Math.floor(ws.length * .75)] || .5; })();
   const isMargin = (l) => !l.bbox || l.bbox[0] < MAIN_X - .06 || l.bbox[0] > MAIN_X + .12 || l.bbox[2] < MAIN_W * .3;
   // line labels: text lines 1…n in page order, marginal lines m1…mk (the same labels as the lb n of the TEI export)
-  const LNUM = (() => { let a = 0, b = 0; return D.lines.map(l => hiddenLine(l) ? "" : (l.words.length && isMargin(l)) ? "m" + (++b) : String(++a)); })();
+  const LNUM = D.labels ? D.labels.map(x => x || "") : (() => { let a = 0, b = 0; return D.lines.map(l => hiddenLine(l) ? "" : (l.words.length && isMargin(l)) ? "m" + (++b) : String(++a)); })();
   function computeParts() {
     const n = FL.length, part = new Array(n), toks = FL.map(([li, wi]) => shownText(li, wi)), rds = toks.map(rd);
-    const margin = FL.map(([li]) => isMargin(D.lines[li]));
+    const margin = FL.map(([li, wi]) => isMargin(D.lines[li]) || !!D.lines[li].words[wi].add);       // words in a line-end addition stand outside the running text
     const hard = toks.map(t => /[.?;!]$/.test(t) && !/^(\.\.|[A-Z]\.,?|[IVXLC]+\.|(Kal|Non|Id|etc)\.)$/.test(t));
     const soft = toks.map((t, k) => hard[k] || /[,:]$/.test(t));
     const head = (k) => { const out = []; for (let q = k; q < n && out.length < 5; q++) if (!margin[q]) out.push(rds[q]); return out.join(" "); };
@@ -703,11 +725,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   }
   // segmentation = list of [first word, part] for the main text; the rules propose it, the editor moves or relabels it
   const DS_NAME = (pt) => pt === "nota" ? "reg. note" : pt === "margo" ? "margin" : pt;
-  const DS_PARTS = ["inscriptio", "arenga", "narratio", "dispositio", "sanctio", "datatio", "nota"];
+  const DS_PARTS = ["inscriptio", "salutatio", "arenga", "narratio", "dispositio", "sanctio", "datatio", "nota", "rubric", "nota-cancellariae"];
   let dsDrag = null;
   function autoSeg(part) { const seg = []; let prev = null; part.forEach((p, g) => { if (p === "margo") return; if (p !== prev) seg.push([g, p]); prev = p; }); return seg; }
+  // a page can bring its own proposal (part starts by line and word; the editor's brief for the demo side); the rules propose otherwise
+  const proposalSeg = () => D.structure_proposal ? D.structure_proposal.map(([li, wi, p]) => [GI[keyOf(li, wi)], p]).filter(x => x[0] !== undefined).sort((a, b) => a[0] - b[0]) : null;
   function structure() {
-    const auto = computeParts(), seg = state.dsSeg || autoSeg(auto), part = auto.slice(), start = {}, endBar = {};
+    const auto = computeParts(), seg = state.dsSeg || proposalSeg() || autoSeg(auto), part = auto.slice(), start = {}, endBar = {};
     let j = -1, lastMain = null;
     for (let g = 0; g < part.length; g++) {
       if (auto[g] === "margo") { if (g === 0 || auto[g - 1] !== "margo") start[g] = true; continue; }
@@ -751,7 +775,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     DS.seg.forEach((x, i) => { const pv = i ? DS.seg[i - 1][1] : null, iem = x[1] === "nota" && iemAt(x[0]);      // an in eundem modum entry is an entry of its own
       if (i === 0 || iem || ((pv === "datatio" || pv === "nota") && x[1] !== "datatio" && x[1] !== "nota")) entryAt[x[0]] = { n: ++eNo, cont: i === 0 && x[1] !== "inscriptio", iem }; });
     const yc = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0, isM = (li) => D.lines[li].words.length > 0 && D.lines[li].words.every((w, wi) => PART[GI[keyOf(li, wi)]] === "margo");
-    const mainL = D.lines.map((l, li) => li).filter(li => !isM(li) && !hiddenLine(D.lines[li])), margL = D.lines.map((l, li) => li).filter(isM);
+    const mainL = D.lines.map((l, li) => li).filter(li => !isM(li) && !hiddenLine(D.lines[li]) && !numeralLine(D.lines[li])), margL = D.lines.map((l, li) => li).filter(isM);
     const beside = (li) => mainL.reduce((b, m) => Math.abs(yc(D.lines[m]) - yc(D.lines[li])) < Math.abs(yc(D.lines[b]) - yc(D.lines[li])) ? m : b, mainL[0]);
     return { entryAt, mainL, margL, isM, beside, entries: eNo };
   }
@@ -760,6 +784,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       (F.herde.some(x => x.branch === "a" || x.branch === "b") ? " · calibrated match" : " · exact fragment of ≥ 4 words") : "") +
     (F.register_letters ? ` · recurs in ≥ ${F.register_letters} of ${(D.formula_source && D.formula_source.register.letters) || "?"} other register letters` : "");
   // a marginal line is undecided (machine detection), an addition that belongs to the text at a place the editor names, or a marginal note
+  // the address supplied later (hand h2): the left-margin zones of an address group and the entry they belong to
+  const addrOf = (li) => { const g = (D.address_groups || []).find(x => String(x.entry_line) === LNUM[li]); return g ? g.margin_lines.map(m => D.lines[LNUM.indexOf(m)].expanded_text).join(" ").replace(/[.,;]$/, "") : ""; };
   function margCtl(li) {
     const m = state.marg[li], c = document.createElement("span"); c.className = "mctl";
     const st = !m ? `undecided (${D.lines[li].zone_subtype || "margin"})` : m.as === "note" ? "marginal note" : m.after != null ? `${m.place === "above" ? "interlinear" : "margin"} addition after “${shownText(...FL[m.after])}”` : "addition: click the word it follows";
@@ -784,6 +810,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const sgAt = state.ner ? SUGG_AT() : {};
     const fmAt = {}; if (state.fml) (D.formulas || []).forEach(f => { for (let g = f.gi; g < f.gi + f.span; g++) fmAt[g] = f; });
     const { entryAt, mainL, margL, isM, beside } = pageLayout(DS);
+    const nearest = (z) => mainL.reduce((b, m) => Math.abs(yc0(D.lines[m]) - yc0(z)) < Math.abs(yc0(D.lines[b]) - yc0(z)) ? m : b, mainL[0]), yc0 = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0;
+    const numAt = {}, adrAt = {}; D.lines.forEach((z) => { if (mainL.length && numeralLine(z)) (numAt[nearest(z)] = numAt[nearest(z)] || []).push(z);
+      else if (mainL.length && z.zone_subtype === "address" && z.words.length) (adrAt[nearest(z)] = adrAt[nearest(z)] || []).push(z.expanded_text); });
     mainL.concat(margL).forEach((li) => {
       const l = D.lines[li];
       if (li === margL[0]) root.insertAdjacentHTML("beforeend", `<div class="msec">Marginalia<span>${margL.length} line(s) outside the text column, in page order; the reference gives the text line beside them</span></div>`);
@@ -791,6 +820,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       row.className = "line" + (li === state.active ? " active" : "") + (state.clausOnly && !lineHasClaus.has(li) ? " dim" : "") + (isM(li) ? " marg" : "") + (entryAt[g00] && entryAt[g00].n > 1 ? " entry" : "");
       row.dataset.li = li;
       const ln = document.createElement("div"); ln.className = "ln"; ln.textContent = LNUM[li]; ln.onclick = () => setActive(li, false);
+      if (!isM(li)) {                                                                 // per-line ink bar: h1 dark, h2 lighter (the line-end addition)
+        const bar = document.createElement("span"); bar.className = "inkbar"; const sx = l.split ? l.split.x : 1;
+        bar.style.background = l.split ? `linear-gradient(90deg,#4a3b2a ${sx * 100}%,#c9b6dc ${sx * 100}%)` : "#4a3b2a"; bar.title = l.split ? `ink changes at ${Math.round(sx * 100)}% of the line (ink ratio ${l.split.ink_ratio}${l.split.how === "forced" ? ", set by the editor" : ""}): hand h1, then h2` : "ink: hand h1";
+        ln.appendChild(bar);
+        (numAt[li] || []).forEach(n => { const c = document.createElement("span"); c.className = "gut"; c.innerHTML = `<span class="chip num" title="later hand (h3), dark ink; the numeral is left to the editor">numeral · later hand</span>`; ln.appendChild(c); });
+        (adrAt[li] || []).forEach(a => { const c = document.createElement("span"); c.className = "gut"; c.innerHTML = `<span class="chip adr">margin · address</span> ${esc(a)}`; ln.appendChild(c); });
+      }
       { const starts = []; l.words.forEach((w, wi) => { const g0 = GI[keyOf(li, wi)]; if (DS.start[g0] && PART[g0] !== "margo") starts.push(g0); });
         starts.forEach(g0 => { const pt = PART[g0], d = document.createElement("div"); d.className = "dsl ds-" + pt; d.textContent = DS_NAME(pt);
           if (pt !== "margo") { d.title = "Click to change the part that starts here"; d.onclick = (e) => { e.stopPropagation(); dsMenu(e, g0); }; }
@@ -808,16 +844,20 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
         const k = keyOf(li, wi), g = GI[k], ed = state.edits[k], pv = peerView(li, wi), lv = level(li, wi), ne = neAt[g];
         if (entryAt[g]) { const E = entryAt[g]; host = t;
           if (wi > 0) t.appendChild(Object.assign(document.createElement("span"), { className: "ebr" }));
-          t.insertAdjacentHTML("beforeend", `<span class="eno" title="register entry ${E.n}${E.cont ? ", continued from the previous folio" : ""}${E.iem ? ", in eundem modum" : ""}">¶ ${E.n}${E.cont ? " (cont.)" : ""}${E.iem ? " (i.e.m.)" : ""}</span>`); }
+          t.insertAdjacentHTML("beforeend", `<span class="eno${E.iem ? " iem" : ""}" title="register entry ${E.n}${E.cont ? ", continued from the previous folio" : ""}${E.iem ? ", in eundem modum" : ""}">¶ ${E.n}${E.cont ? " (cont.)" : ""}${E.iem ? " · in eundem modum" : ""}${addrOf(li) ? ` → ${esc(addrOf(li))}` : ""}</span>`); }
         if (fmAt[g] && host.fm !== fmAt[g]) { const F = fmAt[g];
           host = document.createElement("span"); host.fm = F; host.className = "fm fm-" + F.kind + (g > F.gi ? " cont" : "");
           host.title = fmTitle(F); t.appendChild(host); }
         const s = document.createElement("span");
         const sg = !ne && sgAt[g];
-        s.className = "w " + lv + (w.in_cadence ? " cad" : "") + (ed ? " edited" : "") + (ne ? " ne c-" + ne.type : "") + (sg ? " sg c-" + sg.x.type : "") + "";
+        if (w.add && !(wi > 0 && l.words[wi - 1].add)) host.insertAdjacentHTML("beforeend", `<span class="chip add" title="added later in lighter ink (hand h2), repeated in the left margin">add · line end · h2</span>`);
+        s.className = "w " + lv + (w.add ? " addw" : "") + (w.in_cadence ? " cad" : "") + (ed ? " edited" : "") + (ne ? " ne c-" + ne.type : "") + (sg ? " sg c-" + sg.x.type : "") + "";
         if (state.struct) s.title = PART[g] + " · " + (s.title || "");
         if (state.clausOnly && !w.in_cadence) s.style.opacity = .3;
         s.innerHTML = wordHTML(li, wi, w.in_cadence, state.acc && w.in_cadence);
+        if ((D.initials || []).some(q => q.line === li && q.word === wi)) {            // large initial of the entry: drop cap
+          const n = document.createTreeWalker(s, NodeFilter.SHOW_TEXT).nextNode();
+          if (n && n.nodeValue.length) { const sp = document.createElement("span"); sp.className = "dropcap"; sp.textContent = n.nodeValue[0]; n.nodeValue = n.nodeValue.slice(1); n.parentNode.insertBefore(sp, n); } }
         if (ed) s.insertAdjacentHTML("beforeend", `<sup class="e">✓</sup>`);
         else if (pv.conflict) s.insertAdjacentHTML("beforeend", `<sup class="x">≠</sup>`);
         else if (pv.other.length) s.insertAdjacentHTML("beforeend", `<sup class="x">→</sup>`);
@@ -858,7 +898,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           s.ondrop = (e) => { e.preventDefault(); s.classList.remove("dsdrop"); const from = dsDrag; dsDrag = null; if (from !== null) dsMove(from, g); };
           s.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); dsMenu(e, g); };
         }
-        if (neEnd[g]) host.insertAdjacentHTML("beforeend", `<span class="net c-${neEnd[g].type}">${NE_TYPES[neEnd[g].type][0]}</span>`);
+        if (neEnd[g]) host.insertAdjacentHTML("beforeend", `<span class="net c-${neEnd[g].type}">${NE_TYPES[neEnd[g].type][0]}${neEnd[g].role ? `<span class="role" title="${ROLES[neEnd[g].role]}">·${neEnd[g].role.toUpperCase()}</span>` : ""}</span>`);
         (appEnd[g] || []).forEach(([a, letter]) => {
           const f = document.createElement("span"); f.className = "fn"; f.textContent = letter; f.title = `${a.type} ${a.text}`;
           f.onclick = (e) => { e.stopPropagation(); const [fl, fw] = FL[a.gi]; focusWord(fl, fw, true); openForm("app", a); };
@@ -964,7 +1004,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   function openForm(kind, item, span) {
     if (!state.pop) return;
     const g0 = item ? item.gi : (span ? span[0] : GI[keyOf(...state.pop)]);
-    const f = state.form = { kind, item, gi: g0, span: item ? item.span : (span ? span[1] : 1), type: item ? item.type : (kind === "app" ? APP_TYPES[0] : "person"), text: item ? item.text : "", hand: item ? item.hand : "" };
+    const f = state.form = { kind, item, gi: g0, span: item ? item.span : (span ? span[1] : 1), type: item ? item.type : (kind === "app" ? APP_TYPES[0] : "per"), text: item ? item.text : "", hand: item ? item.hand : "", role: item ? (item.role || "") : roleFor(g0), sub: item ? (item.sub || "") : "" };
     const lem = () => Array.from({ length: f.span }, (_, j) => shownText(...FL[f.gi + j])).join(" ");
     const draw = () => {
       pop.innerHTML = `<h3>${kind === "app" ? "Apparatus note" : "Named entity"}</h3>
@@ -974,17 +1014,24 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
             <span class="m">type</span><select id="fType">${APP_TYPES.map(t => `<option ${t === f.type ? "selected" : ""}>${t}</option>`).join("")}</select>
             <span class="m">reading / note</span><input type="text" id="fText" value="${esc(f.text)}" placeholder="e.g. scolario">
             <span class="m">hand</span><input type="text" id="fHand" value="${esc(f.hand)}" placeholder="optional, e.g. m2"></div>`
-        : `<div class="types" style="margin-top:8px">${Object.entries(NE_TYPES).map(([t, v], i) => `<button class="c-${t}" data-t="${t}" aria-pressed="${t === f.type}">${i + 1} ${v[1]}</button>`).join("")}</div>`}
+        : `<div class="types" style="margin-top:8px">${NE_KEYS.map((t, i) => `<button class="c-${t}" data-t="${t}" aria-pressed="${t === f.type}" title="e.g. ${esc(NE_TYPES[t][3])} · ${state.ne.filter(n => n.type === t).length} on this side · from ${NE_FROM[t]}">N${i + 1} ${NE_TYPES[t][2]}</button>`).join("")}<button data-t="" title="N0: remove the entity">N0 clear</button>${f.type === "actor" ? `</div><div class="types roles" style="margin-top:6px"><span class="m">R role</span>${Object.entries(ROLES).map(([k, v]) => `<button data-r="${k}" aria-pressed="${k === f.role}">${k} ${v}</button>`).join("")}` : ""}${f.type === "cit" ? `</div><div class="types" style="margin-top:6px"><span class="m">kind</span><button data-s="bible" aria-pressed="${f.sub !== "canon"}">bible</button><button data-s="canon" aria-pressed="${f.sub === "canon"}">canon / decretal</button>` : ""}${f.type === "loc" ? `</div><div class="types" style="margin-top:6px"><span class="m">kind</span><button data-s="" aria-pressed="${!f.sub}">place</button><button data-s="diocese" aria-pressed="${f.sub === "diocese"}">diocese</button><button data-s="natural" aria-pressed="${f.sub === "natural"}">natural feature</button>` : ""}</div>`}
         <div class="acts">${item ? `<button class="t" id="fDel">delete</button>` : "<span></span>"}<span><button class="t" id="fCancel">cancel</button> &nbsp; <button class="b sm" id="fSave">save</button></span></div>`;
       place();
       $("spM").onclick = (e) => { e.stopPropagation(); keep(); f.span--; draw(); };
       $("spP").onclick = (e) => { e.stopPropagation(); keep(); f.span++; draw(); };
-      pop.querySelectorAll(".types button").forEach(b => b.onclick = (e) => { e.stopPropagation(); f.type = b.dataset.t; draw(); });
+      pop.querySelectorAll(".types button").forEach(b => b.onclick = (e) => { e.stopPropagation();
+        if (b.dataset.r !== undefined) f.role = b.dataset.r; else if (b.dataset.s !== undefined) f.sub = b.dataset.s;
+        else if (b.dataset.t === "") { if (item) { mutate(() => { state.ne.splice(state.ne.indexOf(item), 1); }); closePop(); render(); toast("entity removed"); } else openPop(...state.pop); return; }
+        else { f.type = b.dataset.t; if (f.type === "actor" && !f.role) f.role = roleFor(f.gi); }
+        draw(); });
       $("fCancel").onclick = (e) => { e.stopPropagation(); openPop(...state.pop); };
       $("fSave").onclick = (e) => { e.stopPropagation(); keep(); save(); };
       if ($("fDel")) $("fDel").onclick = (e) => { e.stopPropagation(); mutate(() => { const L = kind === "app" ? state.app : state.ne; L.splice(L.indexOf(item), 1); }); closePop(); render(); toast("deleted"); };
       pop.querySelectorAll("input,select").forEach(n => n.onkeydown = (e) => { e.stopPropagation(); if (e.key === "Enter") { e.preventDefault(); keep(); save(); } if (e.key === "Escape") openPop(...state.pop); });
-      pop.onkeydown = (e) => { if (kind === "ne" && /^[1-4]$/.test(e.key) && e.target.tagName !== "INPUT") { f.type = Object.keys(NE_TYPES)[+e.key - 1]; draw(); } };
+      pop.onkeydown = (e) => { if (kind !== "ne" || e.target.tagName === "INPUT") return;
+        if (/^[1-9]$/.test(e.key)) { f.type = NE_KEYS[+e.key - 1]; if (f.type === "actor" && !f.role) f.role = roleFor(f.gi); draw(); }
+        else if (e.key === "0") { if (item) { mutate(() => { state.ne.splice(state.ne.indexOf(item), 1); }); closePop(); render(); toast("entity removed"); } else openPop(...state.pop); }
+        else if (f.type === "actor" && ROLES[e.key]) { f.role = e.key; draw(); } };
       if ($("fText")) $("fText").focus();
     };
     const keep = () => { if ($("fType")) { f.type = $("fType").value; f.text = $("fText").value.trim(); f.hand = $("fHand").value.trim(); } };
@@ -992,7 +1039,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       if (kind === "app" && !f.text && !["del.", "om.", "sic", "lectio dubia", "in ras."].includes(f.type)) { toast("add the reading or note"); return; }
       mutate(() => {
         const L = kind === "app" ? state.app : state.ne;
-        const rec = { id: item ? item.id : ++state.seq, gi: f.gi, span: f.span, type: f.type, ...(kind === "app" ? { text: f.text, hand: f.hand } : {}), at: new Date().toISOString() };
+        const rec = { id: item ? item.id : ++state.seq, gi: f.gi, span: f.span, type: f.type, ...(kind === "app" ? { text: f.text, hand: f.hand } : { role: f.type === "actor" ? f.role : "", sub: f.sub }), at: new Date().toISOString() };
         if (item) L[L.indexOf(item)] = rec; else L.push(rec);
       });
       closePop(); render(); toast(kind === "app" ? "apparatus note saved" : "entity saved");
@@ -1109,7 +1156,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       changes,
       diplomatic_changes: Object.entries(state.dipl).map(([li, d]) => ({ line_id: D.lines[li].line_id, original: D.lines[li].diplomatic_text || "", corrected: d.text, at: d.at })),
       apparatus: sortedApp().map((a, i) => ({ siglum: fnLetter(i), from: ref(a.gi), to: ref(a.gi + a.span - 1), lemma: spanGis(a).map(g => shownText(...FL[g])).join(" "), type: a.type, text: a.text, hand: a.hand || null, at: a.at })),
-      entities: state.ne.map(n => ({ from: ref(n.gi), to: ref(n.gi + n.span - 1), text: spanGis(n).map(g => shownText(...FL[g])).join(" "), type: NE_TYPES[n.type][1], at: n.at })),
+      entities: state.ne.map(n => ({ from: ref(n.gi), to: ref(n.gi + n.span - 1), text: spanGis(n).map(g => shownText(...FL[g])).join(" "), type: NE_TYPES[n.type][1], class: NE_TYPES[n.type][2], role: n.role || null, at: n.at })),
       accent_overrides: Object.entries(state.stress).map(([k, s]) => { const [li, wi] = k.split(":").map(Number), a = accOf(li, wi); return { line_id: D.lines[li].line_id, word_index: wi, word: s.text, syllables: a.length ? a[a.length - 1][4] : [], stressed_syllable: s.s, pattern: a.length ? a[a.length - 1][2] : null, at: s.at }; }) };
   }
   const xml = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -1123,7 +1170,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     // hands: h1 = the main hand of the page; every other hand named by the editor in the apparatus gets its own handNote
     const hands = [...new Set(app.map(a => (a.hand || "").trim()).filter(Boolean))], hid = (h) => "h" + (hands.indexOf(h) + 4);
     // who decided: the rules propose the structure; a part is #editor's once its start or its end differs from the proposal
-    const auto = autoSeg(computeParts()), segSame = (j) => { const s = DS.seg[j], n = DS.seg[j + 1], k = auto.findIndex(x => x[0] === s[0] && x[1] === s[1]);
+    const auto = proposalSeg() || autoSeg(computeParts()), segSame = (j) => { const s = DS.seg[j], n = DS.seg[j + 1], k = auto.findIndex(x => x[0] === s[0] && x[1] === s[1]);
       return k >= 0 && (auto[k + 1] ? auto[k + 1][0] : null) === (n ? n[0] : null); };
     const respSeg = (j) => state.dsSeg && !segSame(j) ? "#editor" : "#rules";
     const segOf = (g) => PART[g] === "margo" ? "m" + FL[g][0] : "s" + DS.seg.filter(x => x[0] <= g).length;
@@ -1134,7 +1181,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const spans = [], tryWrap = (a, b, w, open, close) => {
       if (segOf(a) !== segOf(b) || spans.some(s => (s.a < a && a <= s.b && s.b < b) || (a < s.a && s.a <= b && b < s.b))) return false;
       spans.push({ a, b, w, open, close }); return true; };
-    state.ne.forEach(n => tryWrap(n.gi, n.gi + n.span - 1, 1, `<${NE_TYPES[n.type][1]}>`, `</${NE_TYPES[n.type][1]}>`));
+    state.ne.forEach(n => { const t = neTag(n); tryWrap(n.gi, n.gi + n.span - 1, 1, t.open, t.close); });
     const fmSrc = (f) => [...new Set(f.herde.map(x => "Herde " + x.label))].slice(0, 6).concat(f.register_letters ? [`register: ${f.register_letters} letters`] : []).join("; ");
     (D.formulas || []).forEach(f => tryWrap(f.gi, f.gi + f.span - 1, 3, `<seg type="formula" subtype="${f.kind === "herde" ? "legal" : "chancery"}" resp="#formulae" n="${xml(fmSrc(f))}">`, `</seg>`));
     const before = {}, after = {}, noteAfter = {}, put = (o, g, s) => (o[g] = (o[g] || "") + s);
@@ -1152,10 +1199,18 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const opens = (g) => spans.filter(s => s.a === g).sort((x, y) => y.b - x.b || y.w - x.w), closes = (g) => spans.filter(s => s.b === g).sort((x, y) => y.a - x.a || x.w - y.w);
     const lb = (li) => `<lb n="${lnum[li]}" xml:id="${lid(li)}"${L.isM(li) ? ` type="margin"` : ""} facs="${zone(li)}"/>`;
     const wordOut = (g) => { const [li, wi] = FL[g], e = state.edits[keyOf(li, wi)];
-      return (before[g] || "") + opens(g).map(s => s.open).join("") + `<w xml:id="${wid(g)}"${e ? ` resp="#editor"` : ""}>${xml(shownText(li, wi))}</w>` + closes(g).map(s => s.close).join("") + (after[g] || "") + (noteAfter[g] || ""); };
+      const t_ = shownText(li, wi), ini = (D.initials || []).some(q => q.line === li && q.word === wi);
+      return (before[g] || "") + opens(g).map(s => s.open).join("") + `<w xml:id="${wid(g)}"${e ? ` resp="#editor"` : ""}>${ini ? `<hi rend="initial">${xml(t_[0])}</hi>${xml(t_.slice(1))}` : xml(t_)}</w>` + closes(g).map(s => s.close).join("") + (after[g] || "") + (noteAfter[g] || ""); };
     // an addition confirmed by the editor sits in the text after the word it follows
     const addAt = {}; L.margL.filter(inlineAdd).forEach(li => { const m = mg(li), g = m.after;
       put(addAt, g, `<add place="${m.place === "above" ? "above" : "margin"}" resp="#editor" facs="${zone(li)}">${lb(li)}` + D.lines[li].words.map((w, wi) => wordOut(GI[keyOf(li, wi)])).join(" ") + `</add>`); });
+    // the address supplied later: line-end additions (hand h2) and their repetition in the left margin form the inscriptio of the entry
+    const addrGroup = (E, li) => (D.address_groups || []).find(x => String(x.entry_line) === LNUM[li] && x.add_lines.length);
+    const inscriptio = (E, li) => { const gr = E.iem ? null : addrGroup(E, li); if (!gr) return "";
+      const addW = [], zids = []; gr.add_lines.forEach(lab => { const ai = LNUM.indexOf(lab); zids.push("#" + xml(D.lines[ai].line_id) + "-add"); D.lines[ai].words.forEach((w, wi) => w.add && addW.push(GI[keyOf(ai, wi)])); });
+      const txt = gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].words.map((w, wi) => xml(shownText(LNUM.indexOf(m), wi))).join(" ")).join(" "), mz = gr.margin_lines.map(m => zone(LNUM.indexOf(m)));
+      return `${I(5)}<div type="inscriptio" resp="#rules">${I(6)}<ab><handShift new="#h2"/><add place="line-end" hand="#h2" facs="${zids.join(" ")}" resp="#rules" cert="medium">${addW.map(wordOut).join(" ")}</add><handShift new="#h1"/>` +
+        `${I(7)}<note type="marginal" subtype="address" place="margin-left" hand="#h2" facs="${mz.join(" ")}" corresp="#e${E.n}" resp="#rules">${txt}</note></ab>${I(5)}</div>`; };
     // edition: entry > structural part > ab, lines as lb milestones
     let ed = "", entryOpen = false, segKind = null, segI = -1, prevLi = -1, nEntry = 0;
     const closeSeg = () => { if (segKind) ed += `</ab>` + (segKind === "part" ? `${I(5)}</div>` : ""); segKind = null; }, closeEntry = () => { if (entryOpen) ed += `${I(4)}</div>`; entryOpen = false; };
@@ -1168,7 +1223,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
         segI++; closeSeg(); const E = L.entryAt[g], pt = DS.seg[segI][1];
         if (E) { closeEntry(); nEntry++;
           const pF = E.cont, pI = nEntry === entryTotal && lastOpen && !E.iem, pa = pF && pI ? "M" : pF ? "F" : pI ? "I" : "";
-          ed += `${I(4)}<div type="entry"${E.iem ? ` subtype="in-eundem-modum"` : ""} n="${E.n}"${pa ? ` part="${pa}"` : ""} resp="${respSeg(segI)}">` + (E.cont ? `${I(5)}<note type="editorial">the page begins inside an entry of the previous folio</note>` : ""); entryOpen = true; }
+          ed += `${I(4)}<div type="entry"${E.iem ? ` subtype="in-eundem-modum"` : ""} n="${E.n}" xml:id="e${E.n}"${pa ? ` part="${pa}"` : ""} resp="${respSeg(segI)}">` + (E.cont ? `${I(5)}<note type="editorial">the page begins inside an entry of the previous folio</note>` : "") + inscriptio(E, li); entryOpen = true; }
         if (E && E.iem) { segKind = "iem"; ed += `${I(5)}<ab>`; }
         else { segKind = "part"; ed += `${I(5)}<div type="${pt === "nota" ? "registration-note" : pt}" resp="${respSeg(segI)}">${I(6)}<ab>`; }
       }
@@ -1184,9 +1239,15 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       return ids.length ? `${I(4)}<annotation xml:id="cur${c.clausula_id + 1}" type="cursus" ana="#${nw.label}"${nw.cadence && nw.cadence !== nw.label && nw.cadence !== "none" ? ` subtype="${xml(nw.cadence)}"` : ""} target="${ids.join(" ")}" resp="#rules"/>` : ""; }).filter(Boolean);
     const conf = []; FL.forEach(([li, wi], g) => { const w = D.lines[li].words[wi]; if (inl(g) && w.p_error >= 0.2 && !state.edits[keyOf(li, wi)])
       conf.push(`${I(4)}<annotation xml:id="cf${wid(g).slice(1)}" type="word-confidence" target="#${wid(g)}" resp="#model" cert="${(1 - w.p_error).toFixed(2)}"/>`); });
-    const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li)).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="${xml(D.lines[li].zone_subtype || "addition-candidate")}" target="#${lid(L.beside(li))}" facs="${zone(li)}"${D.lines[li].zone_subtype === "address" ? ` hand="#h2"` : D.lines[li].zone_subtype === "later-numbering" ? ` hand="#h3"` : ""} resp="#rules">` + (D.lines[li].zone_subtype === "later-numbering" ? `<gap reason="numeral"/>` : D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ")) + `</annotation>`);
-    const sig = []; FL.forEach(([li, wi], g) => { const t = shownText(li, wi); if (inl(g) && /^\p{Lu}\.,?$/u.test(t) && !state.ne.some(n => spanGis(n).includes(g))) sig.push(`${I(4)}<annotation xml:id="sg${wid(g).slice(1)}" type="siglum" target="#${wid(g)}" resp="#rules">${xml(t)}</annotation>`); });
+    const inGroup = (li) => (D.address_groups || []).some(x => x.entry_line && x.add_lines.length && x.margin_lines.includes(LNUM[li]));
+    const nearestMain = (z) => L.mainL.reduce((b, m) => Math.abs(yc0(D.lines[m]) - yc0(z)) < Math.abs(yc0(D.lines[b]) - yc0(z)) ? m : b, L.mainL[0]), yc0 = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0;
+    const nums = D.lines.map((z, li) => numeralLine(z) ? `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(z))}" facs="${zone(li)}" hand="#h3" resp="#rules"><gap reason="numeral unread"/></annotation>` : "").filter(Boolean);
+    const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li) && !inGroup(li)).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="${xml(D.lines[li].zone_subtype || "addition-candidate")}" target="#${lid(L.beside(li))}" facs="${zone(li)}"${D.lines[li].zone_subtype === "address" ? ` hand="#h2"` : D.lines[li].zone_subtype === "later-numbering" ? ` hand="#h3"` : ""} resp="#rules">` + (D.lines[li].zone_subtype === "later-numbering" ? `<gap reason="numeral"/>` : D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ")) + `</annotation>`);
+    const sig = []; FL.forEach(([li, wi], g) => { const t = shownText(li, wi); if (inl(g) && /^\p{Lu}\.,?$/u.test(t) && !state.ne.some(n => spanGis(n).includes(g))) sig.push(`${I(4)}<annotation xml:id="sg${wid(g).slice(1)}" type="siglum" target="#${wid(g)}" resp="#rules">${xml(t)}${(D.lines[li].words[wi].sigla_candidates || []).map(c => `<note type="expansion-candidate" resp="#model">${xml(c.text)}</note>`).join("")}</annotation>`); });
+    const mz = (id, m) => m ? `${I(4)}<annotation xml:id="ink-${id}" type="ink" target="#${id}" resp="#rules"><measure type="darkness" quantity="${m.darkness}" unit="grey-level"/><measure type="stroke-width" quantity="${m.stroke_width}" unit="px"/></annotation>` : "";
+    const ink = D.lines.map(l => !l.ink ? "" : l.split ? mz(xml(l.line_id), l.ink.main) + mz(xml(l.line_id) + "-add", l.ink.add) : l.zone === "margin-left" ? mz(xml(l.line_id), l.ink.all) : "").filter(Boolean);
     const list = (type, resp, items) => items.length ? `${I(3)}<listAnnotation type="${type}">${items.join("")}${I(3)}</listAnnotation>` : "";
+    const folioMark = D.lines.map((l, li) => l.zone === "folio-mark" ? `${I(4)}<fw type="folio-mark" place="top-centre" facs="${zone(li)}" resp="#rules"/>` : "").join("");
     const dipl = L.mainL.some(li => (state.dipl[li] ? state.dipl[li].text : D.lines[li].diplomatic_text)) ?
       `${I(3)}<div type="transcription" subtype="diplomatic">${I(4)}<ab>` + D.lines.map((l, li) => `${I(5)}<lb n="${lnum[li]}" facs="${zone(li)}"/>${xml(state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || ""))}`).join("") + `${I(4)}</ab>${I(3)}</div>` : "";
     const pts = (poly) => (poly || []).map(p => Math.round(p[0] * W) + "," + Math.round(p[1] * H)).join(" ");
@@ -1199,7 +1260,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   <teiHeader>
     <fileDesc>
       <titleStmt>
-        <title>${xml(S.shelfmark)}, fol. ${xml(S.folio)} (${xml(S.pontificate)}): review export</title>
+        <title>${xml(S.shelfmark)}, fol. ${xml(S.folio)} · ${xml(S.pontificate)}: review export</title>
         <respStmt xml:id="editor"><resp>review and correction</resp><name>@${xml(CFG.login)}</name></respStmt>
         <respStmt xml:id="model"><resp>automatic transcription, word confidence and name suggestions</resp><name>${xml(M.name)}, ${xml(M.version)}</name></respStmt>
         <respStmt xml:id="formulae"><resp>formula detection: Herde, Audientia litterarum contradictarum (FLAME containment and exact fragments) and recurrence in the Honorius III register</resp><name>PAPREG workbench</name></respStmt>
@@ -1207,7 +1268,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       </titleStmt>
       <publicationStmt>
         <publisher>PAPREG</publisher>
-        <availability status="restricted"><p>Internal working file. The register images are not distributed; this file may not be redistributed.</p></availability>
+        <availability status="restricted"><p>Used under the holding archive's terms, not distributed.</p></availability>
         <date when="${now}">${now.slice(0, 10)}</date>
       </publicationStmt>
       <sourceDesc>
@@ -1215,9 +1276,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           <msIdentifier><idno>${xml(idno)}</idno></msIdentifier>
           <msContents><msItem><locus>fol. ${xml(S.folio)}</locus></msItem></msContents>
           <physDesc><handDesc>
-            <handNote xml:id="h1" scope="major">main hand of the page${D.hand ? ` (${xml(D.hand)})` : ""}</handNote>
-            <handNote xml:id="h2" scope="minor">hand of the marginal addresses and of the line-end additions</handNote>
-            <handNote xml:id="h3" scope="minor">later hand (later numbering)</handNote>${hands.map(h => `
+            <handNote xml:id="h1" scope="major" medium="dark brown ink">registrator, main text${D.hand ? ` (${xml(D.hand)})` : ""}</handNote>
+            <handNote xml:id="h2" scope="minor" medium="lighter ink, finer pen">addresses supplied at line ends and repeated in the left margin; same registrator later or another hand: to be confirmed by the editor</handNote>
+            <handNote xml:id="h3" scope="minor" medium="dark ink">later hand: letter numbers in the left margin</handNote>${hands.map(h => `
             <handNote xml:id="${hid(h)}" scope="minor">${xml(h)} (named by the editor in the apparatus)</handNote>`).join("")}
           </handDesc></physDesc>
         </msDesc>
@@ -1235,11 +1296,14 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           <p>Standoff annotations (back to the text through <att>target</att>) hold what is not yet confirmed: the cursus class of each clause end (ana, class of the pilot-1 rule classifier on the text as it now stands), the model's word confidence (<att>cert</att> = calibrated probability that the word is read correctly, given for words at 0.80 or below), marginal text that may be an addition (the editor can confirm it as an add in the text after the word it follows, or as a marginal note), and siglum candidates. An editor's correction of a word is marked resp="#editor" on the w; the machine reading is kept in the audit record.</p>
         </interpretation>
       </editorialDecl>
-      <classDecl><taxonomy xml:id="cursus"><category xml:id="cursus-class"><catDesc>cursus class of a clause end</catDesc>${cursusCats}
+      <classDecl><taxonomy xml:id="entity-classes">${NE_KEYS.map((t, i) => `${I(5)}<category xml:id="N${i + 1}"><catDesc>${NE_TYPES[t][2]}: ${NE_TYPES[t][1]}${t === "actor" ? ' type="actor" role="…"' : t === "obj" ? ' type="object"' : ""} (model labels: ${NE_FROM[t]})</catDesc></category>`).join("")}
+      </taxonomy><taxonomy xml:id="actor-roles">${Object.entries(ROLES).map(([k, v]) => `${I(5)}<category xml:id="R-${k}"><catDesc>${v}</catDesc></category>`).join("")}
+      </taxonomy><taxonomy xml:id="cursus"><category xml:id="cursus-class"><catDesc>cursus class of a clause end</catDesc>${cursusCats}
       </category></taxonomy></classDecl>
     </encodingDesc>
     <revisionDesc>
-      <change when="${now}" who="#model">machine reading (${xml(M.name)}) of ${S.folio}</change>
+      <change when="${now}" who="#model">machine reading (${xml(M.name)}) of ${S.folio}</change>${D.zone_split ? `
+      <change when="${now}" who="#rules">zone classes: facing page (centre beyond the right edge of the text block), left margin (address / later numbering); line-end additions split off where the ink changes (tail / rest ink ratio at most ${D.zone_split.theta_ink_ratio}${D.zone_split.forced_lines.length ? `; named by the editor: line ${D.zone_split.forced_lines.join(", ")}` : ""})</change>` : ""}
       <change when="${now}" who="#editor">${state.dsSeg ? "structure edited; " : ""}${Object.keys(state.edits).length} edition and ${Object.keys(state.dipl).length} diplomatic correction(s), ${state.ne.length} entities, ${app.length} apparatus note(s), ${Object.keys(state.marg).length} marginal line(s) decided</change>
     </revisionDesc>
   </teiHeader>
@@ -1248,12 +1312,12 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       <graphic url="${xml(S.image_dir)}/${xml(S.image_file)}" width="${W}px" height="${H}px"/>${zones}
     </surface>
   </facsimile>
-  <standOff>${list("cursus", "rules", cur)}${list("word-confidence", "model", conf)}${list("marginal-text", "rules", marg)}${list("siglum", "rules", sig)}
+  <standOff>${list("cursus", "rules", cur)}${list("word-confidence", "model", conf)}${list("marginal-text", "rules", marg.concat(nums))}${list("siglum", "rules", sig)}${list("ink", "rules", ink)}
   </standOff>
   <text>
     <body>${dipl}
       <div type="edition">
-        <div type="text" subtype="main">${ed}
+        <div type="text" subtype="main">${folioMark}${ed}
         </div>${notes ? `
         <div type="marginalia">${notes}
         </div>` : ""}
