@@ -1936,7 +1936,7 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
   $("mCopy").onclick = async () => { try { await navigator.clipboard.writeText($("mBody").textContent); toast("copied"); } catch (e) { toast("copy not permitted"); } };
   $("mDown").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([$("mBody").textContent], { type: mode === "tei" ? "application/xml" : "application/json" })); a.download = `review_${S.volume}_${S.folio}_${CFG.login}_${mode}.${mode === "tei" ? "xml" : "json"}`; a.click(); };
 
-  // ------------------------------------------------------------ image and magnifier
+  // ------------------------------------------------------------ the page image
   const stage = $("stage"), img = $("pageImg");
   // ------------------------------------------------------------ the page image: one source and one base URL for the page panel, the line strips and the word crop.
   // A failure is shown, never replaced silently. The public build reads page.synthetic.png only; the internal build tries the real image (page.jpg, git-ignored) and, as a declared fallback, the synthetic page.
