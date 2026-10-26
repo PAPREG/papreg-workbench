@@ -21,8 +21,9 @@ try {
     await ev(`localStorage.setItem("wb:tourSeen","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove())`);
     const st0 = await ev(`document.getElementById("modeStat").textContent`), sel = await ev(`document.getElementById("modeSel").value`);
     const n = +(st0.match(/(\d+) stops/) || st0.match(/(\d+) suggestions/) || [0, 0])[1]; counts[m] = st0;
-    check(sel === m && /^ner:|stops/.test(st0), `${m}: opens through ?mode= (${st0})`);
-    if (m === "edition") { check(n === 0, "edition: no witness loaded, no stop"); continue; }
+    check(sel === m && /^ner:|stops|no witness for this page|0 on this page/.test(st0), `${m}: opens through ?mode= (${st0})`);
+    if (m === "edition") { check(st0 === "edition: no witness for this page", "edition: no witness file, so no stop"); continue; }
+    if (m === "corrections") { check(st0 === "corrections: 0 on this page", "corrections: scribal corrections only; none on this page"); continue; }
     await key("Tab"); await sleep(400);
     const cur = await ev(`document.getElementById("modeCur").textContent`); check(cur.length > 0, `${m}: Tab reaches a stop (${cur.slice(0, 60)})`);
     const before = await ev(`document.getElementById("modeStat").textContent`);
@@ -32,6 +33,15 @@ try {
     const saved = await ev(`JSON.stringify(window.__wb.state.modes[${JSON.stringify(m)}] ? Object.keys(window.__wb.state.modes[${JSON.stringify(m)}].done).length : 0)`);
     check(+saved >= 1 || m === "triage" || m === "ner", `${m}: progress record kept (${saved})`);
   }
+  // public-domain witnesses present (synthetic fixture, never real data): the band shows the regest, the edition mode has a stop, the TEI carries note, annotation and listBibl
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&mode=edition&sources=tests/fixtures/` }); await sleep(3500);
+  await ev(`localStorage.setItem("wb:tourSeen","1")`);
+  const e1 = await ev(`document.getElementById("modeStat").textContent`); check(/1 stops/.test(e1), `edition with a witness file: one stop (${e1})`);
+  const band = await ev(`[...document.querySelectorAll(".band")][1].innerText`); check(/Pressutti TEST-1/.test(band) && /Potthast TEST-2/.test(band), "the band of the entry shows the regests of the files");
+  const tx = await ev(`window.__wb.tei()`); check(/<note type="regest" source="#Pressutti"/.test(tx) && /type="witness"[^>]*source="#Horoy"/.test(tx) && /<bibl xml:id="Pressutti">/.test(tx) && /<bibl xml:id="Horoy">/.test(tx), "TEI: regest notes, witness annotations, listBibl");
+  const rl = await ev(`window.TEI_CHECKS.run(window.__wb.tei(), document.body.innerText).filter(r => !r.ok).map(r => r.id).join(",")`); check(rl === "", `rules met with witnesses loaded (${rl})`);
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}` }); await sleep(3500);
+  const dv = await ev(`[document.getElementById("lv1").value, document.getElementById("lv2").value].join("/") + "|" + document.querySelectorAll(".line .dipl").length + "|" + document.getElementById("lv1").innerHTML.includes("simulated")`); check(dv.startsWith("none/none|0|true"), `public build without images: line view none, simulated selectable (${dv})`);
   console.log(JSON.stringify(counts, null, 1));
 } catch (e) { console.log("FAIL exception", e.message); ok = false; }
 finally { try { ws && ws.close(); } catch (e) {} chrome.kill(); }

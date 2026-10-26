@@ -193,7 +193,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 .band{display:block;font:12px var(--sans);color:var(--mute);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:rgba(120,110,90,.06);padding:4px 8px;margin:2px 0 6px;line-height:1.7}
 .band.gap{margin-top:calc(34px * var(--fs))} .band .rc{color:var(--ink);font-weight:600} .band .dim{color:var(--mute);font-weight:400} .band .warn{color:#a8541a} .band .warn i{color:var(--ink)}
 .band .fold{padding:0 5px;margin-right:6px;cursor:pointer} .band .ty{text-transform:lowercase} .band .st{font-weight:600} .band .bgut{float:right;font-size:11px}
-.band.cur{outline:2px solid #2f5d8a} .w.ecol{display:none} .band button.t{font:11px var(--sans);padding:0 5px}
+.band .rg{color:var(--ink)} .band.cur{outline:2px solid #2f5d8a} .w.ecol{display:none} .band button.t{font:11px var(--sans);padding:0 5px}
 .lvw .lv{font:calc(13px * var(--fs))/1.6 var(--mono);color:var(--mute);overflow-wrap:anywhere} .lvw .lv .tag,.lvw .dipl .tag{font:10px var(--sans);letter-spacing:.06em;text-transform:uppercase;margin-right:8px;color:var(--mute)}
 .chip.sim{border-color:#9a8f7a;color:#7b705c;font-weight:500} .lvw .dipl{font-family:"Junicode",var(--mono)} .lvw .dim{color:var(--mute);font-style:italic}
 .w.modecur{outline:2px solid #2f5d8a;outline-offset:1px;border-radius:3px} .line.modecur{background:rgba(47,93,138,.08)} #modeWrap b{font-weight:600;color:var(--ink)} #modeAsk input{font:12px var(--sans)}
@@ -825,6 +825,16 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       (F.herde.some(x => x.branch === "a" || x.branch === "b") ? " · calibrated match" : " · exact fragment of ≥ 4 words") : "") +
     (F.register_letters ? ` · recurs in ≥ ${F.register_letters} of ${(D.formula_source && D.formula_source.register.letters) || "?"} other register letters` : "");
   // a marginal line is undecided (machine detection), an addition that belongs to the text at a place the editor names, or a marginal note
+  // ------------------------------------------------------------ public-domain witnesses (Pressutti, Potthast, Horoy): sample/<folio>/regests.json and witness.json when they exist.
+  // The expert transcription of the test set is never loaded here. regests: [{entry, source, n, text, date}]; witness: [{line, source, text, align: "aligned" | "entry-level"}]
+  const SRCBASE = new URLSearchParams(location.search).get("sources") || "sample/";
+  const loadJSON = (name) => { try { const x = new XMLHttpRequest(); x.open("GET", `${SRCBASE}${S.folio}/${name}`, false); x.send(); if (x.status === 200) { const j = JSON.parse(x.responseText); return Array.isArray(j) ? j : (j.entries || j.lines || null); } } catch (e) {} return null; };
+  const REG = {}, WIT = {}, SRC_USED = new Set();
+  (loadJSON("regests.json") || []).forEach(r => { if (r && r.entry != null && r.source && r.n != null && r.text) { (REG[String(r.entry)] = REG[String(r.entry)] || []).push(r); SRC_USED.add(r.source); } });
+  (loadJSON("witness.json") || []).forEach(w => { if (w && w.line != null && w.source && w.text) { WIT[String(w.line)] = w; SRC_USED.add(w.source); } });
+  let effViews = () => ["dipl"];                                    // set with the line-view choice below
+  const HAS_WIT = Object.keys(WIT).length > 0, HAS_REG = Object.keys(REG).length > 0;
+  const BIBL = { Pressutti: "Pressutti, Pietro, Regesta Honorii papae III, 2 vols., Rome 1888–1895", Potthast: "Potthast, August, Regesta pontificum Romanorum inde ab a. 1198 ad a. 1304, 2 vols., Berlin 1874–1875", Horoy: "Horoy, Charles Auguste, Honorii III Romani pontificis opera omnia, 5 vols., Paris 1879–1882" };
   // ------------------------------------------------------------ simulated diplomatic line: rule re-abbreviation of the expanded reading (NOT a reading)
   // Whole words of the register's conventions (nomina sacra and the stock words of the chancery) and endings / prefixes; the table is the whole of the simulation.
   const MAC = "̄";                                               // combining macron (the generic abbreviation stroke)
@@ -896,6 +906,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     return { gr, lineEnd, head, type: state.etype[E.n] || rule, typeRule: rule, date, from: lab.length ? Math.min(...lab) : null, to: lab.length ? Math.max(...lab) : null, li0, nums, margin: gr ? gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].expanded_text).join(" ") : "" };
   }
   const L0 = () => pageLayout(structure());
+  const cutHead = (I) => I.head && rd(I.head).replace(/[^a-z]/g, "") !== rd(I.margin).replace(/[^a-z]/g, "");
   function bandEl(E) {
     const I = entryInfo(E), b = document.createElement("div"), col = !!state.collapsed[E.n], chosen = state.recip[E.n];
     b.className = "band" + (E.n > 1 ? " gap" : "") + (col ? " col" : ""); b.dataset.e = E.n; b.dataset.g = E.g0;
@@ -905,12 +916,12 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     else if (E.cont && !I.gr) rec = `<span class="rc dim">continues the entry of the previous folio</span>`;
     else if (chosen) rec = `<span class="rc">${esc(chosen.text)}</span> <span class="dim">(${chosen.src}, confirmed)</span>`;
     else if (!I.gr) rec = `<span class="rc dim">no address read</span>`;
-    else if (agree) rec = `<span class="rc">${esc(strip(I.head))}</span> <span class="dim">(line end = margin)</span>`;
-    else rec = `<span class="warn" title="the two witnesses of the recipient differ">line end: <i>${esc(strip(I.lineEnd))}</i> <button class="t" data-use="line">use</button> · margin: <i>${esc(I.head ? strip(I.head) : "(no confident reading)")}</i> <button class="t" data-use="margin">use</button> ⚠ disagree</span>`;
+    else if (agree) rec = `<span class="rc">${esc(strip(I.head))}${cutHead(I) ? "…" : ""}</span> <span class="dim">(line end = margin)</span>`;
+    else rec = `<span class="warn" title="the two witnesses of the recipient differ">line end: <i>${esc(strip(I.lineEnd))}</i> <button class="t" data-use="line">use</button> · margin: <i title="resp #rules">${esc(I.head ? strip(I.head) + (cutHead(I) ? "…" : "") : "(no confident reading)")}</i> <button class="t" data-use="margin">use</button> ⚠ disagree</span>`;
     const gut = (I.gr ? `<span class="chip adr" title="address in the left margin (hand h2), belongs to this entry">margin · address</span> ${esc(strip(I.head))}` : "") + I.nums.map(() => ` <span class="chip num" title="later hand (h3), dark ink; the numeral is left to the editor">numeral · later hand</span>`).join("");
     b.innerHTML = `<button class="t fold" title="collapse / expand this entry">${col ? "▸" : "▾"}</button><span class="eno">¶ ${E.n}</span> · ${rec} · <span class="ty" title="${I.typeRule ? "rule: " + I.typeRule : ""}">${esc(I.type || "type ?")}</span>` +
       `${I.date ? ` · <span class="dt" title="computed from the datatio${I.date.iso ? ": " + I.date.iso : ""}">${esc(I.date.text)}${I.date.human ? ` (${I.date.human})` : ""}</span>` : ""}` +
-      `${I.from ? ` · l${I.from}${I.to > I.from ? "–" + I.to : ""}` : ""} · <span class="dim" title="Pressutti / Potthast regests: not loaded for this page">regest: not loaded</span> · <span class="st">${state.modes.boundaries && state.modes.boundaries.done["b:" + E.g0] ? "confirmed" : "proposed"}</span>` + (gut ? `<span class="bgut">${gut}</span>` : "");
+      `${I.from ? ` · l${I.from}${I.to > I.from ? "–" + I.to : ""}` : ""}${(REG[String(E.n)] || []).map(r => ` · <span class="rg" title="${esc(r.text)}">${esc(r.source)} ${esc(r.n)}${r.date ? " · " + esc(r.date) : ""}</span>`).join("")} · <span class="st">${state.modes.boundaries && state.modes.boundaries.done["b:" + E.g0] ? "confirmed" : "proposed"}</span>` + (gut ? `<span class="bgut">${gut}</span>` : "");
     b.querySelector(".fold").onclick = (e) => { e.stopPropagation(); state.collapsed[E.n] = !state.collapsed[E.n]; render(); };
     b.querySelectorAll("[data-use]").forEach(x => x.onclick = (e) => { e.stopPropagation(); const src = x.dataset.use; mutate(() => state.recip[E.n] = { src: src === "line" ? "line end" : "margin", text: strip(src === "line" ? I.lineEnd : I.head) }); render(); });
     return b;
@@ -962,7 +973,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       const body = document.createElement("div");
       // line views (the slot of the diplomatic line): per editor, at most two
       const dp = document.createElement("div"); dp.className = "lvw";
-      state.views.forEach(v => { dp.appendChild(lineView(v, li)); });
+      effViews().forEach(v => { dp.appendChild(lineView(v, li)); });
       // edition layer
       const t = document.createElement("div"); t.className = "txt" + (state.heat ? " on" : "") + (state.struct ? " ds-on" : "");
       let host = t;
@@ -1200,11 +1211,11 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       el.title = "Click or press D to edit the diplomatic transcription of this line (the simulated line is only a starting point)";
       el.onclick = (e) => { e.stopPropagation(); editDipl(li); };
     } else if (v === "witness") {
-      const wt = D.witness && D.witness[l.line_id]; el.className = "lv witness";
-      el.innerHTML = wt ? `<span class="tag">witness · ${esc(wt.source)}</span>${esc(wt.text)}` : `<span class="tag">witness</span><span class="dim">no aligned witness line loaded for this page</span>`;
+      const wt = WIT[LNUM[li]]; el.className = "lv witness";
+      el.innerHTML = wt ? `<span class="tag">${esc(wt.source)}${wt.align === "entry-level" ? " · entry" : ""}</span>${esc(wt.text)}` : (HAS_WIT ? "" : `<span class="tag">witness</span><span class="dim">no witness for this page</span>`);
     } else if (v === "pressutti" || v === "potthast") {
-      el.className = "lv regest"; const R = (D.regests || {})[LNUM[li]]; const r = R && R[v];
-      el.innerHTML = r ? `<span class="tag">${v === "pressutti" ? "Pressutti" : "Potthast"} ${esc(r.n)}</span>${esc(r.text)}` : (l.words.length && D.address_groups ? "" : "");
+      el.className = "lv regest"; const E0 = L0().entList.find(E => FL[E.g0][0] === li), rs = E0 ? (REG[String(E0.n)] || []).filter(r => r.source.toLowerCase() === v) : [];
+      el.innerHTML = rs.map(r => `<span class="tag">${esc(r.source)} ${esc(r.n)}${r.date ? " · " + esc(r.date) : ""}</span>${esc(r.text)}`).join("<br>") + (!rs.length && li === L0().mainL[0] && !Object.values(REG).flat().some(r => r.source.toLowerCase() === v) ? `<span class="dim">no ${v} regest for this page</span>` : "");
     } else if (v === "image") {
       el.className = "lv strip"; const cv = document.createElement("canvas"), b = l.bbox;
       if (state.hasImage && b && img.naturalWidth) { const sw = b[2] * img.naturalWidth, sh = b[3] * img.naturalHeight; cv.width = Math.min(900, sw); cv.height = Math.max(8, cv.width * sh / sw); cv.getContext("2d").drawImage(img, b[0] * img.naturalWidth, b[1] * img.naturalHeight, sw, sh, 0, 0, cv.width, cv.height); cv.style.maxWidth = "100%"; el.appendChild(cv); }
@@ -1255,9 +1266,12 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 
   // ------------------------------------------------------------ line-view choice (per editor, stored in this browser and with the editor's login)
   const VIEW_OPTS = [["dipl", "diplomatic (simulated)"], ["witness", "legacy witness"], ["pressutti", "Pressutti regest"], ["potthast", "Potthast regest"], ["image", "image strip"], ["none", "none"]], VKEY = `paprg.views.${CFG.login}`;
-  try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v) && v.length) state.views = v.slice(0, 2); } catch (e) {}
-  const setViewSel = () => { ["lv1", "lv2"].forEach((id, i) => { const el = $(id); el.innerHTML = VIEW_OPTS.filter(o => i === 0 ? o[0] !== "none" || false : true).map(o => `<option value="${o[0]}" ${(state.views[i] || "none") === o[0] ? "selected" : ""}>${o[1]}</option>`).join(""); }); };
-  ["lv1", "lv2"].forEach((id, i) => $(id).onchange = (e) => { const v = state.views.slice(); v[i] = e.target.value; state.views = v.filter((x, k) => x !== "none" && (k < 2) && v.indexOf(x) === k); try { localStorage.setItem(VKEY, JSON.stringify(state.views)); } catch (x) {} setViewSel(); render(); });
+  // default: the public build shows the image strip when images are present, else none; the internal build the simulated diplomatic line. A choice of the editor stands.
+  let VIEWS_CHOSEN = null; try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v)) VIEWS_CHOSEN = v.slice(0, 2); } catch (e) {}
+  const PUBLIC = (CFG.build || "internal") === "public";
+  effViews = () => VIEWS_CHOSEN || (PUBLIC ? (state.hasImage ? ["image"] : []) : ["dipl"]);
+  const setViewSel = () => { const ev_ = effViews(); ["lv1", "lv2"].forEach((id, i) => { $(id).innerHTML = VIEW_OPTS.map(o => `<option value="${o[0]}" ${(ev_[i] || "none") === o[0] ? "selected" : ""}>${o[1]}</option>`).join(""); }); };
+  ["lv1", "lv2"].forEach((id, i) => $(id).onchange = (e) => { const v = effViews().slice(); v[i] = e.target.value; VIEWS_CHOSEN = v.filter((x, k) => x && x !== "none" && v.indexOf(x) === k).slice(0, 2); try { localStorage.setItem(VKEY, JSON.stringify(VIEWS_CHOSEN)); } catch (x) {} setViewSel(); render(); });
   setViewSel();
   // ------------------------------------------------------------ task modes: one Tab queue, counters, keys and progress record per operation
   const MODE_LIST = ["triage", "boundaries", "structure", "cursus", "corrections", "ner", "codicology", "legal", "arenga", "edition"];
@@ -1305,7 +1319,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       return out;
     }
     if (m === "cursus") { D.clausulae.forEach(c => { const g = GI[c.end.join(":")]; if (g === undefined) return; const nw = clausulaNow(c); out.push(wItem("c:" + c.clausula_id, g, `${nw.label}${nw.janson ? " · " + nw.janson : ""}`, { cl: c, cls: nw.label })); }); return out; }
-    if (m === "corrections") { D.lines.forEach((l, li) => l.words.forEach((w, wi) => { if (w.add && !(wi && l.words[wi - 1].add)) out.push(wItem(`a:add:${li}`, GI[keyOf(li, wi)], `add (line end, h2): ${l.words.slice(wi).map(x => x.text).join(" ")}`)); })); sortedApp().filter(a => /^(add\.|del\.|corr\. ex|in ras\.)/.test(a.type)).forEach(a => out.push(wItem("a:" + a.id, a.gi, `${a.type}: ${spanGis(a).map(g => shownText(...FL[g])).join(" ")}`, { app: a }))); return out; }
+    if (m === "corrections") { sortedApp().filter(a => /^(add\.|del\.|corr\. ex|in ras\.)/.test(a.type)).forEach(a => out.push(wItem("a:" + a.id, a.gi, `${a.type}: ${spanGis(a).map(g => shownText(...FL[g])).join(" ")}`, { app: a }))); return out; }
     if (m === "ner") { suggOpen().forEach(x => out.push(wItem("g:" + x.k, x.gi, `${NE_TYPES[x.type][2]}? ${FL.slice(x.gi, x.gi + x.span).map(([li, wi]) => shownText(li, wi)).join(" ")}`, { sugg: x }))); return out.concat(suspects()); }
     if (m === "codicology") {
       D.lines.forEach((l, li) => { if (hiddenLine(l)) return;
@@ -1330,16 +1344,20 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       SUGG.filter(x => x.type === "cit").forEach(x => out.push(wItem("r:c" + x.k, x.gi, "citation suggestion")));
       return out;
     }
-    if (m === "edition") { if (D.witness) D.lines.forEach((l, li) => { const wt = D.witness[l.line_id]; if (wt && rd(wt.text) !== rd(l.words.map(w => w.text).join(" "))) out.push({ id: "e:" + li, li, label: `line ${LNUM[li]}: witness differs` }); }); return out; }
+    if (m === "edition") { if (HAS_WIT) D.lines.forEach((l, li) => { const wt = WIT[LNUM[li]]; if (wt && wt.align === "aligned" && l.words.length && rd(wt.text) !== rd(l.words.map(w => w.text).join(" "))) out.push({ id: "e:" + li, li, label: `line ${LNUM[li]}: ${wt.source} differs from the reading` }); }); return out; }
     return out;
   }
   const modeDone = (m, it) => isDone(m, it.id) || (m === "triage" && state.edits[keyOf(it.li, it.wi)]) || (m === "ner" && !it.suspect && it.sugg && !suggOpen().some(x => x.k === it.sugg.k));
   function modeStatus() {
     const m = state.mode, its = modeItems(m), left = its.filter(it => !modeDone(m, it));
+    if (m === "edition" && !HAS_WIT) return "edition: no witness for this page"; if (m === "corrections" && !its.length) return "corrections: 0 on this page";
     if (m === "ner") return `ner: ${left.filter(i => !i.suspect).length} suggestions · ${left.filter(i => i.suspect).length} suspect · ${state.ne.length} confirmed`;
     return `${m}: ${its.length} stops · ${its.length - left.length} done · ${left.length} left`;
   }
-  function updateModeBar() { $("modeStat").textContent = modeStatus(); $("keysLine").innerHTML = `<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> next / previous stop · ${MODE_INFO[state.mode][2]} · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
+  function storeCounts() { try { const o = {}; MODE_LIST.forEach(m => { const its = modeItems(m); o[m] = [its.length, its.filter(it => !modeDone(m, it)).length]; });
+    localStorage.setItem(`wb:modecounts:${G_PAGE}`, JSON.stringify({ at: new Date().toISOString(), modes: o })); } catch (e) {} }
+  const G_PAGE = `${CFG.org ? "" : ""}${S.volume ? "RV" + S.volume + "/" + S.folio : S.folio}`;
+  function updateModeBar() { $("modeStat").textContent = modeStatus(); clearTimeout(updateModeBar.t); updateModeBar.t = setTimeout(storeCounts, 600); $("keysLine").innerHTML = `<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> next / previous stop · ${MODE_INFO[state.mode][2]} · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
     const cur = modeItems(state.mode).find(i => i.id === state.modeCur); $("modeCur").textContent = cur ? "· " + cur.label + (cur.why ? " (" + cur.why + ")" : "") : ""; }
   function focusItem(it) {
     state.modeCur = it.id;
@@ -1529,8 +1547,10 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const inscriptio = (E, li) => { const gr = E.iem ? null : addrGroup(E, li); if (!gr) return "";
       const addW = [], zids = []; gr.add_lines.forEach(lab => { const ai = LNUM.indexOf(lab); zids.push("#" + xml(D.lines[ai].line_id) + "-add"); D.lines[ai].words.forEach((w, wi) => w.add && addW.push(GI[keyOf(ai, wi)])); });
       const txt = gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].words.map((w, wi) => xml(shownText(LNUM.indexOf(m), wi))).join(" ")).join(" "), mz = gr.margin_lines.map(m => zone(LNUM.indexOf(m)));
+      const inf_ = entryInfo(E), head_ = inf_.head, cut_ = head_ && rd(head_).replace(/[^a-z]/g, "") !== rd(inf_.margin).replace(/[^a-z]/g, ""), rch = state.recip[E.n];
+      const recNote = (rch ? `${I(7)}<note type="recipient" resp="#editor" source="${rch.src === "margin" ? "#margin" : "#line-end"}">${xml(rch.text)}</note>` : "") + (head_ ? `${I(7)}<note type="recipient" subtype="margin-head" resp="#rules">${xml(strip(head_))}${cut_ ? "…" : ""}</note>` : "");
       return `${I(5)}<div type="inscriptio" resp="#rules">${I(6)}<ab><handShift new="#h2"/><add place="line-end" hand="#h2" facs="${zids.join(" ")}" resp="#rules" cert="medium">${addW.map(wordOut).join(" ")}</add><handShift new="#h1"/>` +
-        `${I(7)}<note type="marginal" subtype="address" place="margin-left" hand="#h2" facs="${mz.join(" ")}" corresp="#e${E.n}" resp="${gr.margin_lines.some(m => D.lines[LNUM.indexOf(m)].zone_how === "editor") ? "#editor" : "#rules"}">${txt}${gr.margin_lines.map(m => mcNote(D.lines[LNUM.indexOf(m)])).join("")}</note></ab>${I(5)}</div>`; };
+        `${I(7)}<note type="marginal" subtype="address" place="margin-left" hand="#h2" facs="${mz.join(" ")}" corresp="#e${E.n}" resp="${gr.margin_lines.some(m => D.lines[LNUM.indexOf(m)].zone_how === "editor") ? "#editor" : "#rules"}">${txt}${gr.margin_lines.map(m => mcNote(D.lines[LNUM.indexOf(m)])).join("")}</note>${recNote}</ab>${I(5)}</div>`; };
     const IR = D.initial_restored;
     // edition: entry > structural part > ab, lines as lb milestones
     let ed = "", entryOpen = false, segKind = null, segI = -1, prevLi = -1, nEntry = 0;
@@ -1544,7 +1564,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
         segI++; closeSeg(); const E = L.entryAt[g], pt = DS.seg[segI][1];
         if (E) { closeEntry(); nEntry++;
           const pF = E.cont, pI = nEntry === entryTotal && lastOpen && !E.iem, pa = pF && pI ? "M" : pF ? "F" : pI ? "I" : "";
-          ed += `${I(4)}<div type="entry"${E.iem ? ` subtype="in-eundem-modum"` : ""} n="${E.n}" xml:id="e${E.n}"${pa ? ` part="${pa}"` : ""} resp="${respSeg(segI)}">` + (E.cont ? `${I(5)}<note type="editorial">the page begins inside an entry of the previous folio</note>` : "") + (E.iem ? segNote(segI) : "") + (state.etype[E.n] ? `${I(5)}<note type="doctype" resp="#editor">${xml(state.etype[E.n])}</note>` : "") + (D.regests && D.regests[LNUM[li]] ? Object.entries(D.regests[LNUM[li]]).map(([k, r]) => `${I(5)}<note type="regest" source="#${k === "pressutti" ? "Pressutti" : "Potthast"}" n="${xml(r.n)}">${xml(r.text)}</note>`).join("") : "") + inscriptio(E, li); entryOpen = true; }
+          ed += `${I(4)}<div type="entry"${E.iem ? ` subtype="in-eundem-modum"` : ""} n="${E.n}" xml:id="e${E.n}"${pa ? ` part="${pa}"` : ""} resp="${respSeg(segI)}">` + (E.cont ? `${I(5)}<note type="editorial">the page begins inside an entry of the previous folio</note>` : "") + (E.iem ? segNote(segI) : "") + (state.etype[E.n] ? `${I(5)}<note type="doctype" resp="#editor">${xml(state.etype[E.n])}</note>` : "") + (REG[String(E.n)] || []).map(r => `${I(5)}<note type="regest" source="#${xml(r.source)}" n="${xml(r.n)}"${r.date ? ` when="${xml(r.date)}"` : ""}>${xml(r.text)}</note>`).join("") + inscriptio(E, li); entryOpen = true; }
         if (E && E.iem) { segKind = "iem"; ed += `${I(5)}<ab>`; }
         else { segKind = "part"; ed += `${I(5)}<div type="${pt === "nota" ? "registration-note" : pt}" resp="${respSeg(segI)}">${segNote(segI)}${I(6)}<ab>`; }
       }
@@ -1576,7 +1596,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const modeNotes = []; Object.keys(state.modes).forEach(mn => Object.entries(mdone(mn)).forEach(([id, r]) => { if (!r.val && !["siglum", "no entity"].some(x => (r.act || "").includes(x)) || mn === "boundaries" || mn === "structure") return;
       const a = r.a || [], tg = a[1] !== undefined && a[1] !== null && FL.length && GI[keyOf(a[0], a[1])] !== undefined && inl(GI[keyOf(a[0], a[1])]) ? "#" + wid(GI[keyOf(a[0], a[1])]) : (a[0] !== undefined && a[0] !== null && lnum[a[0]] ? "#" + lid(a[0]) : "");
       if (tg) modeNotes.push(`${I(4)}<annotation xml:id="mn-${mn}-${modeNotes.length + 1}" type="mode-note" subtype="${mn}" target="${tg}" at="${xml(r.at || "")}" resp="#editor">${xml(r.act + (r.val ? ": " + r.val : ""))}</annotation>`.replace(' at="', ' when="')); }));
-    const wit = D.witness ? D.lines.map((l, li) => D.witness[l.line_id] && lnum[li] && !L.isM(li) ? `${I(4)}<annotation xml:id="wt${li + 1}" type="witness" target="#${lid(li)}" source="#${xml(D.witness[l.line_id].source)}" resp="#rules">${xml(D.witness[l.line_id].text)}</annotation>` : "").filter(Boolean) : [];
+    const wit = D.lines.map((l, li) => WIT[lnum[li]] && !L.isM(li) ? `${I(4)}<annotation xml:id="wt${li + 1}" type="witness" subtype="${xml(WIT[lnum[li]].align || "aligned")}" target="#${lid(li)}" source="#${xml(WIT[lnum[li]].source)}" resp="#rules">${xml(WIT[lnum[li]].text)}</annotation>` : "").filter(Boolean);
     const list = (type, resp, items) => items.length ? `${I(3)}<listAnnotation type="${type}">${items.join("")}${I(3)}</listAnnotation>` : "";
     const folioMark = D.lines.map((l, li) => l.zone === "folio-mark" ? `${I(4)}<fw type="folio-mark" place="top-centre" facs="${zone(li)}" resp="#rules"/>` : "").join("");
     const nMargDec = D.lines.filter(z => z.zone_how === "editor").length;
@@ -1609,7 +1629,10 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       <sourceDesc>
         <msDesc>
           <msIdentifier><idno>${xml(idno)}</idno></msIdentifier>
-          <msContents><msItem><locus>fol. ${xml(S.folio)}</locus></msItem></msContents>
+          <msContents><msItem><locus>fol. ${xml(S.folio)}</locus></msItem></msContents>${SRC_USED.size ? `
+          <additional><listBibl>${[...SRC_USED].map(k => `
+            <bibl xml:id="${xml(k)}">${xml(BIBL[k] || k)}</bibl>`).join("")}
+          </listBibl></additional>` : ""}
           <physDesc><handDesc>
             <handNote xml:id="h1" scope="major" medium="dark brown ink">registrator, main text${D.hand ? ` (${xml(D.hand)})` : ""}</handNote>
             <handNote xml:id="h2" scope="minor" medium="lighter ink, finer pen" resp="#editor">addresses supplied at line ends and repeated in the left margin; same registrator later or another hand: provisional, to be confirmed by the editor</handNote>
@@ -1713,7 +1736,7 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
 
   // ------------------------------------------------------------ image and magnifier
   const stage = $("stage"), img = $("pageImg"), lens = $("lens"); let zoom = 3;
-  function setImage(src) { img.onload = () => { state.hasImage = true; img.hidden = false; drawPage(); drawPip(); }; img.src = src; }
+  function setImage(src) { img.onload = () => { state.hasImage = true; img.hidden = false; setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
   window.__wbSetImage = setImage;
   WB.image(D).then(u => u && setImage(u));                        // local folder or URL template (never GitHub)
   function lensAt(e) {

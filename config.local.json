@@ -9,5 +9,9 @@
   "tasks": "tasks/review_queue.json",
   "syncSeconds": 60,
   "claimBatch": 5,
-  "images": { "mode": "local-folder", "pattern": "{file}" }
+  "images": {
+    "mode": "local-folder",
+    "pattern": "{file}"
+  },
+  "build": "internal"
 }

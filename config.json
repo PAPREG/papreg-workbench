@@ -17,5 +17,6 @@
     "note": "The editor chooses the folder that holds the RVAT<volume> image folders; images never leave the computer. Alternative: {\"mode\": \"url\", \"template\": \"http://localhost:8081/{dir}/{name}\"}"
   },
   "testPage": "RV9/154v",
-  "testData": "sample/"
+  "testData": "sample/",
+  "build": "public"
 }

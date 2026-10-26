@@ -278,13 +278,16 @@
     document.getElementById("wbTry").onclick = () => { const u = new URL(location.href); u.searchParams.set("test", "1"); u.searchParams.set("page", G.cfg.testPage || "RV9/154v"); location.href = u.pathname + u.search; };
   }
   const MODE_NAMES = ["triage", "boundaries", "structure", "cursus", "corrections", "ner", "codicology", "legal", "arenga", "edition"];   // task modes (index.html): ?mode= opens a page in one
+  // the stops left per mode are counted when a page is opened (the page data is read in the editor), so the counts are shown for pages opened in this browser
+  function modeLinks(pid) { let c = null; try { c = JSON.parse(localStorage.getItem(`wb:modecounts:${pid}`) || "null"); } catch (e) {}
+    return MODE_NAMES.map(m => `<a href="${pageUrl(pid)}&mode=${m}" title="${c ? `${c.modes[m][0]} stops, ${c.modes[m][1]} left (counted ${c.at.slice(0, 16).replace("T", " ")})` : "counted when the page is opened"}">${m}${c ? ` <b>${c.modes[m][1]}</b>` : ""}</a>`).join(" "); }
   function pageUrl(id) { const u = new URL(location.href); if (id) u.searchParams.set("page", id); else u.searchParams.delete("page"); return u.pathname + u.search; }
   async function taskView() {
     await loadTasks();
     const IDX = await data(G.cfg.pagesIndex).catch(() => ({ pages: [] }));
     const my = mine(), st = (t) => (G.mine.tasks.pages[t.task_id] || { data: { status: "assigned" } }).data.status;
     const row = (t) => `<tr><td><a href="${pageUrl(t.page_id)}">${esc(t.page_id)}</a></td><td>${esc(t.hand)}</td><td>${t.priority}</td><td>${(100 * t.est_cer).toFixed(1)}%</td>
-      <td>${Math.round(100 * t.coverage)}%</td><td>${esc(t.difficulty)}</td><td>${t.double_key ? "two editors" : ""}</td><td>${esc(st(t))}</td><td>${esc(claimants(t).filter(x => x !== G.login).join(", "))}</td><td class="wb-modes">${MODE_NAMES.map(m => `<a href="${pageUrl(t.page_id)}&mode=${m}">${m}</a>`).join(" ")}</td></tr>`;
+      <td>${Math.round(100 * t.coverage)}%</td><td>${esc(t.difficulty)}</td><td>${t.double_key ? "two editors" : ""}</td><td>${esc(st(t))}</td><td>${esc(claimants(t).filter(x => x !== G.login).join(", "))}</td><td class="wb-modes">${modeLinks(t.page_id)}</td></tr>`;
     document.body.innerHTML = `<div class="wb-tasks"><header><h1>PAPREG Editorial Workbench</h1><span>signed in as <b>@${esc(G.login)}</b>${G.readOnly ? " (read-only)" : ""}${G.cfg.mode === "test" ? " · test mode: changes stay in this browser" : (G.cfg.mode === "local" ? " · local mode" : "")}</span>
       <span class="sp"></span><button id="wbOut">${G.cfg.mode === "test" ? "leave the test" : "sign out"}</button></header>
       <h2>My tasks (${my.length})</h2>
@@ -317,7 +320,7 @@
     if (G.cfg.repo && G.cfg.mode === "github" && !LS.get(REPOKEY, "")) LS.set(REPOKEY, G.cfg.repo);
     if (!(await auth())) { loginView(); return null; }
     await loadMine();
-    window.WORKBENCH_CONFIG = { mode: OFFLINE() ? "local" : "live", login: G.login, syncSeconds: G.cfg.syncSeconds };
+    window.WORKBENCH_CONFIG = { mode: OFFLINE() ? "local" : "live", login: G.login, syncSeconds: G.cfg.syncSeconds, build: G.cfg.build || "internal" };
     if (!G.pageId) { await taskView(); return null; }
     const D = await data(`${G.cfg.pageDir}/${G.pageId}.json`);
     try { G.index = (await data(G.cfg.pagesIndex)).pages.map(p => p.page_id); } catch (e) { G.index = []; }

@@ -13,7 +13,7 @@
     ["classes", "the entity classes of classDecl are the hotkeys N1 to N9"],
     ["resp", "resp values are #rules, #model, #editor, #formulae or a declared respStmt"],
     ["simulated", "every simulated diplomatic line carries ana=#simulated, resp #rules and cert low"],
-    ["bandresp", "every line-end addition and marginal address, the sources of a band recipient, carries a resp"],
+    ["bandresp", "every line-end addition, marginal address and recipient note (the sources of a band recipient) carries a resp"],
     ["witness", "witness lines are standoff only: they never stand in the text"],
     ["archive", "the name of the holding archive occurs neither in the file nor in the interface"]
   ];
@@ -40,7 +40,7 @@
     add("resp", !badResp.length, badResp.slice(0, 2).join(" "));
     const sim = q("div").filter(e => e.getAttribute("subtype") === "diplomatic").flatMap(dv => [...dv.getElementsByTagNameNS(NS, "seg")]).filter(sg => sg.getAttribute("resp") !== "#editor" && !(sg.getAttribute("ana") === "#simulated" && sg.getAttribute("resp") === "#rules" && sg.getAttribute("cert") === "low")).length;
     add("simulated", sim === 0, String(sim));
-    const nr = q("add").filter(a => a.getAttribute("place") === "line-end" && !a.getAttribute("resp")).length + q("note").filter(n => n.getAttribute("subtype") === "address" && !n.getAttribute("resp")).length; add("bandresp", nr === 0, String(nr));
+    const nr = q("add").filter(a => a.getAttribute("place") === "line-end" && !a.getAttribute("resp")).length + q("note").filter(n => (n.getAttribute("subtype") === "address" || n.getAttribute("type") === "recipient") && !n.getAttribute("resp")).length; add("bandresp", nr === 0, String(nr));
     const wt = q("annotation").filter(a => a.getAttribute("type") === "witness"), wbad = wt.filter(a => a.parentNode.parentNode.localName !== "standOff").length + q("div").filter(e => e.getAttribute("type") === "text").flatMap(e => [...e.getElementsByTagNameNS(NS, "*")]).filter(e => e.getAttribute("type") === "witness").length; add("witness", wbad === 0, String(wbad));
     add("archive", !(/vatican/i.test(x) || /vatican/i.test(pageText || "")), "");
     return res;
