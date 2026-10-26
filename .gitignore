@@ -6,3 +6,4 @@
 /annotations/
 # ink masks derived from the register images: internal build only, until the PI clears them
 /sample/*/strips/
+/tests/artefacts/

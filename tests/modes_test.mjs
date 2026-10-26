@@ -51,7 +51,7 @@ try {
   check(pl.startsWith("|true|"), `a mode without a task is ignored: plain review, Tab = next flagged word (${pl})`);
   // the public-domain witnesses of the sample (sample/154v/regests.json, witness.json)
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition` }); await sleep(3500);
-  const real = await ev(`JSON.stringify({ stat: document.getElementById("modeStat").textContent, witnessLines: document.querySelectorAll(".pair .wit.siglum").length, diffTokens: document.querySelectorAll(".pair .wit.differs").length, plus: document.querySelectorAll(".pair.plus .chip.pl").length, ocr: document.querySelectorAll(".pair .wit.ocr").length,
+  const real = await ev(`JSON.stringify({ stat: document.getElementById("modeStat").textContent, witnessLines: document.querySelectorAll(".wsig .wit.siglum").length, diffTokens: document.querySelectorAll(".pair .wit.differs").length, plus: document.querySelectorAll(".pair.plus .chip.pl").length, ocr: document.querySelectorAll(".pair .wit.ocr").length,
     bands: [...document.querySelectorAll(".band")].map(b => (b.querySelector(".cov") ? b.querySelector(".cov").textContent : "-")) })`);
   console.log("sample witnesses:", real);
   const rr = JSON.parse(real); check(rr.witnessLines > 0 && /\d+ stops/.test(rr.stat), `the sample files load: ${rr.witnessLines} witness lines, ${rr.stat}`);
