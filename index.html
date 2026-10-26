@@ -257,7 +257,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
 .pip-ms .tk{opacity:.55;margin:0 .22em;filter:blur(.15px)} .pip-ms .tk.cur{opacity:1;filter:none;font-size:1.25em;padding:0 .12em;
   box-shadow:0 0 0 2px #b42318;border-radius:3px;background:rgba(255,255,255,.18)}
 .pip-ms .rule{position:absolute;left:0;right:0;height:1px;background:rgba(90,60,30,.16)}
-.pagesrc{margin:4px 0 0;font:11px var(--sans);color:var(--mute)} .pagesrc.bad,.imgerr{color:#c0392b;font-weight:600} .imgerr{font:600 12px var(--sans);padding:8px}
+.pagesrc{margin:4px 0 0;font:11px var(--sans);color:var(--mute)} .pagesrc.bad,.imgerr{color:#c0392b;font-weight:600} .imgerr{font:600 11.5px/1.35 var(--sans);padding:8px;white-space:normal;word-break:break-all;text-align:center}
 .stage{position:relative} .simb{position:absolute;left:6px;top:6px;z-index:5;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;background:rgba(40,30,22,.78);color:#f4f1ea;padding:2px 7px;border-radius:9px;pointer-events:none}
 .pip-ms .wm{position:absolute;right:8px;bottom:5px;font:600 9.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:rgba(70,45,20,.55)}
 .pip-ms .empty{font:13px var(--sans);color:#6b5236}
@@ -313,13 +313,13 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       <p class="note"><code id="pipUrl" style="font-size:10.5px;word-break:break-all"></code></p>
     </div>
     <p class="lbl">Page</p>
+    <p id="pageSrc" class="note pagesrc">page image: loading…</p>
     <div class="stage" id="stage">
       <img id="pageImg" alt="Manuscript page" hidden>
       <span id="simBadge" class="simb" hidden>simulated</span>
       <svg id="page" role="img" aria-label="Line regions of the page"></svg>
       <div id="lens" hidden></div>
     </div>
-    <p id="pageSrc" class="note pagesrc">page image: loading…</p>
     <p class="live">The live version shows the manuscript page from a IIIF image service here, with a magnifier on the highlighted line (mouse wheel to zoom). Image upload is disabled.</p>
     <p class="note" id="viewnote"></p>
 
