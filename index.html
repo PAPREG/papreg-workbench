@@ -257,6 +257,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
 .pip-ms .tk{opacity:.55;margin:0 .22em;filter:blur(.15px)} .pip-ms .tk.cur{opacity:1;filter:none;font-size:1.25em;padding:0 .12em;
   box-shadow:0 0 0 2px #b42318;border-radius:3px;background:rgba(255,255,255,.18)}
 .pip-ms .rule{position:absolute;left:0;right:0;height:1px;background:rgba(90,60,30,.16)}
+.pagesrc{margin:4px 0 0;font:11px var(--sans);color:var(--mute)} .pagesrc.bad,.imgerr{color:#c0392b;font-weight:600} .imgerr{font:600 12px var(--sans);padding:8px}
 .stage{position:relative} .simb{position:absolute;left:6px;top:6px;z-index:5;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;background:rgba(40,30,22,.78);color:#f4f1ea;padding:2px 7px;border-radius:9px;pointer-events:none}
 .pip-ms .wm{position:absolute;right:8px;bottom:5px;font:600 9.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:rgba(70,45,20,.55)}
 .pip-ms .empty{font:13px var(--sans);color:#6b5236}
@@ -318,6 +319,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       <svg id="page" role="img" aria-label="Line regions of the page"></svg>
       <div id="lens" hidden></div>
     </div>
+    <p id="pageSrc" class="note pagesrc">page image: loading…</p>
     <p class="live">The live version shows the manuscript page from a IIIF image service here, with a magnifier on the highlighted line (mouse wheel to zoom). Image upload is disabled.</p>
     <p class="note" id="viewnote"></p>
 
@@ -587,18 +589,14 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   svg.setAttribute("viewBox", `0 0 ${VW} ${VH}`);
   $("viewnote").textContent = `Line regions from the automatic segmentation. The image is loaded from your local image folder (button “image folder”); the word position within a line is approximate.`;
   const DSCOL = { salutatio: "#6f8fd0", rubric: "#c0392b", "nota-cancellariae": "#8a6d3b", inscriptio: "#4f6bb8", arenga: "#8b5cc4", narratio: "#1f9a8b", dispositio: "#c7861a", sanctio: "#c4415e", datatio: "#7d7d7d", nota: "#a0784f", margo: "#b0a89a" };
-  let LINEPART = {};
   function drawPage() {
     const cs = getComputedStyle(document.documentElement), ink = cs.getPropertyValue("--ink").trim(), err = cs.getPropertyValue("--err").trim();
-    let h = state.hasImage ? "" : `<rect width="${VW}" height="${VH}" fill="none" stroke="${ink}" stroke-opacity=".25"/>`;
-    D.lines.forEach((l, li) => {
+    if (!state.hasImage) { svg.innerHTML = ""; return; }              // no image: no thumbnail; the panel says why (state.imageError)
+    let h = "";
+    D.lines.forEach((l, li) => {                                      // outlines of the line zones over the page image
       if (!l.polygon || !l.polygon.length || hiddenLine(l)) return;
-      const pts = l.polygon.map(p => `${(p[0] * VW).toFixed(1)},${(p[1] * VH).toFixed(1)}`).join(" ");
-      const act = li === state.active, lows = l.words.filter((w, wi) => level(li, wi) === "low").length;
-      let fill = !state.hasImage && !act && lows && !state.apprE.has(li) ? err : ink;
-      let op = state.hasImage ? (act ? .14 : 0) : (act ? .55 : (state.apprE.has(li) ? .05 : .08 + Math.min(.3, lows * .07)));
-      if (state.struct && LINEPART[li]) { fill = DSCOL[LINEPART[li]]; op = act ? .42 : .2; }
-      h += `<polygon points="${pts}" fill="${fill}" fill-opacity="${op}" stroke="${ink}" stroke-opacity="${act ? .9 : .18}" stroke-width="${act ? 1.6 : .8}" data-li="${li}" style="cursor:pointer"/>`;
+      const pts = l.polygon.map(p => `${(p[0] * VW).toFixed(1)},${(p[1] * VH).toFixed(1)}`).join(" "), act = li === state.active;
+      h += `<polygon points="${pts}" fill="${ink}" fill-opacity="${act ? .14 : 0}" stroke="${ink}" stroke-opacity="${act ? .9 : .18}" stroke-width="${act ? 1.6 : .8}" data-li="${li}" style="cursor:pointer"/>`;
     });
     try { const Ls = L0(); Ls.entList.forEach(E => { const lis = new Set(); for (let g = E.g0; g <= E.g1; g++) { const [li_] = FL[g]; if (!Ls.isM(li_)) lis.add(li_); }
       const bs = [...lis].map(i => D.lines[i].bbox).filter(Boolean); if (!bs.length) return;
@@ -655,7 +653,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       g.strokeStyle = "#b42318"; g.lineWidth = 3; g.strokeRect(ox + (wx0 - rx) * sc - 3, oy + (b[1] * IH - ry) * sc + lh * sc * 0.02, (wx1 - wx0) * sc + 6, lh * sc * 1.1);
       if (S.iiif) $("pipUrl").textContent = `${S.iiif.id}/${rx},${ry},${RW},${RH}/!${cw},${ch}/0/default.jpg`;
     } else
-    $("pipMs").innerHTML = nD ? `<span class="rule" style="top:28%"></span><span class="rule" style="top:76%"></span>` + dipl.slice(lo, hi).map((t, k) => `<span class="tk${lo + k === j ? " cur" : ""}">${esc(t)}</span>`).join("") : "";
+    $("pipMs").innerHTML = state.imageError ? `<span class="imgerr">${esc(state.imageError)}</span>` : (nD ? `<span class="rule" style="top:28%"></span><span class="rule" style="top:76%"></span>` + dipl.slice(lo, hi).map((t, k) => `<span class="tk${lo + k === j ? " cur" : ""}">${esc(t)}</span>`).join("") : "");
     { const sw = STRIPS && STRIPS.lines[l.line_id] && STRIPS.lines[l.line_id].words[wi];                       // ink mask of the word (internal build)
       if (sw) $("pipMs").insertAdjacentHTML("beforeend", `<img class="pipmask" src="${stripSrc(sw.file)}" alt="ink mask of the word" title="ink mask derived from the image">`); }
     $("pipHd").innerHTML = `<b>${esc(shownText(li, wi))}</b>`;
@@ -941,7 +939,6 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function render() {
     const root = $("lines"); root.innerHTML = "";
     const DS = structure(), PART = DS.part;
-    LINEPART = {}; D.lines.forEach((l, li) => { const c = {}; l.words.forEach((w, wi) => { const p_ = PART[GI[keyOf(li, wi)]]; c[p_] = (c[p_] || 0) + 1; }); LINEPART[li] = Object.keys(c).sort((a, b) => c[b] - c[a])[0]; });
     document.body.classList.toggle("ds-on-root", state.struct);
     const app = sortedApp(), appEnd = {}; app.forEach((a, i) => (appEnd[a.gi + a.span - 1] = appEnd[a.gi + a.span - 1] || []).push([a, fnLetter(i)]));
     const neAt = {}, neEnd = {}; if (state.ner) state.ne.forEach(n => { spanGis(n).forEach(g => neAt[g] = n); neEnd[n.gi + n.span - 1] = n; });
@@ -1345,7 +1342,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     if (pr) { parts.push(!parts.length ? `P ${pr.n} only` : `P ${pr.n}${pr.text ? "" : ", " + (pr.note || "text missing in parse")}`); cites.push(`Pressutti ${pr.n}${pr.date ? ", " + pr.date : ""}${pr.text ? ": " + pr.text : ""}`); }
     return { text: parts.join(" · "), cites };
   }
-  const stripSrc = (f) => `${SRCBASE}${S.folio}/strips/${f}`;
+  const stripSrc = (f) => `${IMG_BASE}strips/${f}`;
   function lineView(v, li) {
     const l = D.lines[li], el = document.createElement("div");
     if (v === "dipl") {                                              // the editor's own diplomatic line (empty until transcribed)
@@ -1405,7 +1402,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   drawChars();
 
   // ------------------------------------------------------------ line-view choice (per editor, stored in this browser and with the editor's login)
-  const VKEY = `paprg.views.${CFG.login}`, PUBLIC = (CFG.build || "internal") === "public";
+  const VKEY = `paprg.views.v2.${CFG.login}`, PUBLIC = (CFG.build || "internal") === "public";
   // the ink masks (derived from the image, sample/<folio>/strips/) exist for the internal build only, until the PI clears them
   const STRIPS = (() => { if (PUBLIC) return null; try { const x = new XMLHttpRequest(); x.open("GET", `${SRCBASE}${S.folio}/strips/index.json`, false); x.send(); if (x.status === 200) return JSON.parse(x.responseText); } catch (e) {} return null; })();
   // default: the legacy line when there is one, else the ink strip when masks exist (internal build), else none; the choice of the editor stands
@@ -1943,10 +1940,25 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
 
   // ------------------------------------------------------------ image and magnifier
   const stage = $("stage"), img = $("pageImg"), lens = $("lens"); let zoom = 3;
-  // the original page image, when a local copy sits next to the sample (sample/<folio>/page.jpg: git-ignored, never pushed), is shown as it is: no layer, no mark
-  // one image source, chosen at build time: the public build reads page.synthetic.png only; the internal build the real image (page.jpg, git-ignored) and falls back to the synthetic page
-  (function () { for (const n of PUBLIC ? ["page.synthetic.png"] : ["page.jpg", "page.synthetic.png"]) { try { const x = new XMLHttpRequest(); x.open("HEAD", `${SRCBASE}${S.folio}/${n}`, false); x.send(); if (x.status === 200) { state.synthetic = n.includes("synthetic"); setTimeout(() => setImage(`${SRCBASE}${S.folio}/${n}`), 0); return; } } catch (e) {} } })();
-  function setImage(src) { img.onload = () => { state.hasImage = true; img.hidden = false; $("simBadge").hidden = !state.synthetic; setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
+  // ------------------------------------------------------------ the page image: one source and one base URL for the page panel, the line strips and the word crop.
+  // A failure is shown, never replaced silently. The public build reads page.synthetic.png only; the internal build tries the real image (page.jpg, git-ignored) and, as a declared fallback, the synthetic page.
+  const IMG_BASE = new URL(`${SRCBASE}${S.folio}/`, document.baseURI).href;                       // relative to the built site, not to a dev server
+  let BUILD_ID = ""; try { const x = new XMLHttpRequest(); x.open("GET", new URL("build.json", document.baseURI).href, false); x.send(); if (x.status === 200) BUILD_ID = (JSON.parse(x.responseText).hash || ""); } catch (e) {}
+  const imgUrl = (n) => IMG_BASE + n + (BUILD_ID ? "?v=" + BUILD_ID : "");                       // the build hash busts the cache
+  const setPageSrc = (txt, bad) => { const e = $("pageSrc"); e.textContent = txt; e.className = "note pagesrc" + (bad ? " bad" : ""); };
+  async function statusOf(url) { try { const r = await fetch(url, { method: "HEAD", cache: "no-store" }); return String(r.status); } catch (e) { return "network error"; } }
+  function loadPageImage(names, k = 0, notes = []) {
+    const name = names[k], url = imgUrl(name), synthetic = name.includes("synthetic");
+    img.onload = () => { state.hasImage = true; state.synthetic = synthetic; state.imageError = null; img.hidden = false; $("simBadge").hidden = !synthetic;
+      setPageSrc(`source: ${synthetic ? "simulated page" : "manuscript image (internal)"}${notes.length ? " (" + notes.join("; ") + ")" : ""} · loaded ${img.naturalWidth}×${img.naturalHeight}`); setViewSel(); render(); drawPage(); drawPip(); };
+    img.onerror = async () => { const st = await statusOf(url);
+      if (k + 1 < names.length) { loadPageImage(names, k + 1, notes.concat(`${name} not found (${st}), declared fallback`)); return; }
+      state.hasImage = false; state.imageError = `page image not found: ${url} (${st})`; img.hidden = true; $("simBadge").hidden = true; setPageSrc(state.imageError, true);
+      $("pipMs").innerHTML = `<span class="imgerr">${esc(state.imageError)}</span>`; setViewSel(); render(); drawPage(); };
+    img.src = url;
+  }
+  loadPageImage(PUBLIC ? ["page.synthetic.png"] : ["page.jpg", "page.synthetic.png"]);
+  function setImage(src) { img.onload = () => { state.hasImage = true; state.synthetic = false; state.imageError = null; img.hidden = false; $("simBadge").hidden = true; setPageSrc(`source: manuscript image (editor's folder) · loaded ${img.naturalWidth}×${img.naturalHeight}`); setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
   window.__wbSetImage = setImage;
   WB.image(D).then(u => u && setImage(u));                        // local folder or URL template (never GitHub)
   function lensAt(e) {
