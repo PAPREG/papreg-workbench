@@ -52,8 +52,8 @@ try {
   // the public-domain witnesses of the sample (sample/154v/regests.json, witness.json)
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition` }); await sleep(3500);
   const real = await ev(`JSON.stringify({ stat: document.getElementById("modeStat").textContent, witnessLines: document.querySelectorAll(".wsig .wit.siglum").length, diffTokens: document.querySelectorAll(".pair .wit.differs").length, plus: document.querySelectorAll(".pair.plus .chip.pl").length, ocr: document.querySelectorAll(".pair .wit.ocr").length,
-    bands: [...document.querySelectorAll(".band")].map(b => (b.querySelector(".cov") ? b.querySelector(".cov").textContent : "-")) })`);
-  console.log("sample witnesses:", real);
+    bands: [...document.querySelectorAll(".band")].map(b => (b.querySelector(".cov") ? b.querySelector(".cov").textContent + " | " + b.querySelector(".cov").dataset.tip.split(" — ")[0] : "-")), texts: [...document.querySelectorAll(".band")].map(b => b.innerText.split(String.fromCharCode(10)).join(" ")) })`);
+  console.log("sample witnesses:", real); console.log("band texts:", JSON.stringify(JSON.parse(real).texts, null, 1));
   const rr = JSON.parse(real); check(rr.witnessLines > 0 && /\d+ stops/.test(rr.stat), `the sample files load: ${rr.witnessLines} witness lines, ${rr.stat}`);
   const ru = await ev(`window.TEI_CHECKS.run(window.__wb.tei(), document.body.innerText).filter(r => !r.ok).map(r => r.id).join(",")`); check(ru === "", `rules met with the sample witnesses (${ru})`);
   console.log(JSON.stringify(counts, null, 1));

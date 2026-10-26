@@ -12,7 +12,7 @@ try {
   let t; for (let k = 0; k < 40; k++) { try { t = await (await fetch("http://127.0.0.1:9340/json")).json(); break; } catch (e) { await sleep(250); } }
   ws = new WebSocket(t.find(x => x.type === "page").webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
   ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } };
-  await cdp("Page.enable"); await cdp("Page.navigate", { url: "http://127.0.0.1:8090/papreg_workbench/?test=1&page=RV9/154v" }); await sleep(4500);
+  await cdp("Page.enable"); await cdp("Page.navigate", { url: "http://127.0.0.1:8090/papreg_workbench/?test=1&page=RV9/154v&task=T2.1&mode=edition" }); await sleep(4500);
   await ev(`localStorage.setItem("wb:tourSeen","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove()); document.querySelector("header").style.position = "static"; document.getElementById("pageImg").style.display = "none"`);
   const geo = JSON.parse(await ev(`JSON.stringify((() => { let n = 0, bad = []; document.querySelectorAll(".pair").forEach(p => { const reg = p.querySelector(".reg").getBoundingClientRect();
     p.querySelectorAll(".wit").forEach(w => { if (!w.textContent.replace(/\\u00a0/g, "").trim()) return; n++; const b = w.getBoundingClientRect(); if (b.left < reg.left - 4 || b.right > reg.right + 4) bad.push([w.textContent.slice(0, 20), Math.round(b.left - reg.left), Math.round(reg.right - b.right)]); }); });
@@ -20,6 +20,13 @@ try {
     return { n, bad: bad.slice(0, 5), nbad: bad.length, free, sig, sigInText }; })())`));
   check(geo.n > 100 && geo.nbad === 0, `every witness token lies inside the box of its register token (${geo.n} checked, ${geo.nbad} outside ${JSON.stringify(geo.bad)})`);
   check(geo.free === 0 && geo.sigInText === 0 && geo.sig > 0, `no witness outside the pairs; sigla only in the gutter (${geo.sig} sigla)`);
+  // siglum baseline: the y of every gutter siglum equals the y of the corresponding .wit row of the first pair (+-2 px)
+  const sg = JSON.parse(await ev(`JSON.stringify((() => { let max = 0, n = 0; document.querySelectorAll(".line").forEach(row => { const sigs = [...row.querySelectorAll(".wsig .wit.siglum")]; const pr = row.querySelector(".txt .pair"); if (!sigs.length || !pr) return; const wits = pr.querySelectorAll(".wit");
+    sigs.forEach((x, k) => { if (!wits[k]) return; n++; max = Math.max(max, Math.abs(wits[k].getBoundingClientRect().top - x.getBoundingClientRect().top)); }); }); return { n, max: Math.round(max * 10) / 10 }; })())`));
+  check(sg.n > 0 && sg.max <= 2, `siglum baseline: |y(siglum) - y(first .wit)| <= 2 px for ${sg.n} sigla (max ${sg.max} px)`);
+  // instant tooltips: no native title attribute, no cursor:help, the custom tooltip shows at once
+  const tp = JSON.parse(await ev(`JSON.stringify((() => { const titles = document.querySelectorAll("[title]").length; const help = [...document.querySelectorAll("*")].filter(e => getComputedStyle(e).cursor === "help").length; const sig = document.querySelector(".wsig .wit.siglum"); sig.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })); const t = document.getElementById("tip"); return { titles, help, shown: t && getComputedStyle(t).display === "block", text: t && t.textContent.slice(0, 40) }; })())`));
+  check(tp.titles === 0 && tp.help === 0 && tp.shown && tp.text.length > 0, `no native title (${tp.titles}), no cursor:help (${tp.help}), tooltip at once: "${tp.text}"`);
   for (const lab of ["4", "26", "31", "38"]) {
     const sy = await ev(`(() => { const r = [...document.querySelectorAll(".line")].find(n => (n.querySelector(".ln") || {}).firstChild && n.querySelector(".ln").firstChild.textContent === "${lab}"); r.scrollIntoView({ block: "start" }); window.scrollBy(0, -6); return window.scrollY; })()`); await sleep(400);
     const r = await cdp("Page.captureScreenshot", { format: "png", clip: { x: 20, y: sy, width: 1480, height: 330, scale: 1 } }); writeFileSync(new URL(`./artefacts/layout_l${lab}.png`, import.meta.url), Buffer.from(r.result.data, "base64")); if (process.env.SHOTS_COPY) writeFileSync(`${process.env.SHOTS_COPY}/layout_l${lab}.png`, Buffer.from(r.result.data, "base64"));

@@ -80,7 +80,7 @@ main{display:grid;grid-template-columns:minmax(240px,32%) 1fr;max-width:1500px;m
 .legend{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--mute);font-size:12px;margin:0 0 14px}
 .legend i{font-style:normal;color:var(--ink);font-family:var(--serif);font-size:14px;padding:0 2px}
 .line{display:grid;grid-template-columns:86px 36px 1fr 30px;gap:8px;padding:4px 0}
-.wsig{font:calc(17px * var(--fs))/2.45 var(--serif)} .wsig .sp{visibility:hidden} .wsig .wit.siglum{font:600 9px/1.3 var(--sans);letter-spacing:.05em;color:var(--mute);cursor:help;min-height:1.3em;text-align:right}
+.wsig{font:calc(17px * var(--fs))/2.45 var(--serif)} .wsig .sp{visibility:hidden} .wsig .wit.siglum{display:block;transition:none;font:600 9px/1.3 var(--sans);letter-spacing:.05em;color:var(--mute);cursor:default;min-height:1.3em;text-align:right}
 .line.active{background:var(--sel)}
 .line.dim{opacity:.3}
 .ln{color:var(--mute);font:11px var(--sans);text-align:right;padding-top:6px;cursor:pointer;font-variant-numeric:tabular-nums}
@@ -191,19 +191,26 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 .inkbar{display:block;height:3px;border-radius:2px;margin:3px 0 0 auto;width:100%} .hs{font-size:10px;color:#7a4fa0;margin-left:2px}
 .gut{display:block;font:10px var(--sans);color:var(--mute);margin-top:3px;text-align:right;line-height:1.3;overflow-wrap:anywhere}.gut .chip{margin:0 0 2px;white-space:normal}
 .dropcap{font-size:1.9em;font-weight:600;line-height:.8;margin-right:1px;color:var(--ink)}
+.band .mnum.prop,.band .rc.prop{color:var(--mute)} .band .mnum{font-weight:600;cursor:pointer} .band{cursor:pointer} .bapp{margin:0 0 6px;padding:2px 10px 4px;font:12px var(--sans);color:var(--mute);border-bottom:1px solid var(--rule);background:rgba(120,110,90,.03)} .bapp.shut{display:none} .bapp .an{margin:2px 0} .bapp .an i{color:var(--ink);font-style:normal;font-family:var(--serif);font-size:14px}
 .band{display:block;font:12px var(--sans);color:var(--mute);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:rgba(120,110,90,.06);padding:4px 8px;margin:2px 0 6px;line-height:1.7}
 .band.gap{margin-top:calc(34px * var(--fs))} .band .rc{color:var(--ink);font-weight:600} .band .dim{color:var(--mute);font-weight:400} .band .warn{color:#a8541a} .band .warn i{color:var(--ink)}
 .band .fold{padding:0 5px;margin-right:6px;cursor:pointer} .band .ty{text-transform:lowercase} .band .st{font-weight:600} .band .bgut{float:right;font-size:11px}
 .band .rg{color:var(--ink)} .band.cur{outline:2px solid #2f5d8a} .w.ecol{display:none} .band button.t{font:11px var(--sans);padding:0 5px}
 .lvw .lv{font:calc(13px * var(--fs))/1.6 var(--mono);color:var(--mute);overflow-wrap:anywhere} .lvw .lv .tag,.lvw .dipl .tag{font:10px var(--sans);letter-spacing:.06em;text-transform:uppercase;margin-right:8px;color:var(--mute)}
 .lvw .wd{background:rgba(180,35,24,.14);border-radius:2px;padding:0 2px} .lvw .inkimg{display:block;max-width:100%} .pipmask{position:absolute;right:6px;bottom:6px;height:34px;background:rgba(255,255,255,.5);border-radius:3px;padding:2px}
-.wrows{display:block} .wrow{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;margin:1px 0} .wrow .sig{font:600 9px var(--sans);letter-spacing:.05em;color:var(--mute);min-width:26px;cursor:help}
+.wrows{display:block} .wrow{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;margin:1px 0} .wrow .sig{font:600 9px var(--sans);letter-spacing:.05em;color:var(--mute);min-width:26px;cursor:default}
 .wrow .wc.same{color:var(--mute);opacity:.55} .wrow .wc.df{background:rgba(180,35,24,.16);border-radius:2px;padding:0 2px;color:var(--ink)} .wrow .wc.ms{color:var(--mute);opacity:.5} .wrow .wc.oc{color:#999;font-style:italic;opacity:.7}
 .wrow .chip.pl{border-color:#2f7d5b;color:#2f7d5b;margin:0} .wrow .wc.fm{background:rgba(199,134,26,.18);border-radius:2px;padding:0 3px;color:var(--ink)} .band .cov{font-weight:600;color:var(--ink)} .band .cite{display:block;font-size:11px;color:var(--mute);font-style:italic}
 .pair{display:inline-block;vertical-align:top;text-align:left;margin-right:.32em} .pair .reg{display:block} .pair .wit .chip.cand{border-color:#7a4fa0;color:#7a4fa0;margin:0;font-style:normal} .pair .wit.cont{opacity:.4;text-align:center} .pair .wit{display:block;font:11px/1.3 var(--sans);white-space:nowrap;min-height:1.3em;color:var(--mute)}
 .pair .wit.same{opacity:.5} .pair .wit.differs{background:rgba(180,35,24,.16);border-radius:2px;color:var(--ink);opacity:1} .pair .wit.missing{opacity:.5} .pair .wit.ocr{color:#999;font-style:italic} .pair .wit.fm{background:rgba(199,134,26,.2);border-radius:2px;color:var(--ink)}
-.pair .wit.siglum{font:600 9px var(--sans);letter-spacing:.05em;cursor:help} .pair .wit .chip.pl{border-color:#2f7d5b;color:#2f7d5b;margin:0} .pair.plus{margin-right:.25em}
+.pair .wit.siglum{font:600 9px var(--sans);letter-spacing:.05em;cursor:default} .pair .wit .chip.pl{border-color:#2f7d5b;color:#2f7d5b;margin:0} .pair.plus{margin-right:.25em}
 i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical-align:-.15em;border-radius:1px} i.bt.ok{background:#bbb} i.bt.bad{background:#c0392b}
+#tip{position:fixed;z-index:200;display:none;max-width:420px;background:#222;color:#f4f1ea;font:12px/1.4 var(--sans);padding:5px 8px;border-radius:4px;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.3);white-space:pre-wrap}
+.oldlayers,#bHeat,#bAcc,#bClaus,#bStruct,#bNer,#bForm{display:none!important}
+.lg{position:relative;display:inline-block;margin-right:10px} .lg .gcar{padding:0 4px;margin-left:-1px} .lg .gmenu{position:absolute;top:100%;left:0;z-index:60;background:var(--bg,#fff);border:1px solid var(--rule);border-radius:5px;padding:6px 10px;box-shadow:0 4px 14px rgba(0,0,0,.18);white-space:nowrap}
+.lg .gmenu label{display:block;font:12px var(--sans);margin:2px 0;cursor:pointer} .lg .gmenu label.na{opacity:.4;cursor:default}
+#lines.lay-noadd .chip.add{display:none} #lines.lay-noadd .w.addw{background:none} #lines.lay-nomargin .line.marg,#lines.lay-nomargin .msec,#lines.lay-nomargin .bapp{display:none} #lines.lay-nonum .mnum{display:none} #lines.lay-nohands .inkbar{display:none}
+#lines.lay-noinit .dropcap{font-size:inherit;font-weight:inherit;line-height:inherit;margin:0;color:inherit} #lines.lay-nocursus .cl{display:none}
 .chip.sim{border-color:#9a8f7a;color:#7b705c;font-weight:500} .lvw .dipl{font-family:"Junicode",var(--mono)} .lvw .dim{color:var(--mute);font-style:italic}
 .w.modecur{outline:2px solid #2f5d8a;outline-offset:1px;border-radius:3px} .line.modecur{background:rgba(47,93,138,.08)} #modeWrap b{font-weight:600;color:var(--ink)} #modeAsk input{font:12px var(--sans)}
 .mctl{margin-left:10px;font:11px var(--sans)} .mctl .mst{color:var(--mute);margin-right:6px} .mctl button{font:11px var(--sans);padding:1px 6px;margin-left:4px;cursor:pointer}
@@ -278,8 +285,8 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     <button class="b" id="bExport">Approve &amp; save</button>
   </div>
   <div class="row2">
-    <span id="viewSel"></span><span class="sep">|</span>
-    <span>layer
+    <span id="layerBar"></span><span class="sep">|</span><span id="viewSel"></span><span class="sep">|</span>
+    <span class="oldlayers">layer
       <button class="t" data-layer="both" aria-pressed="true">both</button>
       <button class="t" data-layer="dipl" aria-pressed="false">diplomatic</button>
       <button class="t" data-layer="edit" aria-pressed="false">edition</button></span><span class="sep">|</span>
@@ -408,7 +415,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   const APP_TYPES = ["corr. ex", "add. supra lin.", "add. in marg.", "del.", "in ras.", "om.", "sic", "lectio dubia", "alia manu", "nota"];
 
   const state = { showPeers: false, heat: true, acc: true, clausOnly: false, layer: "both", active: null, focus: null, pop: null, form: null,
-    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, numerals: {}, modes: {}, etype: {}, recip: {}, collapsed: {}, mode: null, views: [], history: [], seq: 0,
+    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, numerals: {}, modes: {}, etype: {}, recip: {}, collapsed: {}, appOpen: {}, mode: null, views: [], history: [], seq: 0,
     dirty: false, lastPush: null, peers: [], peerSig: "", syncLog: [], hasImage: false, rej: new Set(), struct: true, ner: true, fml: true };
   WB.restore(state, D);                                            // this editor's saved work on the page
   state.ne.forEach(n => { n.type = NE_ALIAS[n.type] || n.type; });  // entities saved with the earlier four classes
@@ -859,7 +866,8 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     const ai = t.findIndex(w => rd(w) === "anno"), yr = ai >= 0 ? ORD[rd(t[ai + 1] || "")] || ORD[rd(t[ai + 2] || "")] : 0;
     const Y = yr ? ((m > 7 || (m === 7 && day >= 24)) ? 1215 + yr : 1216 + yr) : null, ki = ["Kal.", "Non.", "Id."][kind - 1];
     const place = (tok[0] && /^dat/i.test(tok[0]) && tok[1] && !/^(kal|non|id|[ivxl]+)/i.test(tok[1])) ? tok[1].replace(/[,;.]+$/, "") : "";
-    return { text: `${place ? place + ", " : ""}${t[i - 1]} ${ki} ${MON_EN[mi]}.${yr ? ", a. " + ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][yr] : ""}`, iso: Y ? `${Y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}` : "", human: `${day} ${MON_EN[m - 1]}${Y ? " " + Y : ""}` };
+    const roman = `${t[i - 1]} ${ki} ${MON_EN[mi]}.${yr ? ", a. " + ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"][yr] : ""}`;
+    return { place, roman, text: `${place ? place + ", " : ""}${roman}`, iso: Y ? `${Y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}` : "", human: `${day} ${MON_EN[m - 1]}${Y ? " " + Y : ""}` };
   }
   const strip = (x) => x.replace(/[,;.:]+$/, "");
   function entryInfo(E) {
@@ -869,37 +877,52 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     const lab = main.map(g => LNUM[FL[g][0]]).filter(x => /^\d+$/.test(x)).map(Number), li0 = main.length ? FL[main[0]][0] : FL[E.g0][0];
     const gr = (D.address_groups || []).find(x => String(x.entry_line) === LNUM[li0] && x.add_lines.length);
     let lineEnd = "", head = "";
-    if (gr) { lineEnd = gr.add_lines.map(la => { const ai = LNUM.indexOf(la); return D.lines[ai].words.map((w, wi) => w.add ? shownText(ai, wi) : null).filter(Boolean).join(" "); }).join(" ").trim();
+    let lineEndParts = [];
+    if (gr) { lineEndParts = gr.add_lines.map(la => { const ai = LNUM.indexOf(la); return D.lines[ai].words.map((w, wi) => w.add ? shownText(ai, wi) : null).filter(Boolean).join(" "); }); lineEnd = lineEndParts.join(" ").trim();
       const hw = []; let ok = true; gr.margin_lines.forEach(m => { const mi = LNUM.indexOf(m); D.lines[mi].words.forEach((w, wi) => { if (ok && w.p_error < TH.risk_medium && !w.is_oov) hw.push(shownText(mi, wi)); else ok = false; }); }); head = hw.join(" "); }
     const rule = E.iem ? "in eundem modum" : /mandamus quatinus/.test(rd(partWords("dispositio").join(" "))) ? "mandate" : /(indulgem|concedim|confirmam|statuim)/.test(rd(partWords("dispositio").join(" "))) ? "privilege / indult" : "";
     let eada = false; if (E.iem) for (let g = E.g0; g < E.g1; g++) if (rd(shownText(...FL[g])) === "datum" && rd(shownText(...FL[g + 1])).startsWith("eadem")) eada = true;
     const date = eada ? { text: "same date (eadem)", iso: "", human: "" } : dat.length ? (/^eadem/i.test(dat[1] || "") ? { text: "same date (eadem)", iso: "", human: "" } : romanDate(dat)) : null;
     const nums = D.lines.map((z, zi) => ({ z, li: zi })).filter(o => numeralLine(o.z) && o.z.bbox).filter(({ z }) => { const ey = D.lines[li0].bbox ? D.lines[li0].bbox[1] + D.lines[li0].bbox[3] / 2 : 0, ez = z.bbox[1] + z.bbox[3] / 2, nxt = (L0().entList.find(e => e.g0 > E.g0) || null); const ny = nxt ? (D.lines[FL[nxt.g0][0]].bbox[1] + D.lines[FL[nxt.g0][0]].bbox[3] / 2) : 9; return ez >= ey - .004 && ez < ny - .004; });
-    return { gr, lineEnd, head, type: state.etype[E.n] || rule, typeRule: rule, date, from: lab.length ? Math.min(...lab) : null, to: lab.length ? Math.max(...lab) : null, li0, nums, margin: gr ? gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].expanded_text).join(" ") : "" };
+    return { gr, lineEnd, lineEndParts, head, type: state.etype[E.n] || rule, typeRule: rule, date, from: lab.length ? Math.min(...lab) : null, to: lab.length ? Math.max(...lab) : null, li0, nums, margin: gr ? gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].expanded_text).join(" ") : "" };
   }
   const L0 = () => pageLayout(structure());
   const cutHead = (I) => I.head && rd(I.head).replace(/[^a-z]/g, "") !== rd(I.margin).replace(/[^a-z]/g, "");
+  // the entry band is the Kopfzeile: ¶ n · address · place, date (modern + Roman) · type · witnesses · margin number · status. The sources of the address are the notes of the apparatus under it.
+  const appOpenDefault = () => state.mode === "codicology" || state.mode === "boundaries";
   function bandEl(E) {
-    const I = entryInfo(E), b = document.createElement("div"), col = !!state.collapsed[E.n], chosen = state.recip[E.n];
-    b.className = "band" + (E.n > 1 ? " gap" : "") + (col ? " col" : ""); b.dataset.e = E.n; b.dataset.g = E.g0;
-    const norm = (x) => rd(x).replace(/ /g, ""), agree = I.gr && I.lineEnd && I.head && (norm(I.lineEnd) === norm(I.head));
-    let rec;
-    if (E.iem) rec = `<span class="rc dim">recipients not stated (the entry repeats an earlier one)</span>`;
-    else if (E.cont && !I.gr) rec = `<span class="rc dim">continues the entry of the previous folio</span>`;
-    else if (chosen) rec = `<span class="rc">${esc(chosen.text)}</span> <span class="dim">(${chosen.src}, confirmed)</span>`;
-    else if (!I.gr) rec = `<span class="rc dim">no address read</span>`;
-    else if (agree) rec = `<span class="rc">${esc(strip(I.head))}${cutHead(I) ? "…" : ""}</span> <span class="dim">(line end = margin)</span>`;
-    else rec = `<span class="warn" title="the two witnesses of the recipient differ">line end: <i>${esc(strip(I.lineEnd))}</i> <button class="t" data-use="line">use</button> · margin: <i title="resp #rules">${esc(I.head ? strip(I.head) + (cutHead(I) ? "…" : "") : "(no confident reading)")}</i> <button class="t" data-use="margin">use</button> ⚠ disagree</span>`;
-    const cov = coverage(E, I);
-    const gut = (I.gr ? `<span class="chip adr" title="address in the left margin (hand h2), belongs to this entry">margin · address</span> ${esc(strip(I.head))}` : "") + I.nums.map(({ li: zi }) => { const cn = CONC[String(E.n)], cf = state.numerals[zi]; return cn ? ` <span class="chip num" title="later hand (h3), dark ink; ${cf ? "confirmed by the editor" : "proposed from the concordance (rules); confirm or correct"}">${esc(cf ? cf.val : cn.register_no)} ${cf ? "✓" : `<button class="t" data-cf="${zi}" data-v="${esc(cn.register_no)}">confirm</button>`}</span>` : ` <span class="chip num" title="later hand (h3), dark ink; no source for the numeral: left to the editor">numeral · later hand</span>`; }).join("");
-    b.innerHTML = `<button class="t fold" title="collapse / expand this entry">${col ? "▸" : "▾"}</button><span class="eno">¶ ${E.n}</span> · ${rec} · <span class="ty" title="${I.typeRule ? "rule: " + I.typeRule : ""}">${esc(I.type || "type ?")}</span>` +
-      `${I.date ? ` · <span class="dt" title="computed from the datatio${I.date.iso ? ": " + I.date.iso : ""}">${esc(I.date.text)}${I.date.human ? ` (${I.date.human})` : ""}</span>` : ""}` +
-      `${I.from ? ` · l${I.from}${I.to > I.from ? "–" + I.to : ""}` : ""}${cov.text ? ` · <span class="cov" title="${esc(cov.cites.join(" ; "))}">${esc(cov.text)}</span>` : ""} · <span class="st">${state.modes.boundaries && state.modes.boundaries.done["b:" + E.g0] ? "confirmed" : "proposed"}</span>` + (gut ? `<span class="bgut">${gut}</span>` : "");
+    const I = entryInfo(E), wrap = document.createElement("div"), b = document.createElement("div"), col = !!state.collapsed[E.n], chosen = state.recip[E.n], cov = coverage(E, I);
+    wrap.className = "bandw"; b.className = "band" + (E.n > 1 ? " gap" : "") + (col ? " col" : ""); b.dataset.e = E.n; b.dataset.g = E.g0; wrap.appendChild(b);
+    const norm = (x) => rd(x).replace(/[^a-z]/g, ""), le = strip(I.lineEnd || ""), hd = strip(I.head || "") + (cutHead(I) ? "…" : ""), hasSrc = !!(I.gr && (le || hd));
+    const same = hasSrc && norm(le) === norm(I.head || ""), longer = hasSrc ? (norm(hd) >= norm(le) ? hd : le) : "";
+    let addr;
+    if (E.iem) addr = `<span class="dim">—</span>`; else if (!hasSrc) addr = `<span class="dim">${E.cont ? "(continued)" : "—"}</span>`;
+    else if (chosen) addr = `<span class="rc">${esc(chosen.text)}</span>`;
+    else if (same) addr = `<span class="rc">${esc(longer)}</span>`;
+    else addr = `<span class="rc prop" data-tip="the longer of the two readings of the address (notes a and b below); set one as the address">${esc(longer)}</span> <span class="dim">proposed</span>`;
+    const wits = [...(REG[String(E.n)] || []).filter(r => r.source === "Pressutti").map(r => `P ${r.n}`), ...Object.values(WIT).filter(w => w.letter === E.n).map(w => w.badge || w.source).filter((v, i, a2) => a2.indexOf(v) === i), ...Object.values(WIT).filter(w => w.letter !== E.n && I.from != null && +w.lab >= 0 && false).map(() => "")];
+    const via = [...new Set(Object.entries(WIT).filter(([lab, w]) => w.letter !== E.n && I.from != null && +lab >= I.from && +lab <= I.to).map(([, w]) => `${WSIG[w.source] || w.source} via e${w.letter}`))];
+    const numI = I.nums[0], cn = CONC[String(E.n)], cf = numI && state.numerals[numI.li];
+    const dateH = I.date ? (I.date.human ? `${I.date.place ? esc(I.date.place) + ", " : ""}${esc(I.date.human)} <span class="dim">(${esc(I.date.roman || I.date.text)})</span>` : esc(I.date.text)) : "";
+    const parts = [`<span class="eno" data-tip="collapse / expand this entry">${col ? "▸" : "▾"} ¶ ${E.n}</span>`, addr, dateH, `<span class="ty" data-tip="${I.typeRule ? "rule: " + esc(I.typeRule) : ""}">${esc(I.type || "")}</span>`,
+      (wits.length || via.length) ? `<span class="cov" data-tip="${esc(cov.text)}${cov.cites.length ? " — " + esc(cov.cites.join(" ; ")) : ""}">${esc(wits.concat(via).join(" · "))}</span>` : "",
+      cn && numI ? `<span class="mnum ${cf ? "" : "prop"}" data-cf="${numI.li}" data-v="${esc(cn.register_no)}" data-tip="${cf ? "numeral confirmed by the editor" : "numeral of the later hand (h3), proposed from the concordance: click to confirm"}">${esc(cf ? cf.val : cn.register_no)}</span>` : "",
+      `<span class="st">${state.modes.boundaries && state.modes.boundaries.done["b:" + E.g0] ? "confirmed" : "proposed"}</span>`].filter(Boolean);
+    b.innerHTML = parts.join(" · ");
+    // apparatus: the sources of the address, lettered notes
+    const open = state.appOpen[E.n] !== undefined ? state.appOpen[E.n] : appOpenDefault();
+    if (hasSrc) {
+      const trunc = (parts2) => parts2.map(pt => pt.split(" ").map(w => (I.head && rd(I.head).split(" ").some(h => h.length > rd(w).length && h.startsWith(rd(w)) && rd(w).length >= 3)) ? w + " …" : w).join(" ")).join(" | ");
+      const ap = document.createElement("div"); ap.className = "bapp" + (open ? "" : " shut");
+      const note = (letter, label, txt, src) => `<p class="an"><b>${letter})</b> ${label}: <i>${esc(txt)}</i> ${chosen && chosen.src === src ? `<span class="dim">✓ address</span>` : `<button class="t" data-set="${src}">set as address</button>`}</p>`;
+      ap.innerHTML = note("a", "at line end, lighter ink (h2)", trunc(I.lineEndParts), "line end") + note("b", "left margin, repeated (h2)", hd, "margin") + (cn && numI ? `<p class="an"><b>c)</b> left margin, later hand (h3): <i>${esc(cf ? cf.val : cn.register_no)}</i> <span class="dim">${cf ? "confirmed" : "numeral from the concordance, proposed"}</span></p>` : "");
+      wrap.appendChild(ap);
+      ap.querySelectorAll("[data-set]").forEach(x => x.onclick = (e) => { e.stopPropagation(); const src = x.dataset.set; mutate(() => state.recip[E.n] = { src, text: src === "line end" ? trunc(I.lineEndParts).replace(/ … /g, "… ").replace(/ \| /g, " ") : strip(I.head) + (cutHead(I) ? "…" : "") }); render(); });
+    }
+    b.querySelector(".eno").onclick = (e) => { e.stopPropagation(); state.collapsed[E.n] = !state.collapsed[E.n]; render(); };
+    b.onclick = () => { if (hasSrc) { state.appOpen[E.n] = !(state.appOpen[E.n] !== undefined ? state.appOpen[E.n] : appOpenDefault()); render(); } };
     b.querySelectorAll("[data-cf]").forEach(x => x.onclick = (e) => { e.stopPropagation(); mutate(() => state.numerals[+x.dataset.cf] = { val: x.dataset.v, at: new Date().toISOString() }); render(); });
-    if (cov.cites.length) b.insertAdjacentHTML("beforeend", `<span class="cite">${esc(cov.cites.join(" · "))}</span>`);
-    b.querySelector(".fold").onclick = (e) => { e.stopPropagation(); state.collapsed[E.n] = !state.collapsed[E.n]; render(); };
-    b.querySelectorAll("[data-use]").forEach(x => x.onclick = (e) => { e.stopPropagation(); const src = x.dataset.use; mutate(() => state.recip[E.n] = { src: src === "line" ? "line end" : "margin", text: strip(src === "line" ? I.lineEnd : I.head) }); render(); });
-    return b;
+    return wrap;
   }
   function jumpEntry(dir) { const bs = [...document.querySelectorAll(".band")]; if (!bs.length) return; const cur = state.bandCur ?? -1, i = Math.max(0, Math.min(bs.length - 1, cur + dir)); state.bandCur = i; bs[i].scrollIntoView({ block: "start", behavior: "smooth" }); document.querySelectorAll(".band.cur").forEach(x => x.classList.remove("cur")); bs[i].classList.add("cur"); }
   // the address supplied later (hand h2): the left-margin zones of an address group and the entry they belong to
@@ -1252,11 +1275,26 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   }
   const WSIG = { MGH: "MGH", Horoy: "H", Pressutti: "P" };
   const lineRegT = (li) => D.lines[li].words.map((w, wi) => ({ t: shownText(li, wi), ref: wi, flag: SIGLUM.test(w.text) || !!w.is_oov || pErr(li, wi) >= .5 }));
-  // witness rows of a line: one per edition (MGH / Horoy): the line of the edition against the words of the line
+  // witness rows: the edition is aligned with the text of its whole letter (entry level) and mapped back to the lines, so a word split by a line break (dum | modo) and the
+  // tokens at a line boundary resolve; a "+" belongs to the line of the register word it precedes.
+  let WGROUPS = null;
+  function witGroups() { if (WGROUPS) return WGROUPS; const by = {};
+    Object.entries(WIT).forEach(([lab, w]) => { const key = w.source + "|" + (w.letter != null ? w.letter : lab); (by[key] = by[key] || { source: w.source, letter: w.letter, recs: [] }).recs.push({ lab: +lab, ...w }); });
+    WGROUPS = Object.values(by).map(g => { g.recs.sort((a, b) => a.lab - b.lab); g.lines = g.recs.map(r => LNUM.indexOf(String(r.lab))).filter(i => i >= 0 && D.lines[i].words.length); return g; }); return WGROUPS; }
+  const GCACHE = new Map();
+  function groupAlign(g) {
+    const regT = []; g.lines.forEach(li => D.lines[li].words.forEach((w, wi) => regT.push({ t: shownText(li, wi), ref: GI[keyOf(li, wi)], flag: SIGLUM.test(w.text) || !!w.is_oov || pErr(li, wi) >= .5 })));
+    const key = g.source + "|" + g.letter + "|" + regT.map(x => x.t).join(" "); if (GCACHE.has(key)) return GCACHE.get(key);
+    const cells = alignTokens(regT, g.recs.flatMap(r => r.text.split(/\s+/).filter(Boolean)), .5, { missing: true, plus: true, cand: true }); GCACHE.set(key, cells); return cells;
+  }
   function editionRow(li) {
-    const wt = WIT[LNUM[li]]; if (!wt || !D.lines[li].words.length) return null;
-    const cells = alignTokens(lineRegT(li), wt.text.split(/\s+/).filter(Boolean), .5, { missing: true, plus: true, cand: true });
-    return { sig: WSIG[wt.source] || wt.source, src: wt.source, cite: `${wt.source} ${wt.cite || ""}`.trim(), cells, diff: cells.filter(c => c.k === "differs").length, plus: cells.filter(c => c.k === "plus").length, cand: cells.filter(c => c.k === "cand").length, ocr: cells.filter(c => c.k === "ocr").length, merges: cells.stats.merges };
+    const g = witGroups().find(x => x.lines.includes(li)); if (!g || !D.lines[li].words.length) return null;
+    const last = g.lines[g.lines.length - 1], cells = [];
+    groupAlign(g).forEach(c => {
+      const own = c.ref !== undefined ? FL[c.ref][0] === li : (c.next != null ? FL[c.next][0] === li : li === last); if (!own) return;
+      const o = { ...c }; if (c.ref !== undefined) { o.g = c.ref; o.gs = c.refs || [c.ref]; o.ref = FL[c.ref][1]; } else { o.gnext = c.next; o.next = c.next != null ? FL[c.next][1] : null; } cells.push(o); });
+    cells.stats = { merges: cells.filter(c => c.merge).length }; const r0 = g.recs[0];
+    return { sig: WSIG[g.source] || g.source, src: g.source, cite: `${g.source} ${r0.cite || ""}`.trim(), cells, diff: cells.filter(c => c.k === "differs").length, plus: cells.filter(c => c.k === "plus").length, cand: cells.filter(c => c.k === "cand").length, ocr: cells.filter(c => c.k === "ocr").length, merges: cells.stats.merges };
   }
   // the regest of Pressutti reuses the words of the letter: aligned over the whole entry (only pairs of at least .75 similarity), shown only where a token aligns in the line
   const PCACHE = new Map();
@@ -1375,10 +1413,11 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   const STRIPS = (() => { if (PUBLIC) return null; try { const x = new XMLHttpRequest(); x.open("GET", `${SRCBASE}${S.folio}/strips/index.json`, false); x.send(); if (x.status === 200) return JSON.parse(x.responseText); } catch (e) {} return null; })();
   // default: the legacy line when there is one, else the ink strip when masks exist (internal build), else none; the choice of the editor stands
   let VIEWS_CHOSEN = null; try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v)) VIEWS_CHOSEN = v.filter(x => ["legacy", "image", "ink"].includes(x)); } catch (e) {}
-  effViews = () => VIEWS_CHOSEN || (HAS_WIT || HAS_REG ? ["legacy"] : (STRIPS ? ["ink"] : []));
-  const VIEW_BTN = [["legacy", "witness rows", () => HAS_WIT || HAS_REG || (D.formulas || []).length > 0], ["image", "image strip", () => state.hasImage], ["ink", "ink strip", () => !!STRIPS], ["none", "none", () => true]];
-  const setViewSel = () => { const ev_ = effViews(); $("viewSel").innerHTML = "line view " + VIEW_BTN.filter(b => b[2]()).map(b => `<button class="t" data-v="${b[0]}" aria-pressed="${b[0] === "none" ? !ev_.length : ev_.includes(b[0])}">${b[1]}</button>`).join(" ");
-    $("viewSel").querySelectorAll("button").forEach(bt => bt.onclick = (e) => { e.stopPropagation(); const v = bt.dataset.v; let cur = effViews().slice(); cur = v === "none" ? [] : (cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v)); VIEWS_CHOSEN = cur; try { localStorage.setItem(VKEY, JSON.stringify(cur)); } catch (x) {} setViewSel(); render(); }); };
+  let LAY = null;                                                           // layer groups (set below)
+  effViews = () => (LAY && LAY.text.wit ? ["legacy"] : []).concat((VIEWS_CHOSEN || (STRIPS ? ["ink"] : [])).filter(x => x !== "legacy"));
+  const VIEW_BTN = [["image", "image strip", () => state.hasImage], ["ink", "ink strip", () => !!STRIPS], ["none", "none", () => true]];
+  const setViewSel = () => { const ev_ = effViews(); const av = VIEW_BTN.filter(b => b[2]() && b[0] !== "none"); $("viewSel").innerHTML = av.length ? "line view " + VIEW_BTN.filter(b => b[2]()).map(b => `<button class="t" data-v="${b[0]}" aria-pressed="${b[0] === "none" ? !ev_.length : ev_.includes(b[0])}">${b[1]}</button>`).join(" ") : "";
+    $("viewSel").querySelectorAll("button").forEach(bt => bt.onclick = (e) => { e.stopPropagation(); const v = bt.dataset.v; let cur = effViews().slice(); cur = v === "none" ? [] : (cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v)); VIEWS_CHOSEN = cur.filter(x => x !== "legacy"); try { localStorage.setItem(VKEY, JSON.stringify(VIEWS_CHOSEN)); } catch (x) {} setViewSel(); render(); }); };
   setViewSel();
   // ------------------------------------------------------------ task modes: one Tab queue, counters, keys and progress record per operation
   const MODE_LIST = ["lines", "oov", "triage", "boundaries", "structure", "cursus", "corrections", "ner", "codicology", "legal", "arenga", "edition"];
@@ -1541,7 +1580,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   }
   function modeAfterRender() { document.querySelectorAll(".modecur").forEach(n => n.classList.remove("modecur")); const it = state.modeCur && curItem(); if (!it) return;
     const el = it.g !== undefined ? document.querySelector(`.w[data-k="${keyOf(it.li, it.wi)}"]`) : document.querySelector(`.line[data-li="${it.li}"]`); if (el) el.classList.add("modecur"); updateModeBar(); }
-  { const baseRender = render; render = function () { baseRender(); modeAfterRender(); }; }
+  { const baseRender = render; render = function () { baseRender(); modeAfterRender(); if (typeof alignSigla === "function") alignSigla(); }; }
   // the mode comes from the task link only (?task=…, with ?mode= for the same task); without a task the page is the plain review
   const TASKS = { "T2.2-0": ["Tier 0 boundaries", "boundaries"], "T2.2-1": ["Tier 1 lines", "lines"], "T2.2-2": ["Tier 2 OOV/sigla", "oov"], "T3.2": ["cursus", "cursus"], "T5.1": ["codicology", "codicology"], "T5.2": ["legal", "legal"], "T5.3": ["arenga", "arenga"], "T2.1": ["edition", "edition"],
     "T3.3": ["entities", "ner"], "T2.2-z": ["zones", "structure"], "T3.2c": ["scribal corrections", "corrections"], "T2.2-w": ["words", "triage"] };
@@ -1549,6 +1588,18 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function setMode(m, quiet) { state.mode = m && MODE_INFO[m] ? m : null; state.modeCur = null; updateModeBar(); if (!quiet && state.mode) { render(); modeNext(1); } }
   { const asg = WB.assignee ? WB.assignee(G_PAGE, TASK_ID) : null; $("modeWrap").innerHTML = TASK ? `task · ${esc(TASK_ID)} ${esc(TASK[0])} · ${asg ? (asg === CFG.login ? "assigned" : "assigned to @" + esc(asg)) : "open"} <b id="modeStat"></b> <span id="modeCur"></span> <span id="modeAsk" hidden></span>` : `<b id="modeStat"></b><span id="modeCur"></span><span id="modeAsk" hidden></span>`; }
   setMode(TASK ? TASK[1] : null, true);
+  // ------------------------------------------------------------ instant tooltips (no native title attributes) and the baseline of the sigla
+  const tipEl = document.createElement("div"); tipEl.id = "tip"; document.body.appendChild(tipEl);
+  const toTips = (root) => { (root.querySelectorAll ? root.querySelectorAll("[title]") : []).forEach(e => { const t = e.getAttribute("title"); if (t) e.setAttribute("data-tip", t); e.removeAttribute("title"); }); if (root.getAttribute && root.getAttribute("title")) { root.setAttribute("data-tip", root.getAttribute("title")); root.removeAttribute("title"); } };
+  toTips(document); new MutationObserver(ms => ms.forEach(m => { if (m.type === "attributes") toTips(m.target); else m.addedNodes.forEach(n => n.nodeType === 1 && toTips(n)); })).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["title"] });
+  document.addEventListener("mouseover", (e) => { const t = e.target.closest && e.target.closest("[data-tip]"); if (!t || !t.dataset.tip) { tipEl.style.display = "none"; return; }
+    tipEl.textContent = t.dataset.tip; tipEl.style.display = "block"; const r = t.getBoundingClientRect(), tw = tipEl.offsetWidth; tipEl.style.left = Math.max(6, Math.min(innerWidth - tw - 6, r.left)) + "px"; tipEl.style.top = (r.bottom + 6 + (tipEl.offsetHeight + r.bottom + 12 > innerHeight ? -(r.height + tipEl.offsetHeight + 12) : 0)) + "px"; });
+  document.addEventListener("scroll", () => { tipEl.style.display = "none"; }, true);
+  function alignSigla() {                                                    // each gutter siglum at the y of the corresponding witness row of the first pair
+    document.querySelectorAll(".line").forEach(row => { const sg = [...row.querySelectorAll(".wsig .wit.siglum")]; if (!sg.length) return; const pr = row.querySelector(".txt .pair"); if (!pr) return;
+      sg.forEach(x => { x.style.transform = ""; }); const wits = pr.querySelectorAll(".wit"); sg.forEach((x, k) => { const w = wits[k]; if (w) x.style.transform = `translateY(${(w.getBoundingClientRect().top - x.getBoundingClientRect().top).toFixed(1)}px)`; }); }); }
+  let _rz; window.addEventListener("resize", () => { clearTimeout(_rz); _rz = setTimeout(alignSigla, 80); }); if (document.fonts) { document.fonts.ready.then(alignSigla); document.fonts.addEventListener("loadingdone", alignSigla); }
+  { let _raf = 0; new ResizeObserver(() => { cancelAnimationFrame(_raf); _raf = requestAnimationFrame(alignSigla); }).observe($("lines")); }
   // ------------------------------------------------------------ keyboard and toggles
   function next(dir, open) {
     const f = flaggedList(); if (!f.length) { toast("all flagged words reviewed"); return; }
@@ -1588,6 +1639,32 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function setLayerButtons() { document.querySelectorAll("[data-layer]").forEach(b => b.setAttribute("aria-pressed", b.dataset.layer === state.layer)); $("editor").className = "editor layer-" + state.layer; }
   document.querySelectorAll("[data-layer]").forEach(b => b.onclick = (e) => { e.stopPropagation(); state.layer = b.dataset.layer; setLayerButtons(); closePop(); render(); });
 
+  // ------------------------------------------------------------ layer groups: Text (edition, diplomatic, witnesses), Apparatus (additions, margin notes, numerals, hands, initials), Analysis (confidence, cursus, entities, formulae, structure)
+  // state per editor and task; the defaults depend on the task
+  const LAYDEF = { text: [["edition", "edition"], ["dipl", "diplomatic"], ["wit", "witnesses"]], app: [["add", "additions"], ["margin", "margin notes"], ["num", "numerals"], ["hands", "hands"], ["init", "initials"]], ana: [["conf", "confidence"], ["cursus", "cursus"], ["ent", "entities"], ["form", "formulae"], ["struct", "structure"]] };
+  const LAYNAME = { text: "Text", app: "Apparatus", ana: "Analysis" };
+  function layDefault(mode) { const L = { text: { edition: 1, dipl: 1, wit: 0 }, app: {}, ana: {} }, on = (g, ...k) => k.forEach(x => { L[g][x] = 1; }), allApp = () => on("app", "add", "margin", "num", "hands", "init");
+    if (["lines", "oov", "triage", "corrections"].includes(mode)) { allApp(); on("ana", "conf"); } else if (["boundaries", "structure"].includes(mode)) { allApp(); on("ana", "conf", "struct"); } else if (mode === "cursus") on("ana", "cursus");
+    else if (mode === "ner") on("ana", "ent"); else if (mode === "codicology") allApp(); else if (mode === "edition") L.text.wit = 1; else if (mode === "legal") on("ana", "form", "struct"); else if (mode === "arenga") on("ana", "conf"); return L; }
+  const LKEY = `paprg.layers.${CFG.login}.${TASK_ID || "plain"}`; LAY = layDefault(state.mode);
+  try { const v = JSON.parse(localStorage.getItem(LKEY) || "null"); if (v && v.text && v.app && v.ana) LAY = v; } catch (e) {}
+  const layAvail = (g, k) => !(g === "text" && k === "wit" && !(HAS_WIT || HAS_REG));
+  function applyLayers() {
+    const root = $("lines"); root.classList.toggle("lay-noadd", !LAY.app.add); root.classList.toggle("lay-nomargin", !LAY.app.margin); root.classList.toggle("lay-nonum", !LAY.app.num); root.classList.toggle("lay-nohands", !LAY.app.hands); root.classList.toggle("lay-noinit", !LAY.app.init); root.classList.toggle("lay-nocursus", !LAY.ana.cursus);
+    state.heat = !!LAY.ana.conf; state.acc = !!LAY.ana.cursus; state.ner = !!LAY.ana.ent; state.fml = !!LAY.ana.form; state.struct = !!LAY.ana.struct; $("dsLegend").style.opacity = state.struct ? 1 : .4; $("fmLegend").style.opacity = state.fml ? 1 : .4;
+    state.layer = LAY.text.edition && LAY.text.dipl ? "both" : (LAY.text.dipl ? "dipl" : "edit"); setLayerButtons();
+  }
+  function drawLayerBar() {
+    $("layerBar").innerHTML = Object.keys(LAYDEF).map(g => { const any = LAYDEF[g].some(([k]) => LAY[g][k]);
+      return `<span class="lg" data-g="${g}"><button class="t gsw" aria-pressed="${any}">${LAYNAME[g]}</button><button class="t gcar" aria-label="${LAYNAME[g]} items">▾</button><span class="gmenu" hidden>${LAYDEF[g].map(([k, n]) => `<label class="${layAvail(g, k) ? "" : "na"}"><input type="checkbox" data-k="${k}" ${LAY[g][k] ? "checked" : ""} ${layAvail(g, k) ? "" : "disabled"}> ${n}</label>`).join("")}</span></span>`; }).join("");
+    $("layerBar").querySelectorAll(".lg").forEach(el => { const g = el.dataset.g, menu = el.querySelector(".gmenu");
+      el.querySelector(".gsw").onclick = (e) => { e.stopPropagation(); const any = LAYDEF[g].some(([k]) => LAY[g][k]); LAYDEF[g].forEach(([k]) => { LAY[g][k] = !any && layAvail(g, k) ? 1 : 0; }); if (g === "text" && !LAY.text.edition && !LAY.text.dipl) LAY.text.edition = 1; layChanged(); };
+      el.querySelector(".gcar").onclick = (e) => { e.stopPropagation(); const open = menu.hidden; document.querySelectorAll(".gmenu").forEach(m => { m.hidden = true; }); menu.hidden = !open; };
+      menu.onclick = (e) => e.stopPropagation(); menu.querySelectorAll("input").forEach(inp => inp.onchange = () => { LAY[g][inp.dataset.k] = inp.checked ? 1 : 0; if (g === "text" && !LAY.text.edition && !LAY.text.dipl) LAY.text.edition = 1; layChanged(true); }); });
+  }
+  function layChanged(keepMenu) { try { localStorage.setItem(LKEY, JSON.stringify(LAY)); } catch (e) {} const open = keepMenu ? [...document.querySelectorAll(".gmenu")].findIndex(m => !m.hidden) : -1; applyLayers(); drawLayerBar(); if (open >= 0) document.querySelectorAll(".gmenu")[open].hidden = false; setViewSel(); closePop(); render(); }
+  document.addEventListener("click", () => document.querySelectorAll(".gmenu").forEach(m => { m.hidden = true; }));
+  applyLayers(); drawLayerBar();
   // ------------------------------------------------------------ audit record, TEI and sync
   const ref = (g) => { const [li, wi] = FL[g]; return { line_id: D.lines[li].line_id, word_index: wi }; };
   function audit() {
@@ -1720,7 +1797,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     D.lines.forEach((l, li) => { const wt = WIT[lnum[li]]; if (!wt || L.isM(li) || !l.words.length) return;
       wit.push(`${I(4)}<annotation xml:id="wt${li + 1}" type="witness" subtype="${xml(wt.align || "aligned")}" target="#${lid(li)}" source="#${xml(wt.source)}" resp="#rules">${xml(wt.text)}</annotation>`);
       (editionRow(li) || { cells: [] }).cells.forEach((c, k) => { if (c.k === "cont") return;
-        wit.push(`${I(5)}<annotation xml:id="wk${li + 1}_${k + 1}" type="witness-token" source="#${xml(wt.source)}"${c.ref !== undefined ? ` target="${(c.refs || [c.ref]).map(r => tgt(li, r)).join(" ")}"` : (c.next != null ? ` next="${tgt(li, c.next)}"` : "")} ana="#${c.ref === undefined ? "plus" : c.k === "cand" ? "candidate" : c.k}"${c.merge ? ` n="merge ${c.merge}"` : ""} resp="#rules">${c.k === "missing" ? "" : xml(c.form)}</annotation>`); }); });
+        wit.push(`${I(5)}<annotation xml:id="wk${li + 1}_${k + 1}" type="witness-token" source="#${xml(wt.source)}"${c.ref !== undefined ? ` target="${c.gs.map(g => "#" + wid(g)).join(" ")}"` : (c.gnext != null ? ` next="#${wid(c.gnext)}"` : "")} ana="#${c.ref === undefined ? "plus" : c.k === "cand" ? "candidate" : c.k}"${c.merge ? ` n="merge ${c.merge}"` : ""} resp="#rules">${c.k === "missing" ? "" : xml(c.form)}</annotation>`); }); });
     D.lines.forEach((l, li) => { const W_ = lineWit(li); if (!W_ || L.isM(li) || !l.words.length) return; W_.rows.filter(r => r.edition).forEach(r => {
       Object.entries(r.bd).forEach(([wi, st]) => bnd.push(`${I(4)}<annotation xml:id="bd${li + 1}_${+wi + 1}_${r.sig}" type="boundary" target="${tgt(li, +wi)}" ana="#${st}" source="#${xml(r.src)}" resp="#rules"/>`));
       Object.entries(r.before).forEach(([nx, cs]) => cs.forEach((c, q) => { if (c.bd) bnd.push(`${I(4)}<annotation xml:id="bdp${li + 1}_${nx}_${q}_${r.sig}" type="boundary" next="${tgt(li, +nx)}" ana="#witness-only" source="#${xml(r.src)}" resp="#rules">${xml(c.form)}</annotation>`); }));
