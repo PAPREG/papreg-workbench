@@ -27,9 +27,9 @@ const CHECKS = `(() => {
   const lbs = [...q("lb")].map(e => e.getAttribute("n"));
   return { wellFormed: true, dangling, dup, zones: q("zone").length, entries: has("div", e => e.getAttribute("type") === "entry"), iem: has("div", e => e.getAttribute("subtype") === "in-eundem-modum"),
     parts: [...q("div")].filter(e => e.getAttribute("type") === "entry").map(e => e.getAttribute("part") || "-").join(","),
-    editorResp: has("div", e => e.getAttribute("resp") === "#editor"), add: q("add").length, del: q("del").length, subst: q("subst").length, handNotes: q("handNote").length, handShift: q("handShift").length,
+    editorResp: has("div", e => e.getAttribute("resp") === "#editor" && e.getAttribute("type") !== "entry"), editorNotes: has("note", e => e.getAttribute("type") === "editorial" && e.getAttribute("resp") === "#editor"), add: q("add").length, del: q("del").length, subst: q("subst").length, handNotes: q("handNote").length, handShift: q("handShift").length,
     marginalia: has("div", e => e.getAttribute("type") === "marginalia"), ann: Object.fromEntries([...new Set([...q("annotation")].map(e => e.getAttribute("type")))].map(t => [t, has("annotation", e => e.getAttribute("type") === t)])),
-    cursusInline: x.includes('type="cursus"') && /<note type="cursus"/.test(x), lbNums: lbs.slice(0, 3).concat(lbs.slice(-3)), availability: has("availability", e => e.getAttribute("status") === "restricted"), facsBad, facingHit, noInscr, partBad, addNoShift, nCls, archive: /vatican/i.test(x) || /vatican/i.test(document.body.innerText),
+    cursusInline: x.includes('type="cursus"') && /<note type="cursus"/.test(x), lbNums: lbs.slice(0, 3).concat(lbs.slice(-3)), rules: window.TEI_CHECKS.run(x, document.body.innerText).map(r => [r.id, r.ok, r.detail]), availability: has("availability", e => e.getAttribute("status") === "restricted"), facsBad, facingHit, noInscr, partBad, addNoShift, nCls, archive: /vatican/i.test(x) || /vatican/i.test(document.body.innerText),
     ent: { persName: q("persName").length, roleName: q("roleName").length, placeName: q("placeName").length, actorRole: has("rs", e => e.getAttribute("type") === "actor" && e.getAttribute("role") === "recipient"), obj: has("rs", e => e.getAttribute("type") === "object"), measure: q("measure").length > 0 } };
 })()`;
 try {
@@ -42,7 +42,8 @@ try {
   check(r.wellFormed, "untouched side: well formed " + (r.msg || ""));
   check(r.dangling.length === 0 && r.dup.length === 0, `no dangling pointer, no duplicate xml:id (${r.dangling.slice(0, 4)} ${r.dup.slice(0, 4)})`);
   check(r.zones > 0 && r.availability === 1 && r.handNotes === 3, `facsimile zones ${r.zones}, restricted availability, handNotes h1-h3`);
-  check(r.editorResp === 0, "nothing carries #editor before the editor has done anything");
+  check(r.editorResp > 0 && r.editorNotes >= r.editorResp, `parts that differ from the rules carry #editor and a note editorial (${r.editorResp} parts, ${r.editorNotes} notes)`);
+  check(r.rules.every(x => x[1]), `all ${r.rules.length} rules of tei_rules.md met (${r.rules.filter(x => !x[1]).map(x => x.join(":"))})`);
   check(r.facsBad.length === 0, `every facs resolves to a zone of the surface (${r.facsBad.slice(0, 3)})`);
   check(r.facingHit.length === 0, "no annotation or text points at a facing-page zone");
   check(r.noInscr.length === 0, `every entry has an inscriptio, is in-eundem-modum or continues the previous folio (${r.noInscr})`);
@@ -67,9 +68,10 @@ try {
   if (process.env.TEI_OUT) writeFileSync(process.env.TEI_OUT + ".edited.xml", await ev("window.__wb.tei()"));
   check(r.wellFormed, "edited side: well formed " + (r.msg || ""));
   check(r.dangling.length === 0 && r.dup.length === 0, `no dangling pointer, no duplicate xml:id (${r.dangling.slice(0, 4)} ${r.dup.slice(0, 4)})`);
+  check(r.rules.every(x => x[1]), `edited side: all ${r.rules.length} rules met (${r.rules.filter(x => !x[1]).map(x => x.join(":"))})`);
   check(r.add === 6 && r.del === 2 && r.subst === 1 && r.handShift === 8 && r.handNotes === 5, `add ${r.add}, del ${r.del}, subst ${r.subst}, handShift ${r.handShift}, handNotes ${r.handNotes}`);
-  check(r.editorResp === 0, "structure parts keep #rules unless the editor moved a boundary");
-  check(r.ent.persName === 1 && r.ent.roleName === 1 && r.ent.placeName === 1 && r.ent.actorRole === 1 && r.ent.obj === 1, `entity classes in the text: ${JSON.stringify(r.ent)}`);
+  
+  check(r.ent.persName === 2 && r.ent.roleName === 1 && r.ent.placeName === 1 && r.ent.actorRole === 1 && r.ent.obj === 1, `entity classes in the text: ${JSON.stringify(r.ent)}`);
   check(r.marginalia === 1, "a line marked as note stands in the marginalia div");
   check(r.ann["marginal-text"] === nMarg - 2, `decided marginal lines left the standoff list (${r.ann["marginal-text"]} of ${nMarg})`);
 } catch (e) { console.log("FAIL exception", e.message); ok = false; }

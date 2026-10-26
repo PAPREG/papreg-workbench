@@ -9,5 +9,5 @@ There is no ODD for the project yet; these rules are the checks the export must 
 5. `part="F"` only on the first entry, `part="I"` only on the last, `part="M"` only on a single entry page.
 6. Every `<add place="line-end">` is directly preceded by a `<handShift>`.
 7. The entity classes of `classDecl` (`N1`…`N9`) are the hotkeys of the interface.
-8. Nothing carries `resp="#editor"` before the editor has decided something.
+8. `resp` is `#rules`, `#model`, `#editor`, `#formulae` or a declared respStmt; a part that differs from the rule-based proposal carries `#editor` and an editorial note saying what moved.
 9. The name of the holding archive occurs neither in the file nor in the interface.

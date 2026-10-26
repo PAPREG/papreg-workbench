@@ -339,6 +339,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 <div class="toast" id="toast"></div>
 
 <script src="js/wb.js"></script>
+<script src="js/tei_checks.js"></script>
 <script>
 "use strict";
 (async function () {
@@ -358,12 +359,12 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const suggOpen = () => SUGG.filter(x => !state.rej.has(x.k) && !state.ne.some(n => n.gi <= x.gi && x.gi < n.gi + n.span));
   const SUGG_AT = () => { const m = {}; suggOpen().forEach(x => { for (let j = 0; j < x.span; j++) m[x.gi + j] = { x, first: j === 0 }; }); return m; };
   function suggList() {
-    const open = suggOpen(); if (!SUGG.length) return "";
+    const open = suggOpen(); if (!SUGG.length) return `<li class="empty">entity suggestions: not run on this page</li>`;
     return `<li class="empty">Suggestions (${esc(D.entity_suggestion_source || "model")}; not checked): ${open.length}</li>` + open.map(x =>
       `<li class="c-${x.type} sugg"><span class="net">${NE_TYPES[x.type][0]}?</span> ${esc(FL.slice(x.gi, x.gi + x.span).map(([li, wi]) => D.lines[li].words[wi].text).join(" "))} <span class="meta">line ${LNUM[FL[x.gi][0]]}</span> <button class="t" data-sugg="${x.k}">accept</button> <button class="t" data-srej="${x.k}">reject</button></li>`).join("") + (state.rej.size ? `<li class="empty">${state.rej.size} suggestion(s) rejected</li>` : "");
   }
   function decideSugg(x, accept, g) {
-    if (accept) mutate(() => state.ne.push({ id: ++state.seq, gi: x.gi, span: x.span, type: x.type, at: new Date().toISOString(), source: "suggestion" }));
+    if (accept) mutate(() => state.ne.push({ id: ++state.seq, gi: x.gi, span: x.span, type: x.type, role: x.type === "actor" ? roleFor(x.gi) : "", sub: x.label === "NAT" ? "natural" : "", at: new Date().toISOString(), source: "suggestion" }));
     else mutate(() => state.rej.add(x.k));
     const [fl, fw] = FL[x.gi]; state.focus = [fl, fw]; state.active = fl; render();
     for (let j = 0; j < x.span; j++) { const [a, b] = FL[x.gi + j], el = document.querySelector(`.w[data-k="${keyOf(a, b)}"]`); if (el) { el.classList.add(accept ? "fl-ok" : "fl-no"); } }
@@ -373,7 +374,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     if (r) { e.stopPropagation(); const k = +r.dataset.srej; mutate(() => state.rej.add(k)); render(); toast("suggestion rejected"); return; }
     const b = e.target.closest && e.target.closest("[data-sugg]"); if (!b) return;
     e.stopPropagation(); const x = SUGG[+b.dataset.sugg];
-    mutate(() => state.ne.push({ id: ++state.seq, gi: x.gi, span: x.span, type: x.type, at: new Date().toISOString(), source: "suggestion" }));
+    mutate(() => state.ne.push({ id: ++state.seq, gi: x.gi, span: x.span, type: x.type, role: x.type === "actor" ? roleFor(x.gi) : "", sub: x.label === "NAT" ? "natural" : "", at: new Date().toISOString(), source: "suggestion" }));
     render(); toast("suggested entity accepted");
   });
   // editor-facing profile: nine classes (hotkeys N1…N9, N0 clears) projected from the 19 labels of the model; an ACTOR carries a role (R + letter)
@@ -682,12 +683,38 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   };
   // marginal lines (rubrics, notes, fragments outside the main column)
   const hiddenLine = (l) => l.zone === "facing-page" || l.zone === "folio-mark";    // zones of the facing page and the folio mark: kept in the facsimile, not shown, not numbered
-  const numeralLine = (l) => l.zone_subtype === "later-numbering";                   // a later hand's number in the left margin: a gutter chip, never a text line
+  const numeralLine = (l) => { marginClasses(); return l.zone_subtype === "later-numbering"; };   // a later hand's number in the left margin: a gutter chip, never a text line
   const MAIN_X = (() => { const xs = D.lines.filter(l => l.bbox && !hiddenLine(l)).map(l => l.bbox[0]).sort((a, b) => a - b); return xs[Math.floor(xs.length / 2)] || .35; })();
   const MAIN_W = (() => { const ws = D.lines.filter(l => l.bbox && !hiddenLine(l)).map(l => l.bbox[2]).sort((a, b) => a - b); return ws[Math.floor(ws.length * .75)] || .5; })();
   const isMargin = (l) => !l.bbox || l.bbox[0] < MAIN_X - .06 || l.bbox[0] > MAIN_X + .12 || l.bbox[2] < MAIN_W * .3;
   // line labels: text lines 1…n in page order, marginal lines m1…mk (the same labels as the lb n of the TEI export)
   const LNUM = D.labels ? D.labels.map(x => x || "") : (() => { let a = 0, b = 0; return D.lines.map(l => hiddenLine(l) ? "" : (l.words.length && isMargin(l)) ? "m" + (++b) : String(++a)); })();
+  // Left-margin zones, by rule: a leading ".." in the reading or an address form of the inscriptio formulary (dative of the addressee) -> address; else a zone
+  // 1-4 lines below the start of an entry (the rules' own segmentation) -> later numbering; a zone that touches an address above it continues it.
+  // The page can carry the editor's classification (zone_truth); where it differs from the rule the editor's decision stands and is marked as such.
+  const ADDRESS_FORM = /^(archiepiscop|episcop|abbat|abbatiss|decan|prepos|prior|archidiacon|magistr|capitul|conventui|universis|venerabil|dilect(o|is|e)$|nobil|illustr|cantor|thesaurar|canonic|cleric|rector|plebano)/;
+  let MC = null;
+  function marginClasses() {
+    if (MC) return MC; MC = {};
+    const auto = autoSeg(computeParts()), starts = [], yc = (l) => l.bbox[1] + l.bbox[3] / 2;
+    auto.forEach((x, i) => { const pv = i ? auto[i - 1][1] : null, iem = x[1] === "nota" && iemAtG(x[0]);
+      if (i === 0 || iem || ((pv === "datatio" || pv === "nota") && x[1] !== "datatio" && x[1] !== "nota")) starts.push(yc(D.lines[FL[x[0]][0]])); });
+    const ys = D.lines.filter(l => l.bbox && !hiddenLine(l) && l.zone !== "margin-left" && l.words.length).map(yc).sort((a, b) => a - b), gaps = ys.slice(1).map((y, i) => y - ys[i]).sort((a, b) => a - b), pitch = gaps[Math.floor(gaps.length / 2)] || .016;
+    let prev = null;
+    D.lines.forEach((l, li) => {
+      if (l.zone !== "margin-left") return;
+      const text = (l.reading_raw != null ? l.reading_raw : l.expanded_text || "").trim(), first = rd(text).split(" ")[0] || "";
+      let cls = null, why = "";
+      if (/^\.\./.test(text)) { cls = "address"; why = 'leading ".."'; }
+      else if (ADDRESS_FORM.test(first)) { cls = "address"; why = "address form: " + first; }
+      else { const ds = starts.map(y => (yc(l) - y) / pitch).filter(d => d > .5 && d <= 4.5); if (ds.length) { cls = "later-numbering"; why = `${ds[0].toFixed(1)} lines below an entry start`; } }
+      if (!cls && prev && prev.cls === "address" && l.bbox[1] <= prev.y1 + .004) { cls = "address"; why = "continues the address above"; }
+      MC[li] = { cls: cls || "unclassified", why }; prev = { cls: MC[li].cls, y1: l.bbox[1] + l.bbox[3] };
+      l.zone_rule = MC[li].cls; l.zone_subtype = l.zone_truth || MC[li].cls; l.zone_how = l.zone_truth && l.zone_truth !== MC[li].cls ? "editor" : "rules";
+    });
+    return MC;
+  }
+  const iemAtG = (g) => /^(in eundem|in e m\b|in eodem)/.test(FL.slice(g, g + 4).filter(([li]) => !isMargin(D.lines[li])).map(([li, wi]) => rd(shownText(li, wi))).join(" "));
   function computeParts() {
     const n = FL.length, part = new Array(n), toks = FL.map(([li, wi]) => shownText(li, wi)), rds = toks.map(rd);
     const margin = FL.map(([li, wi]) => isMargin(D.lines[li]) || !!D.lines[li].words[wi].add);       // words in a line-end addition stand outside the running text
@@ -771,7 +798,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   // marginal lines are shown apart, after the text, each with the main line it stands beside
   function pageLayout(DS) {
     const PART = DS.part, entryAt = {}; let eNo = 0;
-    const iemAt = (g) => /^(in eundem|in e m\b|in eodem)/.test(FL.slice(g, g + 4).filter(([li]) => !isMargin(D.lines[li])).map(([li, wi]) => rd(shownText(li, wi))).join(" "));
+    const iemAt = iemAtG;
     DS.seg.forEach((x, i) => { const pv = i ? DS.seg[i - 1][1] : null, iem = x[1] === "nota" && iemAt(x[0]);      // an in eundem modum entry is an entry of its own
       if (i === 0 || iem || ((pv === "datatio" || pv === "nota") && x[1] !== "datatio" && x[1] !== "nota")) entryAt[x[0]] = { n: ++eNo, cont: i === 0 && x[1] !== "inscriptio", iem }; });
     const yc = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0, isM = (li) => D.lines[li].words.length > 0 && D.lines[li].words.every((w, wi) => PART[GI[keyOf(li, wi)]] === "margo");
@@ -850,6 +877,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           host.title = fmTitle(F); t.appendChild(host); }
         const s = document.createElement("span");
         const sg = !ne && sgAt[g];
+        if (D.initial_restored && li === D.initial_restored.line && wi === 0) host.insertAdjacentHTML("beforeend", `<span class="dropcap" title="initial of the entry, own zone: not read by the recogniser, supplied by the editor (guide letter ${esc(D.initial_restored.guide_letter)})">${esc(D.initial_restored.text)}</span> `);
         if (w.add && !(wi > 0 && l.words[wi - 1].add)) host.insertAdjacentHTML("beforeend", `<span class="chip add" title="added later in lighter ink (hand h2), repeated in the left margin">add · line end · h2</span>`);
         s.className = "w " + lv + (w.add ? " addw" : "") + (w.in_cadence ? " cad" : "") + (ed ? " edited" : "") + (ne ? " ne c-" + ne.type : "") + (sg ? " sg c-" + sg.x.type : "") + "";
         if (state.struct) s.title = PART[g] + " · " + (s.title || "");
@@ -1170,9 +1198,15 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     // hands: h1 = the main hand of the page; every other hand named by the editor in the apparatus gets its own handNote
     const hands = [...new Set(app.map(a => (a.hand || "").trim()).filter(Boolean))], hid = (h) => "h" + (hands.indexOf(h) + 4);
     // who decided: the rules propose the structure; a part is #editor's once its start or its end differs from the proposal
-    const auto = proposalSeg() || autoSeg(computeParts()), segSame = (j) => { const s = DS.seg[j], n = DS.seg[j + 1], k = auto.findIndex(x => x[0] === s[0] && x[1] === s[1]);
-      return k >= 0 && (auto[k + 1] ? auto[k + 1][0] : null) === (n ? n[0] : null); };
-    const respSeg = (j) => state.dsSeg && !segSame(j) ? "#editor" : "#rules";
+    // the rule-based segmenter's own proposal; where the structure on the page differs (the editor's brief, or the editor's moves) the part is the editor's, with a note on what moved
+    const autoR = autoSeg(computeParts()), gname = (g) => `line ${LNUM[FL[g][0]]}, “${shownText(...FL[g])}”`;
+    const inRules = (j) => autoR.some(a => a[0] === DS.seg[j][0] && a[1] === DS.seg[j][1]);
+    const respSeg = (j) => inRules(j) ? "#rules" : "#editor";
+    const segNote = (j) => { if (inRules(j)) return ""; const x = DS.seg[j], same = autoR.find(a => a[0] === x[0]), near = autoR.filter(a => a[1] === x[1]).sort((a, b) => Math.abs(a[0] - x[0]) - Math.abs(b[0] - x[0]))[0];
+      const what = same ? `the rules label this start ${same[1]}; set to ${x[1]}` : near && Math.abs(near[0] - x[0]) < 40 ? `${x[1]} moved from ${gname(near[0])} to ${gname(x[0])}` : `${x[1]} starts here (${gname(x[0])}); the rules propose no boundary`;
+      return `<note type="editorial" resp="#editor">${xml(what)}</note>`; };
+    const dropped = autoR.filter(a => !DS.seg.some(x => x[0] === a[0]) && !DS.seg.some(x => x[1] === a[1] && Math.abs(x[0] - a[0]) < 40)).length;
+    const nDecisions = DS.seg.filter((x, j) => !inRules(j)).length;
     const segOf = (g) => PART[g] === "margo" ? "m" + FL[g][0] : "s" + DS.seg.filter(x => x[0] <= g).length;
     // marginal lines: the editor's decision (addition at a place in the text / marginal note) or undecided (machine detection, standoff)
     const mg = (li) => state.marg[li] || null, inlineAdd = (li) => mg(li) && mg(li).as === "add" && mg(li).after != null, isNote = (li) => mg(li) && mg(li).as === "note";
@@ -1204,13 +1238,15 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     // an addition confirmed by the editor sits in the text after the word it follows
     const addAt = {}; L.margL.filter(inlineAdd).forEach(li => { const m = mg(li), g = m.after;
       put(addAt, g, `<add place="${m.place === "above" ? "above" : "margin"}" resp="#editor" facs="${zone(li)}">${lb(li)}` + D.lines[li].words.map((w, wi) => wordOut(GI[keyOf(li, wi)])).join(" ") + `</add>`); });
+    const mcNote = (z) => z.zone_how === "editor" ? `<note type="editorial" resp="#editor">${xml(`the rule classifies this zone as ${z.zone_rule}; set to ${z.zone_subtype}`)}</note>` : "";
     // the address supplied later: line-end additions (hand h2) and their repetition in the left margin form the inscriptio of the entry
     const addrGroup = (E, li) => (D.address_groups || []).find(x => String(x.entry_line) === LNUM[li] && x.add_lines.length);
     const inscriptio = (E, li) => { const gr = E.iem ? null : addrGroup(E, li); if (!gr) return "";
       const addW = [], zids = []; gr.add_lines.forEach(lab => { const ai = LNUM.indexOf(lab); zids.push("#" + xml(D.lines[ai].line_id) + "-add"); D.lines[ai].words.forEach((w, wi) => w.add && addW.push(GI[keyOf(ai, wi)])); });
       const txt = gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].words.map((w, wi) => xml(shownText(LNUM.indexOf(m), wi))).join(" ")).join(" "), mz = gr.margin_lines.map(m => zone(LNUM.indexOf(m)));
       return `${I(5)}<div type="inscriptio" resp="#rules">${I(6)}<ab><handShift new="#h2"/><add place="line-end" hand="#h2" facs="${zids.join(" ")}" resp="#rules" cert="medium">${addW.map(wordOut).join(" ")}</add><handShift new="#h1"/>` +
-        `${I(7)}<note type="marginal" subtype="address" place="margin-left" hand="#h2" facs="${mz.join(" ")}" corresp="#e${E.n}" resp="#rules">${txt}</note></ab>${I(5)}</div>`; };
+        `${I(7)}<note type="marginal" subtype="address" place="margin-left" hand="#h2" facs="${mz.join(" ")}" corresp="#e${E.n}" resp="${gr.margin_lines.some(m => D.lines[LNUM.indexOf(m)].zone_how === "editor") ? "#editor" : "#rules"}">${txt}${gr.margin_lines.map(m => mcNote(D.lines[LNUM.indexOf(m)])).join("")}</note></ab>${I(5)}</div>`; };
+    const IR = D.initial_restored;
     // edition: entry > structural part > ab, lines as lb milestones
     let ed = "", entryOpen = false, segKind = null, segI = -1, prevLi = -1, nEntry = 0;
     const closeSeg = () => { if (segKind) ed += `</ab>` + (segKind === "part" ? `${I(5)}</div>` : ""); segKind = null; }, closeEntry = () => { if (entryOpen) ed += `${I(4)}</div>`; entryOpen = false; };
@@ -1223,11 +1259,12 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
         segI++; closeSeg(); const E = L.entryAt[g], pt = DS.seg[segI][1];
         if (E) { closeEntry(); nEntry++;
           const pF = E.cont, pI = nEntry === entryTotal && lastOpen && !E.iem, pa = pF && pI ? "M" : pF ? "F" : pI ? "I" : "";
-          ed += `${I(4)}<div type="entry"${E.iem ? ` subtype="in-eundem-modum"` : ""} n="${E.n}" xml:id="e${E.n}"${pa ? ` part="${pa}"` : ""} resp="${respSeg(segI)}">` + (E.cont ? `${I(5)}<note type="editorial">the page begins inside an entry of the previous folio</note>` : "") + inscriptio(E, li); entryOpen = true; }
+          ed += `${I(4)}<div type="entry"${E.iem ? ` subtype="in-eundem-modum"` : ""} n="${E.n}" xml:id="e${E.n}"${pa ? ` part="${pa}"` : ""} resp="${respSeg(segI)}">` + (E.cont ? `${I(5)}<note type="editorial">the page begins inside an entry of the previous folio</note>` : "") + (E.iem ? segNote(segI) : "") + inscriptio(E, li); entryOpen = true; }
         if (E && E.iem) { segKind = "iem"; ed += `${I(5)}<ab>`; }
-        else { segKind = "part"; ed += `${I(5)}<div type="${pt === "nota" ? "registration-note" : pt}" resp="${respSeg(segI)}">${I(6)}<ab>`; }
+        else { segKind = "part"; ed += `${I(5)}<div type="${pt === "nota" ? "registration-note" : pt}" resp="${respSeg(segI)}">${segNote(segI)}${I(6)}<ab>`; }
       }
       if (li !== prevLi) { ed += (FL[g][1] === 0 ? `${I(6)}` : "") + lb(li); prevLi = li; }
+      if (IR && FL[g][0] === IR.line && FL[g][1] === 0) ed += `<hi rend="initial" facs="${xml("#" + D.lines[IR.line].line_id)}-initial"><persName resp="#editor">${xml(IR.text)}</persName></hi><note type="guide-letter" resp="#editor">${xml(IR.guide_letter)}</note><note type="editorial" resp="#editor">the initial is not read by the recogniser (zone of its own); supplied by the editor</note> `;
       ed += wordOut(g) + (addAt[g] ? " " + addAt[g] : "") + " ";
     }
     closeSeg(); closeEntry(); ed = ed.replace(/ (<\/ab>)/g, "$1");
@@ -1241,17 +1278,21 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       conf.push(`${I(4)}<annotation xml:id="cf${wid(g).slice(1)}" type="word-confidence" target="#${wid(g)}" resp="#model" cert="${(1 - w.p_error).toFixed(2)}"/>`); });
     const inGroup = (li) => (D.address_groups || []).some(x => x.entry_line && x.add_lines.length && x.margin_lines.includes(LNUM[li]));
     const nearestMain = (z) => L.mainL.reduce((b, m) => Math.abs(yc0(D.lines[m]) - yc0(z)) < Math.abs(yc0(D.lines[b]) - yc0(z)) ? m : b, L.mainL[0]), yc0 = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0;
-    const nums = D.lines.map((z, li) => numeralLine(z) ? `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(z))}" facs="${zone(li)}" hand="#h3" resp="#rules"><gap reason="numeral unread"/></annotation>` : "").filter(Boolean);
-    const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li) && !inGroup(li)).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="${xml(D.lines[li].zone_subtype || "addition-candidate")}" target="#${lid(L.beside(li))}" facs="${zone(li)}"${D.lines[li].zone_subtype === "address" ? ` hand="#h2"` : D.lines[li].zone_subtype === "later-numbering" ? ` hand="#h3"` : ""} resp="#rules">` + (D.lines[li].zone_subtype === "later-numbering" ? `<gap reason="numeral"/>` : D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ")) + `</annotation>`);
-    const sig = []; FL.forEach(([li, wi], g) => { const t = shownText(li, wi); if (inl(g) && /^\p{Lu}\.,?$/u.test(t) && !state.ne.some(n => spanGis(n).includes(g))) sig.push(`${I(4)}<annotation xml:id="sg${wid(g).slice(1)}" type="siglum" target="#${wid(g)}" resp="#rules">${xml(t)}${(D.lines[li].words[wi].sigla_candidates || []).map(c => `<note type="expansion-candidate" resp="#model">${xml(c.text)}</note>`).join("")}</annotation>`); });
+    const nums = D.lines.map((z, li) => numeralLine(z) ? `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(z))}" facs="${zone(li)}" hand="#h3" resp="${z.zone_how === "editor" ? "#editor" : "#rules"}"><gap reason="numeral unread"/>${mcNote(z)}</annotation>` : "").filter(Boolean);
+    const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li) && !inGroup(li)).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="${xml(D.lines[li].zone_subtype === "address" || D.lines[li].zone_subtype === "later-numbering" ? D.lines[li].zone_subtype : "addition-candidate")}" target="#${lid(L.beside(li))}" facs="${zone(li)}"${D.lines[li].zone_subtype === "address" ? ` hand="#h2"` : D.lines[li].zone_subtype === "later-numbering" ? ` hand="#h3"` : ""} resp="#rules">` + (D.lines[li].zone_subtype === "later-numbering" ? `<gap reason="numeral"/>` : D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ")) + `</annotation>`);
+    const sig = []; FL.forEach(([li, wi], g) => { const t = shownText(li, wi); if (inl(g) && /^\p{Lu}\.,?$/u.test(t) && !state.ne.some(n => spanGis(n).includes(g))) sig.push(`${I(4)}<annotation xml:id="sg${wid(g).slice(1)}" type="siglum" target="#${wid(g)}" resp="#rules">${xml(t)}${(D.lines[li].words[wi].sigla_candidates || []).map(c => `<note type="expansion-candidate" resp="#model-expanded">${xml(c.text)}</note>`).join("")}</annotation>`); });
     const mz = (id, m) => m ? `${I(4)}<annotation xml:id="ink-${id}" type="ink" target="#${id}" resp="#rules"><measure type="darkness" quantity="${m.darkness}" unit="grey-level"/><measure type="stroke-width" quantity="${m.stroke_width}" unit="px"/></annotation>` : "";
     const ink = D.lines.map(l => !l.ink ? "" : l.split ? mz(xml(l.line_id), l.ink.main) + mz(xml(l.line_id) + "-add", l.ink.add) : l.zone === "margin-left" ? mz(xml(l.line_id), l.ink.all) : "").filter(Boolean);
+    const NK = (t) => "N" + (NE_KEYS.indexOf(t) + 1);
+    const ents = suggOpen().filter(x => Array.from({ length: x.span }, (_, j) => x.gi + j).every(inl)).map((x, k) => { const ids = Array.from({ length: x.span }, (_, j) => "#" + wid(x.gi + j)), role = x.type === "actor" ? roleFor(x.gi) : "";
+      return `${I(4)}<annotation xml:id="en${x.k + 1}" type="entity" ana="#${NK(x.type)}" target="${ids.join(" ")}" resp="#model" source="#${x.source === "ner-head" ? "model-ner-head" : "model-span-ner"}"${x.score != null ? ` cert="${x.score}"` : ""}>${xml(x.label || "")}${role ? `<note type="role-proposal" resp="#rules">${ROLES[role]}</note>` : ""}</annotation>`; });
     const list = (type, resp, items) => items.length ? `${I(3)}<listAnnotation type="${type}">${items.join("")}${I(3)}</listAnnotation>` : "";
     const folioMark = D.lines.map((l, li) => l.zone === "folio-mark" ? `${I(4)}<fw type="folio-mark" place="top-centre" facs="${zone(li)}" resp="#rules"/>` : "").join("");
+    const nMargDec = D.lines.filter(z => z.zone_how === "editor").length;
     const dipl = L.mainL.some(li => (state.dipl[li] ? state.dipl[li].text : D.lines[li].diplomatic_text)) ?
       `${I(3)}<div type="transcription" subtype="diplomatic">${I(4)}<ab>` + D.lines.map((l, li) => `${I(5)}<lb n="${lnum[li]}" facs="${zone(li)}"/>${xml(state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || ""))}`).join("") + `${I(4)}</ab>${I(3)}</div>` : "";
     const pts = (poly) => (poly || []).map(p => Math.round(p[0] * W) + "," + Math.round(p[1] * H)).join(" ");
-    const zones = D.lines.map(l => l.zones ? l.zones.map(z => `${I(4)}<zone xml:id="${xml(l.line_id)}${z.type === "add" ? "-add" : ""}" type="${z.type === "add" ? "add" : "line"}" points="${pts(z.polygon)}"/>`).join("")
+    const zones = D.lines.map(l => l.zones ? l.zones.map(z => `${I(4)}<zone xml:id="${xml(l.line_id)}${z.type === "main" ? "" : "-" + z.type}" type="${z.type === "main" ? "line" : z.type}" points="${pts(z.polygon)}"/>`).join("")
       : `${I(4)}<zone xml:id="${xml(l.line_id)}"${l.zone === "facing-page" ? ` type="facing-page"` : l.zone === "margin-left" ? ` type="margin" subtype="${xml(l.zone_subtype || "address")}"` : ""} points="${pts(l.polygon)}"/>`).join("");
     const idno = String(S.shelfmark).replace(/^.*,\s*(?=Reg\. Vat\.)/, "");
     const cursusCats = ["planus", "tardus", "velox", "non-canonical"].map(c => `${I(7)}<category xml:id="${c}"><catDesc>${c === "non-canonical" ? "clause end that is not planus, tardus or velox" : c}</catDesc></category>`).join("");
@@ -1263,6 +1304,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
         <title>${xml(S.shelfmark)}, fol. ${xml(S.folio)} · ${xml(S.pontificate)}: review export</title>
         <respStmt xml:id="editor"><resp>review and correction</resp><name>@${xml(CFG.login)}</name></respStmt>
         <respStmt xml:id="model"><resp>automatic transcription, word confidence and name suggestions</resp><name>${xml(M.name)}, ${xml(M.version)}</name></respStmt>
+        <respStmt xml:id="model-expanded"><resp>expansion candidates of the sigla (reading of the expanded-target system, Table 2 of the HTR paper)</resp><name>PAPREG workbench</name></respStmt>${D.entity_suggestion_source ? `
+        <respStmt xml:id="model-span-ner"><resp>entity suggestions: 19-label Span-NER projected on the nine classes</resp><name>ERCDiDip/medieval-latin-span-ner</name></respStmt>
+        <respStmt xml:id="model-ner-head"><resp>entity suggestions: NER head of the hybrid (PER, LOC)</resp><name>${xml(M.name)}</name></respStmt>` : ""}
         <respStmt xml:id="formulae"><resp>formula detection: Herde, Audientia litterarum contradictarum (FLAME containment and exact fragments) and recurrence in the Honorius III register</resp><name>PAPREG workbench</name></respStmt>
         <respStmt xml:id="rules"><resp>rule-based proposals: diplomatic structure (formula openings, sentence boundaries, column geometry), clause ends and their cursus class, marginal lines, sigla</resp><name>PAPREG workbench</name></respStmt>
       </titleStmt>
@@ -1277,7 +1321,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           <msContents><msItem><locus>fol. ${xml(S.folio)}</locus></msItem></msContents>
           <physDesc><handDesc>
             <handNote xml:id="h1" scope="major" medium="dark brown ink">registrator, main text${D.hand ? ` (${xml(D.hand)})` : ""}</handNote>
-            <handNote xml:id="h2" scope="minor" medium="lighter ink, finer pen">addresses supplied at line ends and repeated in the left margin; same registrator later or another hand: to be confirmed by the editor</handNote>
+            <handNote xml:id="h2" scope="minor" medium="lighter ink, finer pen" resp="#editor">addresses supplied at line ends and repeated in the left margin; same registrator later or another hand: provisional, to be confirmed by the editor</handNote>
             <handNote xml:id="h3" scope="minor" medium="dark ink">later hand: letter numbers in the left margin</handNote>${hands.map(h => `
             <handNote xml:id="${hid(h)}" scope="minor">${xml(h)} (named by the editor in the apparatus)</handNote>`).join("")}
           </handDesc></physDesc>
@@ -1293,6 +1337,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           <p>Zones of the facsimile: type="line" and type="add" (a segment at the end of a line in lighter ink, split off by the ink rule recorded in the page data), type="margin" (left margin), type="facing-page" (centre beyond the right edge of the text block; its text is not kept).</p></segmentation>
         <interpretation>
           <p>Responsibility: <ident>#rules</ident> is a proposal of the rule set, <ident>#model</ident> a machine suggestion, <ident>#editor</ident> a decision of the editor; nothing carries <ident>#editor</ident> that the editor has not confirmed. A part div carries <ident>#editor</ident> only once its start or end differs from the proposal.</p>
+          <p>${D.entity_suggestion_source ? `Entity suggestions (standoff, type="entity"): ${xml(D.entity_suggestion_source)}; an accepted suggestion stands in the text with resp="#editor".` : "Entity suggestions: not run on this page."}</p>
           <p>Standoff annotations (back to the text through <att>target</att>) hold what is not yet confirmed: the cursus class of each clause end (ana, class of the pilot-1 rule classifier on the text as it now stands), the model's word confidence (<att>cert</att> = calibrated probability that the word is read correctly, given for words at 0.80 or below), marginal text that may be an addition (the editor can confirm it as an add in the text after the word it follows, or as a marginal note), and siglum candidates. An editor's correction of a word is marked resp="#editor" on the w; the machine reading is kept in the audit record.</p>
         </interpretation>
       </editorialDecl>
@@ -1303,8 +1348,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     </encodingDesc>
     <revisionDesc>
       <change when="${now}" who="#model">machine reading (${xml(M.name)}) of ${S.folio}</change>${D.zone_split ? `
-      <change when="${now}" who="#rules">zone classes: facing page (centre beyond the right edge of the text block), left margin (address / later numbering); line-end additions split off where the ink changes (tail / rest ink ratio at most ${D.zone_split.theta_ink_ratio}${D.zone_split.forced_lines.length ? `; named by the editor: line ${D.zone_split.forced_lines.join(", ")}` : ""})</change>` : ""}
-      <change when="${now}" who="#editor">${state.dsSeg ? "structure edited; " : ""}${Object.keys(state.edits).length} edition and ${Object.keys(state.dipl).length} diplomatic correction(s), ${state.ne.length} entities, ${app.length} apparatus note(s), ${Object.keys(state.marg).length} marginal line(s) decided</change>
+      <change when="${now}" who="#rules">zone classes: facing page (centre beyond the right edge of the text block), left margin (address / later numbering); line-end additions split off where the ink changes (darkness of the line's tail as a z-score against the page distribution, z at most ${D.zone_split.theta_z}${D.zone_split.forced_lines.length ? `; named by the editor: line ${D.zone_split.forced_lines.join(", ")}` : ""})</change>` : ""}
+      <change when="${now}" who="#editor">${nDecisions + dropped + nMargDec + (IR ? 1 : 0)} decision(s) overrode the rule-based proposals: ${nDecisions} part boundary(ies) set, ${dropped} proposed boundary(ies) dropped, ${nMargDec} margin class(es), ${IR ? 1 : 0} restored initial; ${state.dsSeg ? "structure edited; " : ""}${Object.keys(state.edits).length} edition and ${Object.keys(state.dipl).length} diplomatic correction(s), ${state.ne.length} entities, ${app.length} apparatus note(s), ${Object.keys(state.marg).length} marginal line(s) decided</change>
     </revisionDesc>
   </teiHeader>
   <facsimile>
@@ -1312,7 +1357,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       <graphic url="${xml(S.image_dir)}/${xml(S.image_file)}" width="${W}px" height="${H}px"/>${zones}
     </surface>
   </facsimile>
-  <standOff>${list("cursus", "rules", cur)}${list("word-confidence", "model", conf)}${list("marginal-text", "rules", marg.concat(nums))}${list("siglum", "rules", sig)}${list("ink", "rules", ink)}
+  <standOff>${list("cursus", "rules", cur)}${list("word-confidence", "model", conf)}${list("marginal-text", "rules", marg.concat(nums))}${list("siglum", "rules", sig)}${list("ink", "rules", ink)}${list("entity", "model", ents)}
   </standOff>
   <text>
     <body>${dipl}
@@ -1394,7 +1439,10 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   stage.addEventListener("wheel", (e) => { if (lens.hidden) return; e.preventDefault(); zoom = Math.min(8, Math.max(2, zoom + (e.deltaY < 0 ? .5 : -.5))); lensAt(e); }, { passive: false });
 
   function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 1500); }
-  window.__wb = { clausulaNow, accOf, jsAcc, cadence, state, tei, GI };          // for automated tests
+  setTimeout(() => { try {                                                  // the export is checked against the rules of docs/tei_rules.md (not a schema validation)
+    const r = TEI_CHECKS.run(tei(), document.body.innerText), bad = r.filter(x => !x.ok), p = document.createElement("p"); p.id = "teiCheck";
+    p.textContent = `TEI checked against ${r.length} rules (docs/tei_rules.md): ${bad.length ? bad.length + " not met (" + bad.map(b => b.id).join(", ") + ")" : "all met"}.`; $("foot").appendChild(p); } catch (e) { console.warn("TEI check failed", e); } }, 400);
+  window.__wb = { clausulaNow, accOf, jsAcc, cadence, state, tei, GI, marginClasses };          // for automated tests
 
   const hdr = () => document.documentElement.style.setProperty("--hdr", document.querySelector("header").offsetHeight + "px");
   addEventListener("resize", hdr); hdr();
