@@ -96,7 +96,7 @@ main{display:grid;grid-template-columns:minmax(240px,32%) 1fr;max-width:1500px;m
 .on .w.low{background:var(--err-bg);text-decoration:underline wavy var(--err) 1.5px;text-underline-offset:4px}
 .on .w.med{background:var(--unc-bg);text-decoration:underline dotted var(--unc) 2px;text-underline-offset:4px}
 .on .w.name{text-decoration:underline dotted var(--mute) 1px;text-underline-offset:4px}
-.w.edited{background:var(--ok-bg)!important;text-decoration:none!important}
+.w.edited,.on .w.edited.low,.on .w.edited.med{background:var(--ok-bg)!important;text-decoration:none!important;text-decoration-line:none!important;-webkit-text-decoration:none!important}
 .w sup{font:600 9px var(--sans);margin-left:1px;color:var(--mute)}
 .w sup.e,.w sup.p{color:var(--ok)} .w sup.x{color:var(--err)}
 .w.cad{box-shadow:inset 0 -1px 0 var(--mute)}
@@ -104,8 +104,8 @@ main{display:grid;grid-template-columns:minmax(240px,32%) 1fr;max-width:1500px;m
 .sy{color:var(--rule);font-family:var(--sans);font-size:11px;margin:0 .5px}
 .st{font-weight:700;position:relative}
 .st::before{content:"´";position:absolute;left:50%;transform:translateX(-30%);top:-.62em;font-size:.9em;font-weight:400;color:var(--ink)}
-.w.ne{border-top:2px solid var(--nec);border-radius:0;background:color-mix(in srgb, var(--nec) 15%, transparent)}
-.w.ne.edited{background:color-mix(in srgb, var(--nec) 15%, transparent)!important;border-bottom:2px solid var(--ok)}
+.w.ne{border-top:2px solid var(--nec);border-bottom:2px solid var(--nec);border-radius:0;background:rgba(150,150,150,.18);background:color-mix(in srgb, var(--nec) 15%, transparent)}
+.w.ne.edited{background:rgba(150,150,150,.18)!important;background:color-mix(in srgb, var(--nec) 15%, transparent)!important;border-bottom:2px solid var(--ok)}
 .net{font:600 9px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin:0 3px 0 0;vertical-align:sub}
 .net::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--nec);margin-right:3px;vertical-align:middle}
 .fn{font:600 10px var(--sans);color:var(--ink);vertical-align:super;margin-right:2px;cursor:pointer}
