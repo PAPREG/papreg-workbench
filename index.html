@@ -212,6 +212,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
 #lines.lay-noadd .chip.add{display:none} #lines.lay-noadd .w.addw{background:none} #lines.lay-nomargin .line.marg,#lines.lay-nomargin .msec,#lines.lay-nomargin .bapp{display:none} #lines.lay-nonum .mnum{display:none} #lines.lay-nohands .inkbar{display:none}
 #lines.lay-noinit .dropcap{font-size:inherit;font-weight:inherit;line-height:inherit;margin:0;color:inherit} #lines.lay-nocursus .cl{display:none}
 .w.nesel{outline:2px solid #7a4fa0;outline-offset:1px;background:rgba(122,79,160,.16);border-radius:3px} #pop .hint{margin-top:6px;font-size:11px;line-height:1.5}
+.buildid{font:10px var(--sans);color:var(--mute);opacity:.7} #staleBar{background:#c0392b;color:#fff;font:600 12px var(--sans);text-align:center;padding:5px 10px;position:sticky;top:0;z-index:50}
 .chip.sim{border-color:#9a8f7a;color:#7b705c;font-weight:500} .lvw .dipl{font-family:"Junicode",var(--mono)} .lvw .dim{color:var(--mute);font-style:italic}
 .w.modecur{outline:2px solid #2f5d8a;outline-offset:1px;border-radius:3px} .line.modecur{background:rgba(47,93,138,.08)} #modeWrap b{font-weight:600;color:var(--ink)} #modeAsk input{font:12px var(--sans)}
 .mctl{margin-left:10px;font:11px var(--sans)} .mctl .mst{color:var(--mute);margin-right:6px} .mctl button{font:11px var(--sans);padding:1px 6px;margin-left:4px;cursor:pointer}
@@ -288,7 +289,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     <button class="b" id="bExport">Approve &amp; save</button>
   </div>
   <div class="row2">
-    <span id="layerBar"></span><span class="sep">|</span><span id="viewSel"></span><span class="sep">|</span><span id="modeWrap"><b id="modeStat"></b> <span id="modeCur"></span> <span id="modeAsk" hidden></span></span> <span class="keysb" id="keysBtn" tabindex="0">keys</span>
+    <span id="layerBar"></span><span class="sep">|</span><span id="viewSel"></span><span class="sep">|</span><span id="modeWrap"><b id="modeStat"></b> <span id="modeCur"></span> <span id="modeAsk" hidden></span></span> <span class="keysb" id="keysBtn" tabindex="0">keys</span> <span id="buildId" class="buildid"></span>
     <span class="oldlayers">layer
       <button class="t" data-layer="both" aria-pressed="true">both</button>
       <button class="t" data-layer="dipl" aria-pressed="false">diplomatic</button>
@@ -1977,6 +1978,10 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
     img.src = url;
   }
   loadPageImage(PUBLIC ? ["page.synthetic.png"] : ["page.jpg", "page.synthetic.png"]);
+  // which build runs: shown in the toolbar; a browser that keeps an old copy of the page is told to reload (build.json is fetched without cache)
+  fetch(new URL("build.json", document.baseURI).href, { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(j => { const run = BUILD_ID || "?", cur = j && j.hash;
+    $("buildId").textContent = "build " + run.slice(0, 7); $("buildId").dataset.tip = "the build of the code running in this browser" + (cur ? "; the site serves build " + cur.slice(0, 7) : "");
+    if (cur && BUILD_ID && cur !== BUILD_ID) { const b = document.createElement("div"); b.id = "staleBar"; b.textContent = `This page is out of date: it runs build ${run.slice(0, 7)}, the site serves build ${cur.slice(0, 7)}. Reload with Ctrl+Shift+R.`; document.body.insertBefore(b, document.body.firstChild); } }).catch(() => {});
   function setImage(src) { img.onload = () => { state.hasImage = true; state.synthetic = false; state.imageError = null; img.hidden = false; $("simBadge").hidden = true; setPageSrc(`source: manuscript image (editor's folder) · loaded ${img.naturalWidth}×${img.naturalHeight}`); setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
   window.__wbSetImage = setImage;
   WB.image(D).then(u => u && setImage(u));                        // local folder or URL template (never GitHub)
