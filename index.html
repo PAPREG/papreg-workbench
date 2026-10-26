@@ -742,8 +742,9 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function marginClasses() {
     if (MC) return MC; MC = {};
     const auto = autoSeg(computeParts()), starts = [], yc = (l) => l.bbox[1] + l.bbox[3] / 2;
+    let inIem = false;                                                   // after an in eundem modum note, its own variant text and date belong to the same entry
     auto.forEach((x, i) => { const pv = i ? auto[i - 1][1] : null, iem = x[1] === "nota" && iemAtG(x[0]);
-      if (i === 0 || iem || ((pv === "datatio" || pv === "nota") && x[1] !== "datatio" && x[1] !== "nota")) starts.push(yc(D.lines[FL[x[0]][0]])); });
+      const st = i === 0 || iem || ((pv === "datatio" || (pv === "nota" && !inIem)) && x[1] !== "datatio" && x[1] !== "nota"); if (st) { inIem = !!iem; starts.push(yc(D.lines[FL[x[0]][0]])); } });
     const ys = D.lines.filter(l => l.bbox && !hiddenLine(l) && l.zone !== "margin-left" && l.words.length).map(yc).sort((a, b) => a - b), gaps = ys.slice(1).map((y, i) => y - ys[i]).sort((a, b) => a - b), pitch = gaps[Math.floor(gaps.length / 2)] || .016;
     let prev = null;
     D.lines.forEach((l, li) => {
@@ -844,8 +845,9 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function pageLayout(DS) {
     const PART = DS.part, entryAt = {}; let eNo = 0;
     const iemAt = iemAtG;
-    DS.seg.forEach((x, i) => { const pv = i ? DS.seg[i - 1][1] : null, iem = x[1] === "nota" && iemAt(x[0]);      // an in eundem modum entry is an entry of its own
-      if (i === 0 || iem || ((pv === "datatio" || pv === "nota") && x[1] !== "datatio" && x[1] !== "nota")) entryAt[x[0]] = { n: ++eNo, cont: i === 0 && x[1] !== "inscriptio", iem }; });
+    let inIem = false;                                                   // an in eundem modum entry is an entry of its own; its variant text and date belong to it
+    DS.seg.forEach((x, i) => { const pv = i ? DS.seg[i - 1][1] : null, iem = x[1] === "nota" && iemAt(x[0]);
+      if (i === 0 || iem || ((pv === "datatio" || (pv === "nota" && !inIem)) && x[1] !== "datatio" && x[1] !== "nota")) { inIem = !!iem; entryAt[x[0]] = { n: ++eNo, cont: i === 0 && x[1] !== "inscriptio", iem }; } });
     const eg = Object.keys(entryAt).map(Number).sort((a, b) => a - b); eg.forEach((g, i) => { entryAt[g].g0 = g; entryAt[g].g1 = i + 1 < eg.length ? eg[i + 1] - 1 : FL.length - 1; });
     const yc = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0, isM = (li) => D.lines[li].words.length > 0 && D.lines[li].words.every((w, wi) => PART[GI[keyOf(li, wi)]] === "margo");
     const mainL = D.lines.map((l, li) => li).filter(li => !isM(li) && !hiddenLine(D.lines[li]) && !numeralLine(D.lines[li])), margL = D.lines.map((l, li) => li).filter(isM);
