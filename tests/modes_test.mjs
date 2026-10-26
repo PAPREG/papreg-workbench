@@ -17,7 +17,7 @@ try {
   await cdp("Page.enable");
   const counts = {};
   for (const m of MODES) {
-    await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=${TASKS[m]}&mode=${m}` }); await sleep(3500);
+    await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=${TASKS[m]}&mode=${m}&sources=tests/none/` }); await sleep(3500);
     await ev(`localStorage.setItem("wb:tourSeen","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove())`);
     const st0 = await ev(`document.getElementById("modeStat").textContent`), sel = await ev(`document.getElementById("modeWrap").innerText.trim().startsWith("task · ${TASKS[m]}") ? "${m}" : ""`);
     const n = +(st0.match(/(\d+) stops/) || st0.match(/(\d+) suggestions/) || [0, 0])[1]; counts[m] = st0;
@@ -41,14 +41,22 @@ try {
   const band = await ev(`[...document.querySelectorAll(".band")][1].innerText`); check(/Pressutti TEST-1/.test(band) && /Potthast TEST-2/.test(band), "the band of the entry shows the regests of the files");
   const tx = await ev(`window.__wb.tei()`); check(/<note type="regest" source="#Pressutti"/.test(tx) && /type="witness"[^>]*source="#Horoy"/.test(tx) && /<bibl xml:id="Pressutti">/.test(tx) && /<bibl xml:id="Horoy">/.test(tx), "TEI: regest notes, witness annotations, listBibl");
   const rl = await ev(`window.TEI_CHECKS.run(window.__wb.tei(), document.body.innerText).filter(r => !r.ok).map(r => r.id).join(",")`); check(rl === "", `rules met with witnesses loaded (${rl})`);
-  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}` }); await sleep(3500);
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&sources=tests/none/` }); await sleep(3500);
   const hd = await ev(`[!!document.getElementById("modeSel"), document.getElementById("viewSel").innerText, document.body.innerText.includes("simulated"), !!document.querySelector(".lvw .wd")].join("|")`);
   check(hd.startsWith("false|") && !/ink strip/.test(hd) && /false\|(true|false)$/.test(hd), `no mode dropdown; no ink option in the public build; no simulated text (${hd.replace(/\n/g, " ")})`);
   const lg = await ev(`document.querySelectorAll(".lvw .witness").length + "|" + document.querySelectorAll(".lvw .wd").length`); console.log("legacy lines shown:", lg);
   // without a task link the page is the plain review: no mode, Tab goes to the next flagged word
-  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&mode=ner` }); await sleep(3500);
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&mode=ner&sources=tests/none/` }); await sleep(3500);
   await key("Tab"); await sleep(400); const pl = await ev(`[window.__wb.state.mode, !!window.__wb.state.focus, document.getElementById("modeStat").textContent].join("|")`);
   check(pl.startsWith("|true|"), `a mode without a task is ignored: plain review, Tab = next flagged word (${pl})`);
+  // the public-domain witnesses of the sample (sample/154v/regests.json, witness.json)
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition` }); await sleep(3500);
+  const real = await ev(`JSON.stringify({ stat: document.getElementById("modeStat").textContent, witnessLines: document.querySelectorAll(".lvw .witness").length, diffTokens: document.querySelectorAll(".lvw .wd").length,
+    perLine: [...document.querySelectorAll(".line")].map(r => [r.querySelector(".ln") && r.querySelector(".ln").firstChild.textContent, r.querySelectorAll(".lvw .wd").length]).filter(x => x[1] > 0),
+    bands: [...document.querySelectorAll(".band")].map(b => (b.querySelector(".rg") ? [...b.querySelectorAll(".rg")].map(x => x.textContent).join(", ") : "-")) })`);
+  console.log("sample witnesses:", real);
+  const rr = JSON.parse(real); check(rr.witnessLines > 0 && /\d+ stops/.test(rr.stat), `the sample files load: ${rr.witnessLines} witness lines, ${rr.stat}`);
+  const ru = await ev(`window.TEI_CHECKS.run(window.__wb.tei(), document.body.innerText).filter(r => !r.ok).map(r => r.id).join(",")`); check(ru === "", `rules met with the sample witnesses (${ru})`);
   console.log(JSON.stringify(counts, null, 1));
 } catch (e) { console.log("FAIL exception", e.message); ok = false; }
 finally { try { ws && ws.close(); } catch (e) {} chrome.kill(); }
