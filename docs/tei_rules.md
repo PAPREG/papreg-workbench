@@ -14,3 +14,4 @@ There is no ODD for the project yet; these rules are the checks the export must 
 10. No simulated layer is present: nothing in the file carries `ana="#simulated"` or the word simulated; a diplomatic line exists only where the editor has transcribed it (`resp="#editor"`).
 11. Every line-end addition, marginal address and recipient note (the sources of a band recipient) carries a `resp`; the truncated margin head is `#rules` and ends in an ellipsis when cut.
 12. Witness lines (`annotation type="witness"`) stand in the standoff only; they never stand in the text and never replace the reading.
+13. Witness rows are standoff: every `annotation type="witness-token"` has an `ana` (`#same`, `#differs`, `#missing`, `#ocr`, `#plus`); a `#plus` token (only in the witness) has no `target` and may carry `next` (the following register word); every other token targets a register word. OCR noise (a witness token with non-letters) is `#ocr`: not a difference.

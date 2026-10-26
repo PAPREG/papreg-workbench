@@ -110,7 +110,7 @@
   // ------------------------------------------------------------------ the page's state <-> per-type records
   // state snapshot fields of the editor engine: edits, dipl, apprE, apprD, stress (corrections), app (apparatus), ne, rej
   // (entities), dsSeg / modes / etype / recip (structure and task-mode progress), marg (the editor's decision on each marginal line).
-  const SPLIT = { corrections: ["edits", "dipl", "apprE", "apprD", "stress"], apparatus: ["app", "marg"], entities: ["ne", "rej"], structure: ["dsSeg", "modes", "etype", "recip"] };
+  const SPLIT = { corrections: ["edits", "dipl", "apprE", "apprD", "stress"], apparatus: ["app", "marg"], entities: ["ne", "rej"], structure: ["dsSeg", "modes", "etype", "recip", "numerals"] };
   function restore(state, D) {
     if (!G.pageId) return;
     for (const [t, keys] of Object.entries(SPLIT)) {

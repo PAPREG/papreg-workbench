@@ -196,6 +196,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 .band .rg{color:var(--ink)} .band.cur{outline:2px solid #2f5d8a} .w.ecol{display:none} .band button.t{font:11px var(--sans);padding:0 5px}
 .lvw .lv{font:calc(13px * var(--fs))/1.6 var(--mono);color:var(--mute);overflow-wrap:anywhere} .lvw .lv .tag,.lvw .dipl .tag{font:10px var(--sans);letter-spacing:.06em;text-transform:uppercase;margin-right:8px;color:var(--mute)}
 .lvw .wd{background:rgba(180,35,24,.14);border-radius:2px;padding:0 2px} .lvw .inkimg{display:block;max-width:100%} .pipmask{position:absolute;right:6px;bottom:6px;height:34px;background:rgba(255,255,255,.5);border-radius:3px;padding:2px}
+.wrows{display:block} .wrow{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;margin:1px 0} .wrow .sig{font:600 9px var(--sans);letter-spacing:.05em;color:var(--mute);min-width:26px;cursor:help}
+.wrow .wc.same{color:var(--mute);opacity:.55} .wrow .wc.df{background:rgba(180,35,24,.16);border-radius:2px;padding:0 2px;color:var(--ink)} .wrow .wc.ms{color:var(--mute);opacity:.5} .wrow .wc.oc{color:#999;font-style:italic;opacity:.7}
+.wrow .chip.pl{border-color:#2f7d5b;color:#2f7d5b;margin:0} .wrow .wc.fm{background:rgba(199,134,26,.18);border-radius:2px;padding:0 3px;color:var(--ink)} .band .cov{font-weight:600;color:var(--ink)} .band .cite{display:block;font-size:11px;color:var(--mute);font-style:italic}
 .chip.sim{border-color:#9a8f7a;color:#7b705c;font-weight:500} .lvw .dipl{font-family:"Junicode",var(--mono)} .lvw .dim{color:var(--mute);font-style:italic}
 .w.modecur{outline:2px solid #2f5d8a;outline-offset:1px;border-radius:3px} .line.modecur{background:rgba(47,93,138,.08)} #modeWrap b{font-weight:600;color:var(--ink)} #modeAsk input{font:12px var(--sans)}
 .mctl{margin-left:10px;font:11px var(--sans)} .mctl .mst{color:var(--mute);margin-right:6px} .mctl button{font:11px var(--sans);padding:1px 6px;margin-left:4px;cursor:pointer}
@@ -400,7 +403,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const APP_TYPES = ["corr. ex", "add. supra lin.", "add. in marg.", "del.", "in ras.", "om.", "sic", "lectio dubia", "alia manu", "nota"];
 
   const state = { showPeers: false, heat: true, acc: true, clausOnly: false, layer: "both", active: null, focus: null, pop: null, form: null,
-    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, modes: {}, etype: {}, recip: {}, collapsed: {}, mode: null, views: [], history: [], seq: 0,
+    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, numerals: {}, modes: {}, etype: {}, recip: {}, collapsed: {}, mode: null, views: [], history: [], seq: 0,
     dirty: false, lastPush: null, peers: [], peerSig: "", syncLog: [], hasImage: false, rej: new Set(), struct: true, ner: true, fml: true };
   WB.restore(state, D);                                            // this editor's saved work on the page
   state.ne.forEach(n => { n.type = NE_ALIAS[n.type] || n.type; });  // entities saved with the earlier four classes
@@ -831,11 +834,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const SRCBASE = new URLSearchParams(location.search).get("sources") || "sample/";
   const loadJSON = (name) => { try { const x = new XMLHttpRequest(); x.open("GET", `${SRCBASE}${S.folio}/${name}`, false); x.send(); if (x.status === 200) { const j = JSON.parse(x.responseText); return Array.isArray(j) ? j : (j.entries || j.lines || null); } } catch (e) {} return null; };
   const REG = {}, WIT = {}, SRC_USED = new Set();
-  (loadJSON("regests.json") || []).forEach(r => { if (r && r.entry != null && r.source && r.n != null && r.text) { (REG[String(r.entry)] = REG[String(r.entry)] || []).push(r); SRC_USED.add(r.source); } });
+  (loadJSON("regests.json") || []).forEach(r => { if (r && r.entry != null && r.source && r.n != null && (r.text || r.note)) { (REG[String(r.entry)] = REG[String(r.entry)] || []).push(r); SRC_USED.add(r.source); } });
   (loadJSON("witness.json") || []).forEach(w => { if (w && w.line != null && w.source && w.text) { WIT[String(w.line)] = w; SRC_USED.add(w.source); } });
   let effViews = () => ["dipl"];                                    // set with the line-view choice below
+  const CONC = {}; (loadJSON("concordance.json") || []).forEach(c => { if (c && c.entry != null && c.register_no) CONC[String(c.entry)] = c; });     // Pressutti number <-> running number of the register
+  if (Object.keys(CONC).length) SRC_USED.add("concordance");
   const HAS_WIT = Object.keys(WIT).length > 0, HAS_REG = Object.keys(REG).length > 0;
-  const BIBL = { Pressutti: "Pressutti, Pietro, Regesta Honorii papae III, 2 vols., Rome 1888–1895", Potthast: "Potthast, August, Regesta pontificum Romanorum inde ab a. 1198 ad a. 1304, 2 vols., Berlin 1874–1875", MGH: "Epistolae saeculi XIII e regestis pontificum Romanorum selectae, ed. Carolus Rodenberg, vol. 1, Monumenta Germaniae Historica, Berlin 1883", Horoy: "Horoy, Charles Auguste, Honorii III Romani pontificis opera omnia, 5 vols., Paris 1879–1882" };
+  const BIBL = { Pressutti: "Pressutti, Pietro, Regesta Honorii papae III, 2 vols., Rome 1888–1895", Potthast: "Potthast, August, Regesta pontificum Romanorum inde ab a. 1198 ad a. 1304, 2 vols., Berlin 1874–1875", MGH: "Epistolae saeculi XIII e regestis pontificum Romanorum selectae, ed. Carolus Rodenberg, vol. 1, Monumenta Germaniae Historica, Berlin 1883", concordance: "Concordance of the Pressutti numbers with the running numbers of the register (the project's link table)", Horoy: "Horoy, Charles Auguste, Honorii III Romani pontificis opera omnia, 5 vols., Paris 1879–1882" };
   // ------------------------------------------------------------ entry bands: recipient, type, place and date (computed from the datatio), lines, regest, status
   const ROMAN = (t) => { const v = { I: 1, V: 5, X: 10, L: 50, C: 100 }; t = t.toUpperCase().replace(/[^IVXLC]/g, ""); let n = 0; for (let i = 0; i < t.length; i++) { const a = v[t[i]], b = v[t[i + 1]] || 0; n += a < b ? -a : a; } return n; };
   const MONTHS = ["ianuar", "februar", "mart", "april", "mai", "iuni", "iuli", "august", "septembr", "octobr", "novembr", "decembr"], MON_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -864,7 +869,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const rule = E.iem ? "in eundem modum" : /mandamus quatinus/.test(rd(partWords("dispositio").join(" "))) ? "mandate" : /(indulgem|concedim|confirmam|statuim)/.test(rd(partWords("dispositio").join(" "))) ? "privilege / indult" : "";
     let eada = false; if (E.iem) for (let g = E.g0; g < E.g1; g++) if (rd(shownText(...FL[g])) === "datum" && rd(shownText(...FL[g + 1])).startsWith("eadem")) eada = true;
     const date = eada ? { text: "same date (eadem)", iso: "", human: "" } : dat.length ? (/^eadem/i.test(dat[1] || "") ? { text: "same date (eadem)", iso: "", human: "" } : romanDate(dat)) : null;
-    const nums = D.lines.filter(z => numeralLine(z) && z.bbox).filter(z => { const ey = D.lines[li0].bbox ? D.lines[li0].bbox[1] + D.lines[li0].bbox[3] / 2 : 0, ez = z.bbox[1] + z.bbox[3] / 2, nxt = (L0().entList.find(e => e.g0 > E.g0) || null); const ny = nxt ? (D.lines[FL[nxt.g0][0]].bbox[1] + D.lines[FL[nxt.g0][0]].bbox[3] / 2) : 9; return ez >= ey - .004 && ez < ny - .004; });
+    const nums = D.lines.map((z, zi) => ({ z, li: zi })).filter(o => numeralLine(o.z) && o.z.bbox).filter(({ z }) => { const ey = D.lines[li0].bbox ? D.lines[li0].bbox[1] + D.lines[li0].bbox[3] / 2 : 0, ez = z.bbox[1] + z.bbox[3] / 2, nxt = (L0().entList.find(e => e.g0 > E.g0) || null); const ny = nxt ? (D.lines[FL[nxt.g0][0]].bbox[1] + D.lines[FL[nxt.g0][0]].bbox[3] / 2) : 9; return ez >= ey - .004 && ez < ny - .004; });
     return { gr, lineEnd, head, type: state.etype[E.n] || rule, typeRule: rule, date, from: lab.length ? Math.min(...lab) : null, to: lab.length ? Math.max(...lab) : null, li0, nums, margin: gr ? gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].expanded_text).join(" ") : "" };
   }
   const L0 = () => pageLayout(structure());
@@ -880,10 +885,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     else if (!I.gr) rec = `<span class="rc dim">no address read</span>`;
     else if (agree) rec = `<span class="rc">${esc(strip(I.head))}${cutHead(I) ? "…" : ""}</span> <span class="dim">(line end = margin)</span>`;
     else rec = `<span class="warn" title="the two witnesses of the recipient differ">line end: <i>${esc(strip(I.lineEnd))}</i> <button class="t" data-use="line">use</button> · margin: <i title="resp #rules">${esc(I.head ? strip(I.head) + (cutHead(I) ? "…" : "") : "(no confident reading)")}</i> <button class="t" data-use="margin">use</button> ⚠ disagree</span>`;
-    const gut = (I.gr ? `<span class="chip adr" title="address in the left margin (hand h2), belongs to this entry">margin · address</span> ${esc(strip(I.head))}` : "") + I.nums.map(() => ` <span class="chip num" title="later hand (h3), dark ink; the numeral is left to the editor">numeral · later hand</span>`).join("");
+    const cov = coverage(E, I);
+    const gut = (I.gr ? `<span class="chip adr" title="address in the left margin (hand h2), belongs to this entry">margin · address</span> ${esc(strip(I.head))}` : "") + I.nums.map(({ li: zi }) => { const cn = CONC[String(E.n)], cf = state.numerals[zi]; return cn ? ` <span class="chip num" title="later hand (h3), dark ink; ${cf ? "confirmed by the editor" : "proposed from the concordance (rules); confirm or correct"}">${esc(cf ? cf.val : cn.register_no)} ${cf ? "✓" : `<button class="t" data-cf="${zi}" data-v="${esc(cn.register_no)}">confirm</button>`}</span>` : ` <span class="chip num" title="later hand (h3), dark ink; no source for the numeral: left to the editor">numeral · later hand</span>`; }).join("");
     b.innerHTML = `<button class="t fold" title="collapse / expand this entry">${col ? "▸" : "▾"}</button><span class="eno">¶ ${E.n}</span> · ${rec} · <span class="ty" title="${I.typeRule ? "rule: " + I.typeRule : ""}">${esc(I.type || "type ?")}</span>` +
       `${I.date ? ` · <span class="dt" title="computed from the datatio${I.date.iso ? ": " + I.date.iso : ""}">${esc(I.date.text)}${I.date.human ? ` (${I.date.human})` : ""}</span>` : ""}` +
-      `${I.from ? ` · l${I.from}${I.to > I.from ? "–" + I.to : ""}` : ""}${(REG[String(E.n)] || []).map(r => ` · <span class="rg" title="${esc(r.text)}">${esc(r.source)} ${esc(r.n)}${r.date ? " · " + esc(r.date) : ""}</span>`).join("")} · <span class="st">${state.modes.boundaries && state.modes.boundaries.done["b:" + E.g0] ? "confirmed" : "proposed"}</span>` + (gut ? `<span class="bgut">${gut}</span>` : "");
+      `${I.from ? ` · l${I.from}${I.to > I.from ? "–" + I.to : ""}` : ""}${cov.text ? ` · <span class="cov" title="${esc(cov.cites.join(" ; "))}">${esc(cov.text)}</span>` : ""} · <span class="st">${state.modes.boundaries && state.modes.boundaries.done["b:" + E.g0] ? "confirmed" : "proposed"}</span>` + (gut ? `<span class="bgut">${gut}</span>` : "");
+    b.querySelectorAll("[data-cf]").forEach(x => x.onclick = (e) => { e.stopPropagation(); mutate(() => state.numerals[+x.dataset.cf] = { val: x.dataset.v, at: new Date().toISOString() }); render(); });
+    if (cov.cites.length) b.insertAdjacentHTML("beforeend", `<span class="cite">${esc(cov.cites.join(" · "))}</span>`);
     b.querySelector(".fold").onclick = (e) => { e.stopPropagation(); state.collapsed[E.n] = !state.collapsed[E.n]; render(); };
     b.querySelectorAll("[data-use]").forEach(x => x.onclick = (e) => { e.stopPropagation(); const src = x.dataset.use; mutate(() => state.recip[E.n] = { src: src === "line" ? "line end" : "margin", text: strip(src === "line" ? I.lineEnd : I.head) }); render(); });
     return b;
@@ -1032,11 +1040,11 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   function setActive(li, scroll) { state.active = li; render(); if (scroll) { const r = document.querySelector(`.line[data-li="${li}"]`); r && r.scrollIntoView({ block: "center", behavior: "smooth" }); } }
 
   // ------------------------------------------------------------ undo (snapshots of the editable state)
-  const snap = () => JSON.stringify({ edits: state.edits, dipl: state.dipl, apprE: [...state.apprE], apprD: [...state.apprD], app: state.app, ne: state.ne, stress: state.stress, rej: [...state.rej], dsSeg: state.dsSeg, marg: state.marg, modes: state.modes, etype: state.etype, recip: state.recip });
+  const snap = () => JSON.stringify({ edits: state.edits, dipl: state.dipl, apprE: [...state.apprE], apprD: [...state.apprD], app: state.app, ne: state.ne, stress: state.stress, rej: [...state.rej], dsSeg: state.dsSeg, marg: state.marg, numerals: state.numerals, modes: state.modes, etype: state.etype, recip: state.recip });
   function mutate(f) { state.history.push(snap()); $("bUndo").disabled = false; f(); state.dirty = true; syncStatus(); WB.tele("edit"); }
   function undo() {
     const h = state.history.pop(); if (!h) return;
-    const s = JSON.parse(h); Object.assign(state, { edits: s.edits, dipl: s.dipl, apprE: new Set(s.apprE), apprD: new Set(s.apprD), app: s.app, ne: s.ne, stress: s.stress, rej: new Set(s.rej || []), dsSeg: s.dsSeg || null, marg: s.marg || {}, modes: s.modes || {}, etype: s.etype || {}, recip: s.recip || {} });
+    const s = JSON.parse(h); Object.assign(state, { edits: s.edits, dipl: s.dipl, apprE: new Set(s.apprE), apprD: new Set(s.apprD), app: s.app, ne: s.ne, stress: s.stress, rej: new Set(s.rej || []), dsSeg: s.dsSeg || null, marg: s.marg || {}, numerals: s.numerals || {}, modes: s.modes || {}, etype: s.etype || {}, recip: s.recip || {} });
     $("bUndo").disabled = !state.history.length; state.dirty = true; closePop(); syncStatus(); render(); toast("undone");
   }
   $("bUndo").onclick = undo;
@@ -1165,20 +1173,75 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   // diplomatic layer: line-level editing
   // sources of the line view: the editor's own diplomatic line, the legacy witness line, the original image strip, the ink mask
   const foldT = (t) => rd(t).replace(/[^a-z]/g, "");
-  // witness line against the reading: tokens that differ (LCS of the folded tokens); the differing tokens of the reading are the stops of the edition task
-  function witnessDiff(li) {
-    const wt = WIT[LNUM[li]]; if (!wt || wt.align === "entry-level" || !D.lines[li].words.length) return null;
-    const R = D.lines[li].words.map((w, wi) => ({ t: shownText(li, wi), f: foldT(shownText(li, wi)) })), Wt = wt.text.split(/\s+/).filter(Boolean).map(t => ({ t, f: foldT(t) })), n = R.length, m = Wt.length;
-    const Lm = Array.from({ length: n + 1 }, () => new Int16Array(m + 1));
-    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) Lm[i][j] = R[i].f === Wt[j].f ? Lm[i + 1][j + 1] + 1 : Math.max(Lm[i + 1][j], Lm[i][j + 1]);
-    const rdf = new Set(), wdf = new Set(), gaps = []; let i = 0, j = 0, gap = null;
-    const flush = () => { if (gap) { gaps.push(gap); gap = null; } };
-    while (i < n || j < m) {
-      if (i < n && j < m && R[i].f === Wt[j].f) { flush(); i++; j++; continue; }
-      gap = gap || { r: [], w: [], at: Math.max(0, i - 1) };
-      if (j >= m || (i < n && Lm[i + 1][j] >= Lm[i][j + 1])) { rdf.add(i); gap.r.push(i); i++; } else { wdf.add(j); gap.w.push(Wt[j].t); j++; }
-    }
-    flush(); return { wt, Wt, rdf, wdf, gaps };
+  // ------------------------------------------------------------ word alignment of the witnesses with the reading (Needleman-Wunsch on normalised forms)
+  // normalised: case, diacritics, u/v, i/j/y, ae/oe/e, ci/ti before a vowel, h, punctuation. A witness token with a non-letter inside (X>>s, vol>is) is OCR noise: class ocr, no stop, no difference.
+  const normW = (t) => { let x = String(t).toLowerCase().replace(/[æǽ]/g, "e").replace(/œ/g, "e"); x = x.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z]/g, ""); return x.replace(/ae|oe/g, "e").replace(/v/g, "u").replace(/[jy]/g, "i").replace(/ti(?=[aeiou])/g, "ci").replace(/h/g, ""); };
+  const EDGE_RE = /^[\s.,;:!?()\[\]«»"'“”‘’…·—-]+|[\s.,;:!?()\[\]«»"'“”‘’…·—-]+$/g;
+  const isOCR = (t) => { const c = String(t).replace(EDGE_RE, ""); return !c || /[^\p{L}'’\-]/u.test(c) || !normW(c); };
+  const lev = (a, b) => { const m = a.length, n = b.length; if (!m) return n; if (!n) return m; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; };
+  const simW = (a, b) => 1 - lev(a, b) / Math.max(a.length, b.length, 1);
+  function nwOps(R, W, thr) {
+    const n = R.length, m = W.length, S = Array.from({ length: n + 1 }, () => new Float32Array(m + 1)), T = Array.from({ length: n + 1 }, () => new Uint8Array(m + 1));
+    for (let i = 1; i <= n; i++) { S[i][0] = -i; T[i][0] = 1; } for (let j = 1; j <= m; j++) { S[0][j] = -j; T[0][j] = 2; }
+    const sc = (i, j) => { if (R[i] === W[j]) return 3; const s_ = R[i] && W[j] ? simW(R[i], W[j]) : 0; return s_ >= thr ? 2 * s_ : -3; };
+    for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) { const d = S[i - 1][j - 1] + sc(i - 1, j - 1), u = S[i - 1][j] - 1, l = S[i][j - 1] - 1; if (d >= u && d >= l) { S[i][j] = d; T[i][j] = 0; } else if (u >= l) { S[i][j] = u; T[i][j] = 1; } else { S[i][j] = l; T[i][j] = 2; } }
+    const ops = []; let i = n, j = m; while (i > 0 || j > 0) { const t = T[i][j]; if (i > 0 && j > 0 && t === 0) { ops.push(["p", i - 1, j - 1]); i--; j--; } else if (i > 0 && (j === 0 || t === 1)) { ops.push(["r", i - 1]); i--; } else { ops.push(["w", j - 1]); j--; } }
+    return ops.reverse();
+  }
+  // regT: [{t, ref}] register tokens (ref = index the cell points to); witT: [string]; -> cells in text order
+  function alignTokens(regT, witT, thr, keepMissing) {
+    const R = regT.map(x => normW(x.t)), W = witT.map(normW), ops = nwOps(R, W, thr), cells = [];
+    ops.forEach((o, k) => {
+      if (o[0] === "p") cells.push({ k: isOCR(witT[o[2]]) ? "ocr" : (R[o[1]] === W[o[2]] ? "same" : "differs"), i: o[1], ref: regT[o[1]].ref, form: witT[o[2]] });
+      else if (o[0] === "r") { if (keepMissing) cells.push({ k: "missing", i: o[1], ref: regT[o[1]].ref }); }
+      else { const nx = ops.slice(k + 1).find(q => q[0] !== "w"); cells.push({ k: isOCR(witT[o[1]]) ? "ocr" : "plus", form: witT[o[1]], next: nx ? regT[nx[1]].ref : null }); }
+    });
+    return cells;
+  }
+  const WSIG = { MGH: "MGH", Horoy: "H", Pressutti: "P" };
+  const lineRegT = (li) => D.lines[li].words.map((w, wi) => ({ t: shownText(li, wi), ref: wi }));
+  // witness rows of a line: one per edition (MGH / Horoy): the line of the edition against the words of the line
+  function editionRow(li) {
+    const wt = WIT[LNUM[li]]; if (!wt || !D.lines[li].words.length) return null;
+    const cells = alignTokens(lineRegT(li), wt.text.split(/\s+/).filter(Boolean), .5, true);
+    return { sig: WSIG[wt.source] || wt.source, src: wt.source, cite: `${wt.source} ${wt.cite || ""}`.trim(), cells, diff: cells.filter(c => c.k === "differs").length, plus: cells.filter(c => c.k === "plus").length, ocr: cells.filter(c => c.k === "ocr").length };
+  }
+  // the regest of Pressutti reuses the words of the letter: aligned over the whole entry (only pairs of at least .75 similarity), shown only where a token aligns in the line
+  const PCACHE = new Map();
+  function regestAlign(E) {
+    const rs = (REG[String(E.n)] || []).filter(r => r.source === "Pressutti" && r.text); if (!rs.length) return null;
+    const regT = []; for (let g = E.g0; g <= E.g1; g++) { const [li, wi] = FL[g]; if (L0().isM(li) || D.lines[li].words[wi].add) continue; regT.push({ t: shownText(li, wi), ref: g }); }
+    const key = E.n + "|" + regT.map(x => x.t).join(" "); if (PCACHE.has(key)) return PCACHE.get(key);
+    const cells = alignTokens(regT, rs[0].text.replace(/^[^.]*\.\s*/, "").split(/\s+/).filter(Boolean), .75, false); PCACHE.set(key, { cells, n: rs[0].n }); return PCACHE.get(key);
+  }
+  function regestRow(li) {
+    const E = L0().entList.find(e => { const f = FL[e.g0][0], l = FL[e.g1][0]; return li >= f && li <= l; }); if (!E) return null; const A = regestAlign(E); if (!A) return null;
+    const mine = A.cells.filter(c => (c.ref !== undefined ? FL[c.ref][0] === li : (c.next != null && FL[c.next][0] === li))); if (!mine.some(c => c.k === "same" || c.k === "differs")) return null;
+    const cells = mine.map(c => c.ref === undefined ? { ...c, next: FL[c.next][1] } : { ...c, ref: FL[c.ref][1] });
+    return { sig: "P", src: "Pressutti", cite: `Pressutti ${A.n}`, cells, diff: 0, plus: 0, ocr: 0 };
+  }
+  // formula row: the spans the Herde / register-recurrence detector covers
+  function formulaRow(li) {
+    const fs = (D.formulas || []).filter(f => { for (let g = f.gi; g < f.gi + f.span; g++) if (FL[g][0] === li) return true; return false; }); if (!fs.length) return null;
+    return { sig: "F", src: "formula", cite: "formula detector: Herde, Audientia litterarum contradictarum; recurrence in the register", formulas: fs.map(f => ({ label: f.kind === "herde" ? ([...new Set((f.herde || []).map(x => x.label))][0] || "legal formula") : "chancery formula", text: Array.from({ length: f.span }, (_, k) => f.gi + k).filter(g => FL[g][0] === li).map(g => shownText(...FL[g])).join(" ") })) };
+  }
+  function rowEl(row, li) {
+    const el = document.createElement("div"); el.className = "lv wrow"; const sg = `<span class="sig" title="${esc(row.cite)}">${esc(row.sig)}</span>`;
+    if (row.formulas) { el.innerHTML = sg + row.formulas.map(f => `<span class="wc fm" title="${esc(f.label)}">${esc(f.text)}</span>`).join(" "); return el; }
+    el.innerHTML = sg + row.cells.map(c => c.k === "plus" ? `<span class="chip pl" title="only in the witness">+${esc(c.form)}</span>` : c.k === "missing" ? `<span class="wc ms" title="absent in the witness">—</span>` : c.k === "same" ? `<span class="wc same">${esc(c.form)}</span>`
+      : c.k === "differs" ? `<span class="wc df" title="reading: ${esc(shownText(li, c.ref))}">${esc(c.form)}</span>` : `<span class="wc oc" title="OCR?">${esc(c.form)}</span>`).join(" ");
+    return el;
+  }
+  // coverage of the entry: which witness covers which lines (MGH l1-3 · P 786)
+  function coverage(E, I) {
+    const parts = [], cites = []; const recs = Object.entries(WIT).map(([lab, w]) => ({ lab: +lab, ...w }));
+    const own = recs.filter(w => w.letter === E.n), via = recs.filter(w => w.letter !== E.n && I.from != null && w.lab >= I.from && w.lab <= I.to);
+    const grp = (rs) => { const by = {}; rs.forEach(w => (by[w.source] = by[w.source] || []).push(w)); return Object.values(by); };
+    grp(own).forEach(g => { const ls = g.map(w => w.lab), w0 = g[0]; parts.push(`${w0.badge || w0.source} l${Math.min(...ls)}–${Math.max(...ls)}${w0.note ? ` (${w0.note})` : ""}`); cites.push(`${w0.source} ${w0.cite || ""}`.trim()); });
+    grp(via).forEach(g => { parts.push(`${WSIG[g[0].source] || g[0].source} via e${g[0].letter}`); });
+    const pr = (REG[String(E.n)] || []).filter(r => r.source === "Pressutti")[0];
+    if (pr) { parts.push(!parts.length ? `P ${pr.n} only` : `P ${pr.n}${pr.text ? "" : ", " + (pr.note || "text missing in parse")}`); cites.push(`Pressutti ${pr.n}${pr.date ? ", " + pr.date : ""}`); }
+    return { text: parts.join(" · "), cites };
   }
   const stripSrc = (f) => `${SRCBASE}${S.folio}/strips/${f}`;
   function lineView(v, li) {
@@ -1189,9 +1252,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       el.innerHTML = real ? (state.layer === "both" ? `<span class="tag">dipl.</span>` : "") + esc(real.normalize("NFC")) : "";
       el.onclick = (e) => { e.stopPropagation(); editDipl(li); };
     } else if (v === "legacy") {
-      const wt = WIT[LNUM[li]]; el.className = "lv witness"; if (!wt) return el;
-      const df = witnessDiff(li), cite = `${wt.source}${wt.cite ? " " + wt.cite : ""}`;
-      el.innerHTML = `<span class="tag">${esc(cite)}${wt.align === "entry-level" ? " · entry" : ""}</span>` + (df ? df.Wt.map((x, k) => df.wdf.has(k) ? `<span class="wd" title="differs from the reading">${esc(x.t)}</span>` : esc(x.t)).join(" ") : esc(wt.text));
+      el.className = "lv wrows"; [editionRow(li), regestRow(li), formulaRow(li)].filter(Boolean).forEach(row => el.appendChild(rowEl(row, li)));
     } else if (v === "image") {                                       // strip of the original image, only when the image is loaded on this computer
       el.className = "lv strip"; const cv = document.createElement("canvas"), b = l.bbox;
       if (state.hasImage && b && img.naturalWidth && !hiddenLine(l)) { const sw = b[2] * img.naturalWidth, sh = b[3] * img.naturalHeight; cv.width = Math.min(900, sw); cv.height = Math.max(8, cv.width * sh / sw); cv.getContext("2d").drawImage(img, b[0] * img.naturalWidth, b[1] * img.naturalHeight, sw, sh, 0, 0, cv.width, cv.height); cv.style.maxWidth = "100%"; el.appendChild(cv); }
@@ -1247,8 +1308,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const STRIPS = (() => { if (PUBLIC) return null; try { const x = new XMLHttpRequest(); x.open("GET", `${SRCBASE}${S.folio}/strips/index.json`, false); x.send(); if (x.status === 200) return JSON.parse(x.responseText); } catch (e) {} return null; })();
   // default: the legacy line when there is one, else the ink strip when masks exist (internal build), else none; the choice of the editor stands
   let VIEWS_CHOSEN = null; try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v)) VIEWS_CHOSEN = v.filter(x => ["legacy", "image", "ink"].includes(x)); } catch (e) {}
-  effViews = () => VIEWS_CHOSEN || (HAS_WIT ? ["legacy"] : (STRIPS ? ["ink"] : []));
-  const VIEW_BTN = [["legacy", "legacy line", () => HAS_WIT || HAS_REG], ["image", "image strip", () => state.hasImage], ["ink", "ink strip", () => !!STRIPS], ["none", "none", () => true]];
+  effViews = () => VIEWS_CHOSEN || (HAS_WIT || HAS_REG ? ["legacy"] : (STRIPS ? ["ink"] : []));
+  const VIEW_BTN = [["legacy", "witness rows", () => HAS_WIT || HAS_REG || (D.formulas || []).length > 0], ["image", "image strip", () => state.hasImage], ["ink", "ink strip", () => !!STRIPS], ["none", "none", () => true]];
   const setViewSel = () => { const ev_ = effViews(); $("viewSel").innerHTML = "line view " + VIEW_BTN.filter(b => b[2]()).map(b => `<button class="t" data-v="${b[0]}" aria-pressed="${b[0] === "none" ? !ev_.length : ev_.includes(b[0])}">${b[1]}</button>`).join(" ");
     $("viewSel").querySelectorAll("button").forEach(bt => bt.onclick = (e) => { e.stopPropagation(); const v = bt.dataset.v; let cur = effViews().slice(); cur = v === "none" ? [] : (cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v)); VIEWS_CHOSEN = cur; try { localStorage.setItem(VKEY, JSON.stringify(cur)); } catch (x) {} setViewSel(); render(); }); };
   setViewSel();
@@ -1327,9 +1388,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       SUGG.filter(x => x.type === "cit").forEach(x => out.push(wItem("r:c" + x.k, x.gi, "citation suggestion")));
       return out;
     }
-    if (m === "edition") { if (HAS_WIT) D.lines.forEach((l, li) => { const df = witnessDiff(li); if (!df) return;
-      df.gaps.forEach((gp, k) => { const wi = gp.r.length ? gp.r[0] : gp.at; gp.r.forEach((ri, q) => out.push(wItem(`e:${li}:${ri}`, GI[keyOf(li, ri)], `${shownText(li, ri)} ⇄ ${q === 0 ? (gp.w.join(" ") || "∅") : "…"} (${df.wt.source})`)));
-        if (!gp.r.length) out.push(wItem(`e:${li}:+${k}`, GI[keyOf(li, wi)], `witness adds: ${gp.w.join(" ")} (${df.wt.source})`)); }); }); return out; }
+    if (m === "edition") { if (HAS_WIT) D.lines.forEach((l, li) => { const row = editionRow(li); if (!row) return;
+      row.cells.forEach((c, k) => { if (c.k === "differs") out.push(wItem(`e:${li}:${c.ref}`, GI[keyOf(li, c.ref)], `${shownText(li, c.ref)} ⇄ ${c.form} (${row.sig})`));
+        else if (c.k === "plus") { const wi = c.next != null ? c.next : l.words.length - 1; out.push(wItem(`e:${li}:+${k}`, GI[keyOf(li, wi)], `+${c.form} (${row.sig})`)); } }); }); return out; }
     return out;
   }
   const modeDone = (m, it) => isDone(m, it.id) || ((m === "triage" || m === "oov") && state.edits[keyOf(it.li, it.wi)]) || (m === "lines" && state.apprE.has(it.li)) || (m === "ner" && !it.suspect && it.sugg && !suggOpen().some(x => x.k === it.sugg.k));
@@ -1527,6 +1588,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     // an addition confirmed by the editor sits in the text after the word it follows
     const addAt = {}; L.margL.filter(inlineAdd).forEach(li => { const m = mg(li), g = m.after;
       put(addAt, g, `<add place="${m.place === "above" ? "above" : "margin"}" resp="#editor" facs="${zone(li)}">${lb(li)}` + D.lines[li].words.map((w, wi) => wordOut(GI[keyOf(li, wi)])).join(" ") + `</add>`); });
+    const numEntry = {}; L.entList.forEach(E => entryInfo(E).nums.forEach(n => { numEntry[n.li] = E.n; }));
+    const numContent = (li) => { const cn = CONC[String(numEntry[li])], cf = state.numerals[li]; return cn ? `<num type="roman" resp="${cf ? "#editor" : "#rules"}" source="#concordance">${xml(cf ? cf.val : cn.register_no)}</num>` : `<gap reason="numeral unread"/>`; };
     const mcNote = (z) => z.zone_how === "editor" ? `<note type="editorial" resp="#editor">${xml(`the rule classifies this zone as ${z.zone_rule}; set to ${z.zone_subtype}`)}</note>` : "";
     // the address supplied later: line-end additions (hand h2) and their repetition in the left margin form the inscriptio of the entry
     const addrGroup = (E, li) => (D.address_groups || []).find(x => String(x.entry_line) === LNUM[li] && x.add_lines.length);
@@ -1571,7 +1634,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const inGroup = (li) => (D.address_groups || []).some(x => x.entry_line && x.add_lines.length && x.margin_lines.includes(LNUM[li]));
     const nearestMain = (z) => L.mainL.reduce((b, m) => Math.abs(yc0(D.lines[m]) - yc0(z)) < Math.abs(yc0(D.lines[b]) - yc0(z)) ? m : b, L.mainL[0]), yc0 = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0;
     const numDec = L.margL.filter(li => mg(li) && mg(li).as === "numeral").map(li => `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(D.lines[li]))}" facs="${zone(li)}" hand="#h3" resp="#editor"><gap reason="numeral unread"/></annotation>`);
-    const nums = numDec.concat(D.lines.map((z, li) => numeralLine(z) ? `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(z))}" facs="${zone(li)}" hand="#h3" resp="${z.zone_how === "editor" ? "#editor" : "#rules"}"><gap reason="numeral unread"/>${mcNote(z)}</annotation>` : "").filter(Boolean));
+    const nums = numDec.concat(D.lines.map((z, li) => numeralLine(z) ? `${I(4)}<annotation xml:id="mn${li + 1}" type="marginal-text" subtype="later-numbering" target="#${lid(nearestMain(z))}" facs="${zone(li)}" hand="#h3" resp="${z.zone_how === "editor" || state.numerals[li] ? "#editor" : "#rules"}">${numContent(li)}${mcNote(z)}</annotation>` : "").filter(Boolean));
     const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li) && !inGroup(li) && !(mg(li) && mg(li).as === "numeral")).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="${xml(D.lines[li].zone_subtype === "address" || D.lines[li].zone_subtype === "later-numbering" ? D.lines[li].zone_subtype : "addition-candidate")}" target="#${lid(L.beside(li))}" facs="${zone(li)}"${D.lines[li].zone_subtype === "address" ? ` hand="#h2"` : D.lines[li].zone_subtype === "later-numbering" ? ` hand="#h3"` : ""} resp="#rules">` + (D.lines[li].zone_subtype === "later-numbering" ? `<gap reason="numeral"/>` : D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ")) + `</annotation>`);
     const sig = []; FL.forEach(([li, wi], g) => { const t = shownText(li, wi); if (inl(g) && /^\p{Lu}\.,?$/u.test(t) && !state.ne.some(n => spanGis(n).includes(g))) sig.push(`${I(4)}<annotation xml:id="sg${wid(g).slice(1)}" type="siglum" target="#${wid(g)}" resp="#rules">${xml(t)}${(D.lines[li].words[wi].sigla_candidates || []).map(c => `<note type="expansion-candidate" resp="#model-expanded">${xml(c.text)}</note>`).join("")}</annotation>`); });
     const mz = (id, m) => m ? `${I(4)}<annotation xml:id="ink-${id}" type="ink" target="#${id}" resp="#rules"><measure type="darkness" quantity="${m.darkness}" unit="grey-level"/><measure type="stroke-width" quantity="${m.stroke_width}" unit="px"/></annotation>` : "";
@@ -1582,7 +1645,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const modeNotes = []; Object.keys(state.modes).forEach(mn => Object.entries(mdone(mn)).forEach(([id, r]) => { if (!r.val && !["siglum", "no entity"].some(x => (r.act || "").includes(x)) || mn === "boundaries" || mn === "structure") return;
       const a = r.a || [], tg = a[1] !== undefined && a[1] !== null && FL.length && GI[keyOf(a[0], a[1])] !== undefined && inl(GI[keyOf(a[0], a[1])]) ? "#" + wid(GI[keyOf(a[0], a[1])]) : (a[0] !== undefined && a[0] !== null && lnum[a[0]] ? "#" + lid(a[0]) : "");
       if (tg) modeNotes.push(`${I(4)}<annotation xml:id="mn-${mn}-${modeNotes.length + 1}" type="mode-note" subtype="${mn}" target="${tg}" at="${xml(r.at || "")}" resp="#editor">${xml(r.act + (r.val ? ": " + r.val : ""))}</annotation>`.replace(' at="', ' when="')); }));
-    const wit = D.lines.map((l, li) => WIT[lnum[li]] && !L.isM(li) ? `${I(4)}<annotation xml:id="wt${li + 1}" type="witness" subtype="${xml(WIT[lnum[li]].align || "aligned")}" target="#${lid(li)}" source="#${xml(WIT[lnum[li]].source)}" resp="#rules">${xml(WIT[lnum[li]].text)}</annotation>` : "").filter(Boolean);
+    // witness rows stay standoff: the line of the edition, and per token the alignment with the reading (ana: same | differs | missing | ocr | plus; a plus token has no target and points to the following register word)
+    const wit = [], tgt = (li, wi) => "#" + wid(GI[keyOf(li, wi)]);
+    D.lines.forEach((l, li) => { const wt = WIT[lnum[li]]; if (!wt || L.isM(li) || !l.words.length) return;
+      wit.push(`${I(4)}<annotation xml:id="wt${li + 1}" type="witness" subtype="${xml(wt.align || "aligned")}" target="#${lid(li)}" source="#${xml(wt.source)}" resp="#rules">${xml(wt.text)}</annotation>`);
+      (editionRow(li) || { cells: [] }).cells.forEach((c, k) => wit.push(`${I(5)}<annotation xml:id="wk${li + 1}_${k + 1}" type="witness-token" source="#${xml(wt.source)}"${c.ref !== undefined ? ` target="${tgt(li, c.ref)}"` : (c.next != null ? ` next="${tgt(li, c.next)}"` : "")} ana="#${c.ref === undefined ? "plus" : c.k}" resp="#rules">${c.k === "missing" ? "" : xml(c.form)}</annotation>`)); });
+    L.entList.forEach(E => { const A = regestAlign(E); if (!A) return;
+      A.cells.forEach((c, k) => wit.push(`${I(5)}<annotation xml:id="wp${E.n}_${k + 1}" type="witness-token" source="#Pressutti"${c.ref !== undefined ? ` target="#${wid(c.ref)}"` : (c.next != null ? ` next="#${wid(c.next)}"` : "")} ana="#${c.ref === undefined ? "plus" : c.k}" resp="#rules">${xml(c.form)}</annotation>`)); });
     const list = (type, resp, items) => items.length ? `${I(3)}<listAnnotation type="${type}">${items.join("")}${I(3)}</listAnnotation>` : "";
     const folioMark = D.lines.map((l, li) => l.zone === "folio-mark" ? `${I(4)}<fw type="folio-mark" place="top-centre" facs="${zone(li)}" resp="#rules"/>` : "").join("");
     const nMargDec = D.lines.filter(z => z.zone_how === "editor").length;
@@ -1641,7 +1710,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           <p>Standoff annotations (back to the text through <att>target</att>) hold what is not yet confirmed: the cursus class of each clause end (ana, class of the pilot-1 rule classifier on the text as it now stands), the model's word confidence (<att>cert</att> = calibrated probability that the word is read correctly, given for words at 0.80 or below), marginal text that may be an addition (the editor can confirm it as an add in the text after the word it follows, or as a marginal note), and siglum candidates. An editor's correction of a word is marked resp="#editor" on the w; the machine reading is kept in the audit record.</p>
         </interpretation>
       </editorialDecl>
-      <classDecl><taxonomy xml:id="entity-classes">${NE_KEYS.map((t, i) => `${I(5)}<category xml:id="N${i + 1}"><catDesc>${NE_TYPES[t][2]}: ${NE_TYPES[t][1]}${t === "actor" ? ' type="actor" role="…"' : t === "obj" ? ' type="object"' : ""} (model labels: ${NE_FROM[t]})</catDesc></category>`).join("")}
+      <classDecl><taxonomy xml:id="witness-alignment">${["same", "differs", "missing", "ocr", "plus"].map(k => `${I(5)}<category xml:id="${k}"><catDesc>${{ same: "the witness token equals the register token after normalisation", differs: "aligned, the forms differ", missing: "register token absent in the witness", ocr: "witness token with non-letters: OCR noise, not a difference", plus: "witness token without a register token (next points to the following register word)" }[k]}</catDesc></category>`).join("")}
+      </taxonomy><taxonomy xml:id="entity-classes">${NE_KEYS.map((t, i) => `${I(5)}<category xml:id="N${i + 1}"><catDesc>${NE_TYPES[t][2]}: ${NE_TYPES[t][1]}${t === "actor" ? ' type="actor" role="…"' : t === "obj" ? ' type="object"' : ""} (model labels: ${NE_FROM[t]})</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="actor-roles">${Object.entries(ROLES).map(([k, v]) => `${I(5)}<category xml:id="R-${k}"><catDesc>${v}</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="cursus"><category xml:id="cursus-class"><catDesc>cursus class of a clause end</catDesc>${cursusCats}
       </category></taxonomy></classDecl>
@@ -1746,7 +1816,7 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
   setTimeout(() => { try {                                                  // the export is checked against the rules of docs/tei_rules.md (not a schema validation)
     const r = TEI_CHECKS.run(tei(), document.body.innerText), bad = r.filter(x => !x.ok), p = document.createElement("p"); p.id = "teiCheck";
     p.textContent = `TEI checked against ${r.length} rules (docs/tei_rules.md): ${bad.length ? bad.length + " not met (" + bad.map(b => b.id).join(", ") + ")" : "all met"}.`; $("foot").appendChild(p); } catch (e) { console.warn("TEI check failed", e); } }, 400);
-  window.__wb = { clausulaNow, accOf, jsAcc, cadence, state, tei, GI, marginClasses };          // for automated tests
+  window.__wb = { clausulaNow, accOf, jsAcc, cadence, state, tei, GI, marginClasses, editionRow, regestRow, formulaRow, regestAlign, coverage, entryInfo, L0 };          // for automated tests
 
   const hdr = () => document.documentElement.style.setProperty("--hdr", document.querySelector("header").offsetHeight + "px");
   addEventListener("resize", hdr); hdr();

@@ -15,6 +15,7 @@
     ["nosim", "no simulated layer is present: nothing carries ana=#simulated"],
     ["bandresp", "every line-end addition, marginal address and recipient note (the sources of a band recipient) carries a resp"],
     ["witness", "witness lines are standoff only: they never stand in the text"],
+    ["witnesstoken", "every witness-token annotation has an ana (same, differs, missing, ocr, plus); a plus token has no target; every other token targets a register word"],
     ["archive", "the name of the holding archive occurs neither in the file nor in the interface"]
   ];
   function run(x, pageText) {
@@ -41,6 +42,7 @@
     add("nosim", !/#simulated|simulated/i.test(x), "");
     const nr = q("add").filter(a => a.getAttribute("place") === "line-end" && !a.getAttribute("resp")).length + q("note").filter(n => (n.getAttribute("subtype") === "address" || n.getAttribute("type") === "recipient") && !n.getAttribute("resp")).length; add("bandresp", nr === 0, String(nr));
     const wt = q("annotation").filter(a => a.getAttribute("type") === "witness"), wbad = wt.filter(a => a.parentNode.parentNode.localName !== "standOff").length + q("div").filter(e => e.getAttribute("type") === "text").flatMap(e => [...e.getElementsByTagNameNS(NS, "*")]).filter(e => e.getAttribute("type") === "witness").length; add("witness", wbad === 0, String(wbad));
+    const wtk = q("annotation").filter(a => a.getAttribute("type") === "witness-token"), wbad2 = wtk.filter(a => { const an = a.getAttribute("ana"), tg = a.getAttribute("target"); return !an || (an === "#plus" ? !!tg : !tg && an !== "#ocr"); }).length; add("witnesstoken", wbad2 === 0, String(wbad2));
     add("archive", !(/vatican/i.test(x) || /vatican/i.test(pageText || "")), "");
     return res;
   }
