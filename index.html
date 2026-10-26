@@ -52,7 +52,6 @@ main{display:grid;grid-template-columns:minmax(240px,32%) 1fr;max-width:1500px;m
 .stage{position:relative;line-height:0}
 .stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
 .stage svg{width:100%;height:auto;display:block;position:relative}
-#lens{position:absolute;width:200px;height:200px;border-radius:50%;border:1px solid var(--ink);background-repeat:no-repeat;pointer-events:none;z-index:5;background-color:var(--bg)}
 .live{font-weight:700;margin:14px 0 4px}
 .note{color:var(--mute);font-size:12px;margin:4px 0}
 .imgbar{margin-top:10px;font-size:12px;color:var(--mute)}
@@ -318,9 +317,8 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       <img id="pageImg" alt="Manuscript page" hidden>
       <span id="simBadge" class="simb" hidden>simulated</span>
       <svg id="page" role="img" aria-label="Line regions of the page"></svg>
-      <div id="lens" hidden></div>
     </div>
-    <p class="live">The live version shows the manuscript page from a IIIF image service here, with a magnifier on the highlighted line (mouse wheel to zoom). Image upload is disabled.</p>
+    <p class="live">The live version shows the manuscript page from a IIIF image service here. Image upload is disabled.</p>
     <p class="note" id="viewnote"></p>
 
     <p class="lbl gap">Model progress</p>
@@ -1939,7 +1937,7 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
   $("mDown").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([$("mBody").textContent], { type: mode === "tei" ? "application/xml" : "application/json" })); a.download = `review_${S.volume}_${S.folio}_${CFG.login}_${mode}.${mode === "tei" ? "xml" : "json"}`; a.click(); };
 
   // ------------------------------------------------------------ image and magnifier
-  const stage = $("stage"), img = $("pageImg"), lens = $("lens"); let zoom = 3;
+  const stage = $("stage"), img = $("pageImg");
   // ------------------------------------------------------------ the page image: one source and one base URL for the page panel, the line strips and the word crop.
   // A failure is shown, never replaced silently. The public build reads page.synthetic.png only; the internal build tries the real image (page.jpg, git-ignored) and, as a declared fallback, the synthetic page.
   const IMG_BASE = new URL(`${SRCBASE}${S.folio}/`, document.baseURI).href;                       // relative to the built site, not to a dev server
@@ -1961,20 +1959,6 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
   function setImage(src) { img.onload = () => { state.hasImage = true; state.synthetic = false; state.imageError = null; img.hidden = false; $("simBadge").hidden = true; setPageSrc(`source: manuscript image (editor's folder) · loaded ${img.naturalWidth}×${img.naturalHeight}`); setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
   window.__wbSetImage = setImage;
   WB.image(D).then(u => u && setImage(u));                        // local folder or URL template (never GitHub)
-  function lensAt(e) {
-    const r = stage.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-    const l = state.active !== null ? D.lines[state.active] : null, b = l && l.bbox;
-    const inside = b && x >= b[0] - .01 && x <= b[0] + b[2] + .01 && y >= b[1] - .012 && y <= b[1] + b[3] + .012;
-    if (!inside || !state.hasImage) { lens.hidden = true; return; }
-    const L = lens.offsetWidth || 200; lens.hidden = false;
-    lens.style.left = (e.clientX - r.left - L / 2) + "px"; lens.style.top = (e.clientY - r.top - L / 2) + "px";
-    lens.style.backgroundImage = `url("${img.src}")`;
-    lens.style.backgroundSize = `${r.width * zoom}px ${r.height * zoom}px`;
-    lens.style.backgroundPosition = `${-(x * r.width * zoom - L / 2)}px ${-(y * r.height * zoom - L / 2)}px`;
-  }
-  stage.addEventListener("mousemove", lensAt);
-  stage.addEventListener("mouseleave", () => lens.hidden = true);
-  stage.addEventListener("wheel", (e) => { if (lens.hidden) return; e.preventDefault(); zoom = Math.min(8, Math.max(2, zoom + (e.deltaY < 0 ? .5 : -.5))); lensAt(e); }, { passive: false });
 
   function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 1500); }
   setTimeout(() => { try {                                                  // the export is checked against the rules of docs/tei_rules.md (not a schema validation)
