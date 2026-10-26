@@ -210,6 +210,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
 .lg .gmenu label{display:block;font:12px var(--sans);margin:2px 0;cursor:pointer} .lg .gmenu label.na{opacity:.4;cursor:default}
 #lines.lay-noadd .chip.add{display:none} #lines.lay-noadd .w.addw{background:none} #lines.lay-nomargin .line.marg,#lines.lay-nomargin .msec,#lines.lay-nomargin .bapp{display:none} #lines.lay-nonum .mnum{display:none} #lines.lay-nohands .inkbar{display:none}
 #lines.lay-noinit .dropcap{font-size:inherit;font-weight:inherit;line-height:inherit;margin:0;color:inherit} #lines.lay-nocursus .cl{display:none}
+.w.nesel{outline:2px solid #7a4fa0;outline-offset:1px;background:rgba(122,79,160,.16);border-radius:3px} #pop .hint{margin-top:6px;font-size:11px;line-height:1.5}
 .chip.sim{border-color:#9a8f7a;color:#7b705c;font-weight:500} .lvw .dipl{font-family:"Junicode",var(--mono)} .lvw .dim{color:var(--mute);font-style:italic}
 .w.modecur{outline:2px solid #2f5d8a;outline-offset:1px;border-radius:3px} .line.modecur{background:rgba(47,93,138,.08)} #modeWrap b{font-weight:600;color:var(--ink)} #modeAsk input{font:12px var(--sans)}
 .mctl{margin-left:10px;font:11px var(--sans)} .mctl .mst{color:var(--mute);margin-right:6px} .mctl button{font:11px var(--sans);padding:1px 6px;margin-left:4px;cursor:pointer}
@@ -1135,7 +1136,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     if ($("revert")) $("revert").onclick = (e) => { e.stopPropagation(); revert(li, wi); };
     $("closep").onclick = closePop;
   }
-  function closePop() { pop.style.display = "none"; state.pop = null; state.form = null; }
+  function closePop() { pop.style.display = "none"; state.pop = null; state.form = null; state.formApi = null; document.querySelectorAll(".w.nesel").forEach(n => n.classList.remove("nesel")); }
   document.addEventListener("click", (e) => { if (!pop.contains(e.target) && !$("chars").contains(e.target)) closePop(); });
   function setStress(li, wi, s) {
     const k = keyOf(li, wi);
@@ -1157,13 +1158,14 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       pop.innerHTML = `<h3>${kind === "app" ? "Apparatus note" : "Named entity"}</h3>
         <div class="span"><span class="m">lemma</span> <span class="lem">${esc(lem())}</span>
           <button class="b sm" id="spM" ${f.span <= 1 ? "disabled" : ""} title="shorter">−</button><button class="b sm" id="spP" ${f.gi + f.span >= FL.length ? "disabled" : ""} title="one more word">+</button></div>
+        ${kind === "ne" ? `<div class="m hint">the marked words are the span · <kbd>+</kbd> / <kbd>−</kbd> right edge · <kbd>Shift</kbd>+<kbd>←</kbd> / <kbd>→</kbd> left edge · <kbd>1</kbd>–<kbd>9</kbd> class (marks at once) · <kbd>0</kbd> clear · <kbd>Enter</kbd> save</div>` : ""}
         ${kind === "app" ? `<div class="grid" style="margin-top:8px">
             <span class="m">type</span><select id="fType">${APP_TYPES.map(t => `<option ${t === f.type ? "selected" : ""}>${t}</option>`).join("")}</select>
             <span class="m">reading / note</span><input type="text" id="fText" value="${esc(f.text)}" placeholder="e.g. scolario">
             <span class="m">hand</span><input type="text" id="fHand" value="${esc(f.hand)}" placeholder="optional, e.g. m2"></div>`
         : `<div class="types" style="margin-top:8px">${NE_KEYS.map((t, i) => `<button class="c-${t}" data-t="${t}" aria-pressed="${t === f.type}" title="e.g. ${esc(NE_TYPES[t][3])} · ${state.ne.filter(n => n.type === t).length} on this side · from ${NE_FROM[t]}">N${i + 1} ${NE_TYPES[t][2]}</button>`).join("")}<button data-t="" title="N0: remove the entity">N0 clear</button>${f.type === "actor" ? `</div><div class="types roles" style="margin-top:6px"><span class="m">R role</span>${Object.entries(ROLES).map(([k, v]) => `<button data-r="${k}" aria-pressed="${k === f.role}">${k} ${v}</button>`).join("")}` : ""}${f.type === "cit" ? `</div><div class="types" style="margin-top:6px"><span class="m">kind</span><button data-s="bible" aria-pressed="${f.sub !== "canon"}">bible</button><button data-s="canon" aria-pressed="${f.sub === "canon"}">canon / decretal</button>` : ""}${f.type === "loc" ? `</div><div class="types" style="margin-top:6px"><span class="m">kind</span><button data-s="" aria-pressed="${!f.sub}">place</button><button data-s="diocese" aria-pressed="${f.sub === "diocese"}">diocese</button><button data-s="natural" aria-pressed="${f.sub === "natural"}">natural feature</button>` : ""}</div>`}
         <div class="acts">${item ? `<button class="t" id="fDel">delete</button>` : "<span></span>"}<span><button class="t" id="fCancel">cancel</button> &nbsp; <button class="b sm" id="fSave">save</button></span></div>`;
-      place();
+      place(); markNeSel();
       $("spM").onclick = (e) => { e.stopPropagation(); keep(); f.span--; draw(); };
       $("spP").onclick = (e) => { e.stopPropagation(); keep(); f.span++; draw(); };
       pop.querySelectorAll(".types button").forEach(b => b.onclick = (e) => { e.stopPropagation();
@@ -1191,7 +1193,24 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       });
       closePop(); render(); toast(kind === "app" ? "apparatus note saved" : "entity saved");
     };
+    state.formApi = kind === "ne" ? { f, draw, save, keep, item } : null;
     draw();
+  }
+  // the span of the entity being marked is shown in the text; keys set its edges and the class (N1-N9 mark at once)
+  function markNeSel() { document.querySelectorAll(".w.nesel").forEach(n => n.classList.remove("nesel")); const f = state.form; if (!f || f.kind !== "ne") return;
+    for (let j = 0; j < f.span; j++) { const g = f.gi + j; if (g >= FL.length) break; const el = document.querySelector(`.w[data-k="${keyOf(...FL[g])}"]`); if (el) el.classList.add("nesel"); } }
+  function neFormKey(e) {
+    const A = state.formApi, f = state.form; if (!A || !f || f.kind !== "ne") return false; const k = e.key;
+    const removeOrCancel = () => { if (A.item) { mutate(() => { state.ne.splice(state.ne.indexOf(A.item), 1); }); closePop(); render(); toast("entity removed"); } else openPop(...state.pop); };
+    if (/^[1-9]$/.test(k)) { f.type = NE_KEYS[+k - 1]; if (f.type === "actor") { if (!f.role) f.role = roleFor(f.gi); A.draw(); } else A.save(); return true; }      // N6 = DATE, marked at once; an actor waits for a role letter and Enter
+    if (k === "0") { removeOrCancel(); return true; }
+    if (k === "+" || k === "=" || (k === "ArrowRight" && !e.shiftKey)) { if (f.gi + f.span < FL.length) f.span++; A.draw(); return true; }
+    if (k === "-" || k === "_" || (k === "ArrowLeft" && !e.shiftKey)) { if (f.span > 1) f.span--; A.draw(); return true; }
+    if (k === "ArrowLeft" && e.shiftKey) { if (f.gi > 0) { f.gi--; f.span++; } A.draw(); return true; }
+    if (k === "ArrowRight" && e.shiftKey) { if (f.span > 1) { f.gi++; f.span--; } A.draw(); return true; }
+    if (k === "Enter") { A.keep(); A.save(); return true; }
+    if (f.type === "actor" && ROLES[k]) { f.role = k; A.draw(); return true; }
+    return false;
   }
   function record(li, wi, corrected, method) {
     mutate(() => state.edits[keyOf(li, wi)] = { corrected, method, at: new Date().toISOString() });
@@ -1573,7 +1592,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   }
   function modeAfterRender() { document.querySelectorAll(".modecur").forEach(n => n.classList.remove("modecur")); const it = state.modeCur && curItem(); if (!it) return;
     const el = it.g !== undefined ? document.querySelector(`.w[data-k="${keyOf(it.li, it.wi)}"]`) : document.querySelector(`.line[data-li="${it.li}"]`); if (el) el.classList.add("modecur"); updateModeBar(); }
-  { const baseRender = render; render = function () { baseRender(); modeAfterRender(); if (typeof alignSigla === "function") alignSigla(); }; }
+  { const baseRender = render; render = function () { baseRender(); modeAfterRender(); markNeSel(); if (typeof alignSigla === "function") alignSigla(); }; }
   // the mode comes from the task link only (?task=…, with ?mode= for the same task); without a task the page is the plain review
   const TASKS = { "T2.2-0": ["Tier 0 boundaries", "boundaries"], "T2.2-1": ["Tier 1 lines", "lines"], "T2.2-2": ["Tier 2 OOV/sigla", "oov"], "T3.2": ["cursus", "cursus"], "T5.1": ["codicology", "codicology"], "T5.2": ["legal", "legal"], "T5.3": ["arenga", "arenga"], "T2.1": ["edition", "edition"],
     "T3.3": ["entities", "ner"], "T2.2-z": ["zones", "structure"], "T3.2c": ["scribal corrections", "corrections"], "T2.2-w": ["words", "triage"] };
@@ -1604,6 +1623,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     if ($("modal").style.display === "flex") { if (e.key === "Escape") $("modal").style.display = "none"; return; }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && e.target.tagName !== "INPUT") { e.preventDefault(); undo(); return; }
     if (["INPUT", "SELECT"].includes(e.target.tagName)) return;
+    if (state.form && state.form.kind === "ne" && neFormKey(e)) { e.preventDefault(); return; }
     if (state.form) { if (e.key === "Escape") openPop(...state.pop); return; }
     const k = e.key.toLowerCase();
     if (modeKey(e)) return;

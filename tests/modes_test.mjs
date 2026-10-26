@@ -49,6 +49,15 @@ try {
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&mode=ner&sources=tests/none/` }); await sleep(3500);
   await key("Tab"); await sleep(400); const pl = await ev(`[window.__wb.state.mode, !!window.__wb.state.focus, document.getElementById("modeStat").textContent].join("|")`);
   check(pl.startsWith("|true|"), `a mode without a task is ignored: plain review, Tab = next flagged word (${pl})`);
+  // the entity form: N opens it on the focused word, + / - move the right edge, Shift+arrows the left edge, a digit marks at once (6 = DATE)
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&sources=tests/none/` }); await sleep(3500);
+  await key("Tab"); await sleep(300); await key("n"); await sleep(300);
+  const f0 = JSON.parse(await ev(`JSON.stringify({ form: !!window.__wb.state.form, span: window.__wb.state.form && window.__wb.state.form.span, marked: document.querySelectorAll(".w.nesel").length })`));
+  await key("+"); await sleep(150); await key("+"); await sleep(150); const f1 = JSON.parse(await ev(`JSON.stringify({ span: window.__wb.state.form.span, marked: document.querySelectorAll(".w.nesel").length })`));
+  await key("-"); await sleep(150); const f2 = JSON.parse(await ev(`JSON.stringify({ span: window.__wb.state.form.span, marked: document.querySelectorAll(".w.nesel").length })`));
+  await key("6"); await sleep(300); const f3 = JSON.parse(await ev(`JSON.stringify({ ne: window.__wb.state.ne.map(n => [n.type, n.span]), form: !!window.__wb.state.form, marked: document.querySelectorAll(".w.nesel").length })`));
+  check(f0.form && f0.span === 1 && f0.marked === 1 && f1.span === 3 && f1.marked === 3 && f2.span === 2 && f2.marked === 2, `entity form: the span is shown and + / - move its edge (${JSON.stringify([f0, f1, f2])})`);
+  check(f3.ne.length === 1 && f3.ne[0][0] === "date" && f3.ne[0][1] === 2 && !f3.form && f3.marked === 0, `N6 marks the span as DATE at once (${JSON.stringify(f3)})`);
   // the public-domain witnesses of the sample (sample/154v/regests.json, witness.json)
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition` }); await sleep(3500);
   const real = await ev(`JSON.stringify({ stat: document.getElementById("modeStat").textContent, witnessLines: document.querySelectorAll(".wsig .wit.siglum").length, diffTokens: document.querySelectorAll(".pair .wit.differs").length, plus: document.querySelectorAll(".pair.plus .chip.pl").length, ocr: document.querySelectorAll(".pair .wit.ocr").length,
