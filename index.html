@@ -195,6 +195,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
 .band .fold{padding:0 5px;margin-right:6px;cursor:pointer} .band .ty{text-transform:lowercase} .band .st{font-weight:600} .band .bgut{float:right;font-size:11px}
 .band .rg{color:var(--ink)} .band.cur{outline:2px solid #2f5d8a} .w.ecol{display:none} .band button.t{font:11px var(--sans);padding:0 5px}
 .lvw .lv{font:calc(13px * var(--fs))/1.6 var(--mono);color:var(--mute);overflow-wrap:anywhere} .lvw .lv .tag,.lvw .dipl .tag{font:10px var(--sans);letter-spacing:.06em;text-transform:uppercase;margin-right:8px;color:var(--mute)}
+.lvw .wd{background:rgba(180,35,24,.14);border-radius:2px;padding:0 2px} .lvw .inkimg{display:block;max-width:100%} .pipmask{position:absolute;right:6px;bottom:6px;height:34px;background:rgba(255,255,255,.5);border-radius:3px;padding:2px}
 .chip.sim{border-color:#9a8f7a;color:#7b705c;font-weight:500} .lvw .dipl{font-family:"Junicode",var(--mono)} .lvw .dim{color:var(--mute);font-style:italic}
 .w.modecur{outline:2px solid #2f5d8a;outline-offset:1px;border-radius:3px} .line.modecur{background:rgba(47,93,138,.08)} #modeWrap b{font-weight:600;color:var(--ink)} #modeAsk input{font:12px var(--sans)}
 .mctl{margin-left:10px;font:11px var(--sans)} .mctl .mst{color:var(--mute);margin-right:6px} .mctl button{font:11px var(--sans);padding:1px 6px;margin-left:4px;cursor:pointer}
@@ -269,7 +270,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     <button class="b" id="bExport">Approve &amp; save</button>
   </div>
   <div class="row2">
-    <span id="viewSel">line view <select id="lv1" aria-label="line view 1"></select> <select id="lv2" aria-label="second line view"></select></span><span class="sep">|</span>
+    <span id="viewSel"></span><span class="sep">|</span>
     <span>layer
       <button class="t" data-layer="both" aria-pressed="true">both</button>
       <button class="t" data-layer="dipl" aria-pressed="false">diplomatic</button>
@@ -399,7 +400,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const APP_TYPES = ["corr. ex", "add. supra lin.", "add. in marg.", "del.", "in ras.", "om.", "sic", "lectio dubia", "alia manu", "nota"];
 
   const state = { showPeers: false, heat: true, acc: true, clausOnly: false, layer: "both", active: null, focus: null, pop: null, form: null,
-    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, modes: {}, etype: {}, recip: {}, collapsed: {}, mode: "triage", views: ["dipl"], history: [], seq: 0,
+    edits: {}, dipl: {}, apprE: new Set(), apprD: new Set(), app: [], ne: [], stress: {}, marg: {}, pickMarg: null, modes: {}, etype: {}, recip: {}, collapsed: {}, mode: null, views: [], history: [], seq: 0,
     dirty: false, lastPush: null, peers: [], peerSig: "", syncLog: [], hasImage: false, rej: new Set(), struct: true, ner: true, fml: true };
   WB.restore(state, D);                                            // this editor's saved work on the page
   state.ne.forEach(n => { n.type = NE_ALIAS[n.type] || n.type; });  // entities saved with the earlier four classes
@@ -626,25 +627,25 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const nW = words.length, nD = dipl.length;
     const j = nD ? alignWD(words.map((w, k) => shownText(li, k)), dipl)[wi] : -1;
     const lo = Math.max(0, j - 2), hi = Math.min(nD, j + 3);
-    if (state.hasImage && l.bbox && S.iiif) {
-      const IW = S.iiif.width, IH = S.iiif.height, b = l.bbox;
+    if (state.hasImage && l.bbox && (S.iiif || img.naturalWidth)) {
+      const IW = S.iiif ? S.iiif.width : img.naturalWidth, IH = S.iiif ? S.iiif.height : img.naturalHeight, b = l.bbox;
       const lens2 = words.map(w => w.text.length + 1), tot2 = lens2.reduce((a, c) => a + c, 0);
       const fx0 = lens2.slice(0, wi).reduce((a, c) => a + c, 0) / tot2, fx1 = fx0 + lens2[wi] / tot2;
       const lh = b[3] * IH, cx = (b[0] + b[2] * (fx0 + fx1) / 2) * IW, cy = (b[1] + b[3] / 2) * IH;
       const rw = Math.max((fx1 - fx0) * b[2] * IW * 2.6, lh * 7), rh = lh * 2.4;
       const rx = Math.max(0, Math.round(cx - rw / 2)), ry = Math.max(0, Math.round(cy - rh / 2)), RW = Math.round(Math.min(rw, IW - rx)), RH = Math.round(Math.min(rh, IH - ry));
       const box = $("pipMs"), cw = box.clientWidth || 400, ch = box.clientHeight || 118;
-      box.innerHTML = `<canvas width="${cw * 2}" height="${ch * 2}" style="width:100%;height:100%"></canvas><span class="wm">synthetic · IIIF region</span>`;
+      box.innerHTML = `<canvas width="${cw * 2}" height="${ch * 2}" style="width:100%;height:100%"></canvas>${S.iiif ? `<span class="wm">synthetic · IIIF region</span>` : ""}`;
       const cv = box.querySelector("canvas"), g = cv.getContext("2d"), sc = Math.min(cv.width / RW, cv.height / RH);
       const dw = RW * sc, dh = RH * sc, ox = (cv.width - dw) / 2, oy = (cv.height - dh) / 2;
       g.fillStyle = "#e6d6b0"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, rx, ry, RW, RH, ox, oy, dw, dh);
       const wx0 = (b[0] + b[2] * fx0) * IW, wx1 = (b[0] + b[2] * fx1) * IW;      // frame of the word
       g.strokeStyle = "#b42318"; g.lineWidth = 3; g.strokeRect(ox + (wx0 - rx) * sc - 3, oy + (b[1] * IH - ry) * sc + lh * sc * 0.02, (wx1 - wx0) * sc + 6, lh * sc * 1.1);
-      $("pipUrl").textContent = `${S.iiif.id}/${rx},${ry},${RW},${RH}/!${cw},${ch}/0/default.jpg`;
+      if (S.iiif) $("pipUrl").textContent = `${S.iiif.id}/${rx},${ry},${RW},${RH}/!${cw},${ch}/0/default.jpg`;
     } else
-    $("pipMs").innerHTML = nD ? `<span class="rule" style="top:28%"></span><span class="rule" style="top:76%"></span>` +
-      dipl.slice(lo, hi).map((t, k) => `<span class="tk${lo + k === j ? " cur" : ""}">${esc(t)}</span>`).join("") + `<span class="wm">simulated</span>`
-      : `<span class="empty">no diplomatic reading for this line</span>`;
+    $("pipMs").innerHTML = nD ? `<span class="rule" style="top:28%"></span><span class="rule" style="top:76%"></span>` + dipl.slice(lo, hi).map((t, k) => `<span class="tk${lo + k === j ? " cur" : ""}">${esc(t)}</span>`).join("") : "";
+    { const sw = STRIPS && STRIPS.lines[l.line_id] && STRIPS.lines[l.line_id].words[wi];                       // ink mask of the word (internal build)
+      if (sw) $("pipMs").insertAdjacentHTML("beforeend", `<img class="pipmask" src="${stripSrc(sw.file)}" alt="ink mask of the word" title="ink mask derived from the image">`); }
     $("pipHd").innerHTML = `<b>${esc(shownText(li, wi))}</b>`;
     $("pipPos").textContent = `fol. ${S.folio} · line ${LNUM[li]} · word ${wi + 1}/${nW}`;
     const lens_ = words.map(w => w.text.length + 1), tot = lens_.reduce((a, c) => a + c, 0), x0 = lens_.slice(0, wi).reduce((a, c) => a + c, 0) / tot;
@@ -835,45 +836,6 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   let effViews = () => ["dipl"];                                    // set with the line-view choice below
   const HAS_WIT = Object.keys(WIT).length > 0, HAS_REG = Object.keys(REG).length > 0;
   const BIBL = { Pressutti: "Pressutti, Pietro, Regesta Honorii papae III, 2 vols., Rome 1888–1895", Potthast: "Potthast, August, Regesta pontificum Romanorum inde ab a. 1198 ad a. 1304, 2 vols., Berlin 1874–1875", Horoy: "Horoy, Charles Auguste, Honorii III Romani pontificis opera omnia, 5 vols., Paris 1879–1882" };
-  // ------------------------------------------------------------ simulated diplomatic line: rule re-abbreviation of the expanded reading (NOT a reading)
-  // Whole words of the register's conventions (nomina sacra and the stock words of the chancery) and endings / prefixes; the table is the whole of the simulation.
-  const MAC = "̄";                                               // combining macron (the generic abbreviation stroke)
-  const ABBR_WORDS = { // folded form -> abbreviated form (lower case; the initial capital is kept)
-    apostolica: "aplica", apostolice: "aplice", apostolicam: "aplicam", apostolici: "aplici", apostolicis: "aplicis", apostolicum: "aplicum", apostolicorum: "aplicoꝝ",
-    ecclesia: "eccl" + MAC + "ia", ecclesie: "eccl" + MAC + "ie", ecclesiam: "eccl" + MAC + "iam", ecclesiis: "eccl" + MAC + "iis", ecclesiasticum: "eccl" + MAC + "icum", ecclesiastica: "eccl" + MAC + "ica", ecclesiasticam: "eccl" + MAC + "icam",
-    episcopus: "epc" + MAC + "s", episcopo: "epc" + MAC + "o", episcopi: "epc" + MAC + "i", episcopum: "epc" + MAC + "m", archiepiscopus: "archiepc" + MAC + "s", archiepiscopo: "archiepc" + MAC + "o", archiepiscopi: "archiepc" + MAC + "i",
-    littere: "lr" + MAC + "e", litteras: "lr" + MAC + "as", litteris: "lr" + MAC + "is", litterarum: "lr" + MAC + "arum",
-    nostri: "nr" + MAC + "i", nostro: "nr" + MAC + "o", nostra: "nr" + MAC + "a", nostre: "nr" + MAC + "e", nostrum: "nr" + MAC + "m", noster: "nr" + MAC, nostris: "nr" + MAC + "is", nostrorum: "nr" + MAC + "oꝝ",
-    vestri: "vr" + MAC + "i", vestro: "vr" + MAC + "o", vestra: "vr" + MAC + "a", vestre: "vr" + MAC + "e", vestram: "vr" + MAC + "am", vestrum: "vr" + MAC + "m", vester: "vr" + MAC, vestris: "vr" + MAC + "is",
-    tue: "tu" + MAC + "e", tuo: "tu" + MAC + "o",
-    gratia: "gr" + MAC + "a", gratiam: "gr" + MAC + "am", gratie: "gr" + MAC + "e",
-    dominus: "dn" + MAC + "s", domino: "dn" + MAC + "o", domini: "dn" + MAC + "i", dominum: "dn" + MAC + "m", deus: "d" + MAC + "s", deo: "d" + MAC + "o", dei: "d" + MAC + "i",
-    jesu: "ih" + MAC + "u", christi: "xp" + MAC + "i", christo: "xp" + MAC + "o",
-    sanctus: "sc" + MAC + "s", sancti: "sc" + MAC + "i", sancte: "sc" + MAC + "e", sanctam: "sc" + MAC + "am", sancta: "sc" + MAC + "a", sanctorum: "sc" + MAC + "oꝝ", sancto: "sc" + MAC + "o",
-    dilectus: "dilc" + MAC + "s", dilecti: "dilc" + MAC + "i", dilecto: "dilc" + MAC + "o", dilectis: "dilc" + MAC + "is", dilectum: "dilc" + MAC + "m", dilectos: "dilc" + MAC + "os",
-    venerabilis: "venl" + MAC + "is", venerabili: "venl" + MAC + "i", venerabilem: "venl" + MAC + "em",
-    frater: "fr" + MAC, fratrem: "fr" + MAC + "em", fratri: "fr" + MAC + "i", fratribus: "fr" + MAC + "ib;", fratres: "fr" + MAC + "es",
-    presbyteri: "pbr" + MAC + "i", presbyter: "pbr" + MAC, cardinalis: "cardl" + MAC + "is", cardinali: "cardl" + MAC + "i",
-    monasterio: "monast" + MAC + "io", monasterii: "monast" + MAC + "ii", monasterium: "monast" + MAC + "ium", capitulo: "cap" + MAC + "lo", capituli: "cap" + MAC + "li", capitulum: "cap" + MAC + "lm",
-    conventui: "conv" + MAC + "tui", abbati: "abb" + MAC + "i", abbas: "abb" + MAC + "s", abbatibus: "abb" + MAC + "ib;", decano: "dec" + MAC + "o", decanus: "dec" + MAC + "s", priori: "prior" + MAC + "i", prior: "prior" + MAC,
-    papa: "pp" + MAC, pape: "pp" + MAC + "e", pontificatus: "pontf" + MAC + "s", predecessor: "p" + MAC + "decessor", predecessoris: "p" + MAC + "decessoris", predecessore: "p" + MAC + "decessore",
-    et: "⁊", est: "÷", enim: "en" + MAC, non: "no" + MAC, quod: "qđ", quia: "qa", quam: "qm" + MAC, quoque: "qꝫ", quatinus: "qtin" + MAC + "s", etiam: "eti" + MAC, nobis: "nob;", vobis: "vob;", omnibus: "omib;", omnes: "oms", omnis: "omis",
-    scripta: "scripta", mandamus: "mandam" + MAC + "", precipiendo: "ꝓcipiendo", presentium: "ꝑsentium", per: "ꝑ", pro: "ꝓ", cum: "cū", sicut: "sicut", super: "sup", supra: "sup" + MAC + "a", ut: "ut", sed: "sed", nec: "nec", secundum: "sc" + MAC + "m", tamen: "tm" + MAC, igitur: "igit" + MAC, ergo: "erg" + MAC
-  };
-  const ABBR_RULES = [ // [pattern, replacement]: prefixes / endings, applied in order to words not in the table (words of 4 letters or more)
-    [/^per(?=[a-z]{3,})/, "ꝑ"], [/^pro(?=[a-z]{3,})/, "ꝓ"], [/^pre(?=[a-z]{3,})/, "p" + MAC], [/^con(?=[a-z]{3,})/, "ꝯ"],
-    [/orum$/, "oꝝ"], [/arum$/, "aꝝ"], [/bus$/, "b;"], [/que$/, "qꝫ"], [/us$/, "ꝰ"], [/([aeio])m$/, "$1" + MAC]
-  ];
-  const abbrWord = (w) => {
-    const m = w.match(/^([^\p{L}]*)([\p{L}]+)([^\p{L}]*)$/u); if (!m) return w; const [, a, core, z] = m, low = core.toLowerCase(), key = low.normalize("NFD").replace(/\p{M}/gu, "").replace(/v/g, "u").replace(/j/g, "i"), ukey = ABBR_WORDS[key] !== undefined ? key : null;
-    let out = ukey ? ABBR_WORDS[ukey] : null;
-    if (out === null && core.length >= 4) { out = low; for (const [re, rep] of ABBR_RULES) { if (re.test(out)) { out = out.replace(re, rep); break; } } if (out === low) out = core; }
-    if (out === null) out = core;
-    if (out !== core && /^\p{Lu}/u.test(core)) out = out[0].toUpperCase() + out.slice(1);
-    return a + out + z;
-  };
-  const simDipl = (li) => D.lines[li].words.map((w, wi) => abbrWord(shownText(li, wi))).join(" ").normalize("NFC");
-  const SIM_TABLE_SIZE = Object.keys(ABBR_WORDS).length + ABBR_RULES.length;
   // ------------------------------------------------------------ entry bands: recipient, type, place and date (computed from the datatio), lines, regest, status
   const ROMAN = (t) => { const v = { I: 1, V: 5, X: 10, L: 50, C: 100 }; t = t.toUpperCase().replace(/[^IVXLC]/g, ""); let n = 0; for (let i = 0; i < t.length; i++) { const a = v[t[i]], b = v[t[i + 1]] || 0; n += a < b ? -a : a; } return n; };
   const MONTHS = ["ianuar", "februar", "mart", "april", "mai", "iuni", "iuli", "august", "septembr", "octobr", "novembr", "decembr"], MON_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -973,7 +935,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       const body = document.createElement("div");
       // line views (the slot of the diplomatic line): per editor, at most two
       const dp = document.createElement("div"); dp.className = "lvw";
-      effViews().forEach(v => { dp.appendChild(lineView(v, li)); });
+      ["dipl"].concat(effViews()).forEach(v => { dp.appendChild(lineView(v, li)); });
       // edition layer
       const t = document.createElement("div"); t.className = "txt" + (state.heat ? " on" : "") + (state.struct ? " ds-on" : "");
       let host = t;
@@ -1201,25 +1163,40 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     mutate(() => delete state.edits[keyOf(li, wi)]); closePop(); render(); toast(`reverted to ${w.text}`);
   }
   // diplomatic layer: line-level editing
-  // sources of the line view: diplomatic (simulated unless the editor has corrected it), legacy witness (aligned line), regest (at entry level), image strip
+  // sources of the line view: the editor's own diplomatic line, the legacy witness line, the original image strip, the ink mask
+  const foldT = (t) => rd(t).replace(/[^a-z]/g, "");
+  // witness line against the reading: tokens that differ (LCS of the folded tokens); the differing tokens of the reading are the stops of the edition task
+  function witnessDiff(li) {
+    const wt = WIT[LNUM[li]]; if (!wt || wt.align === "entry-level" || !D.lines[li].words.length) return null;
+    const R = D.lines[li].words.map((w, wi) => ({ t: shownText(li, wi), f: foldT(shownText(li, wi)) })), Wt = wt.text.split(/\s+/).filter(Boolean).map(t => ({ t, f: foldT(t) })), n = R.length, m = Wt.length;
+    const Lm = Array.from({ length: n + 1 }, () => new Int16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) Lm[i][j] = R[i].f === Wt[j].f ? Lm[i + 1][j + 1] + 1 : Math.max(Lm[i + 1][j], Lm[i][j + 1]);
+    const rdf = new Set(), wdf = new Set(), gaps = []; let i = 0, j = 0, gap = null;
+    const flush = () => { if (gap) { gaps.push(gap); gap = null; } };
+    while (i < n || j < m) {
+      if (i < n && j < m && R[i].f === Wt[j].f) { flush(); i++; j++; continue; }
+      gap = gap || { r: [], w: [], at: Math.max(0, i - 1) };
+      if (j >= m || (i < n && Lm[i + 1][j] >= Lm[i][j + 1])) { rdf.add(i); gap.r.push(i); i++; } else { wdf.add(j); gap.w.push(Wt[j].t); j++; }
+    }
+    flush(); return { wt, Wt, rdf, wdf, gaps };
+  }
+  const stripSrc = (f) => `${SRCBASE}${S.folio}/strips/${f}`;
   function lineView(v, li) {
     const l = D.lines[li], el = document.createElement("div");
-    if (v === "dipl") {
-      const real = state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || ""), sim = !real;
-      el.className = "dipl" + (state.dipl[li] ? " changed" : ""); el.dataset.li = li;
-      el.innerHTML = (state.layer === "both" ? `<span class="tag">dipl.</span>` : "") + esc((real || simDipl(li) || "—").normalize("NFC")) + (sim && l.words.length ? ` <span class="chip sim" title="simulated: rule re-abbreviation of the expanded reading, not a reading. Correct it to make it a real diplomatic line.">simulated</span>` : "");
-      el.title = "Click or press D to edit the diplomatic transcription of this line (the simulated line is only a starting point)";
+    if (v === "dipl") {                                              // the editor's own diplomatic line (empty until transcribed)
+      const real = state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || "");
+      el.className = "dipl" + (state.dipl[li] ? " changed" : ""); el.dataset.li = li; el.title = "Press D to transcribe the diplomatic line";
+      el.innerHTML = real ? (state.layer === "both" ? `<span class="tag">dipl.</span>` : "") + esc(real.normalize("NFC")) : "";
       el.onclick = (e) => { e.stopPropagation(); editDipl(li); };
-    } else if (v === "witness") {
-      const wt = WIT[LNUM[li]]; el.className = "lv witness";
-      el.innerHTML = wt ? `<span class="tag">${esc(wt.source)}${wt.align === "entry-level" ? " · entry" : ""}</span>${esc(wt.text)}` : (HAS_WIT ? "" : `<span class="tag">witness</span><span class="dim">no witness for this page</span>`);
-    } else if (v === "pressutti" || v === "potthast") {
-      el.className = "lv regest"; const E0 = L0().entList.find(E => FL[E.g0][0] === li), rs = E0 ? (REG[String(E0.n)] || []).filter(r => r.source.toLowerCase() === v) : [];
-      el.innerHTML = rs.map(r => `<span class="tag">${esc(r.source)} ${esc(r.n)}${r.date ? " · " + esc(r.date) : ""}</span>${esc(r.text)}`).join("<br>") + (!rs.length && li === L0().mainL[0] && !Object.values(REG).flat().some(r => r.source.toLowerCase() === v) ? `<span class="dim">no ${v} regest for this page</span>` : "");
-    } else if (v === "image") {
+    } else if (v === "legacy") {
+      const wt = WIT[LNUM[li]]; el.className = "lv witness"; if (!wt) return el;
+      const df = witnessDiff(li), cite = `${wt.source}${wt.cite ? " " + wt.cite : ""}`;
+      el.innerHTML = `<span class="tag">${esc(cite)}${wt.align === "entry-level" ? " · entry" : ""}</span>` + (df ? df.Wt.map((x, k) => df.wdf.has(k) ? `<span class="wd" title="differs from the reading">${esc(x.t)}</span>` : esc(x.t)).join(" ") : esc(wt.text));
+    } else if (v === "image") {                                       // strip of the original image, only when the image is loaded on this computer
       el.className = "lv strip"; const cv = document.createElement("canvas"), b = l.bbox;
-      if (state.hasImage && b && img.naturalWidth) { const sw = b[2] * img.naturalWidth, sh = b[3] * img.naturalHeight; cv.width = Math.min(900, sw); cv.height = Math.max(8, cv.width * sh / sw); cv.getContext("2d").drawImage(img, b[0] * img.naturalWidth, b[1] * img.naturalHeight, sw, sh, 0, 0, cv.width, cv.height); cv.style.maxWidth = "100%"; el.appendChild(cv); }
-      else el.innerHTML = `<span class="dim">image strip: choose the image folder</span>`;
+      if (state.hasImage && b && img.naturalWidth && !hiddenLine(l)) { const sw = b[2] * img.naturalWidth, sh = b[3] * img.naturalHeight; cv.width = Math.min(900, sw); cv.height = Math.max(8, cv.width * sh / sw); cv.getContext("2d").drawImage(img, b[0] * img.naturalWidth, b[1] * img.naturalHeight, sw, sh, 0, 0, cv.width, cv.height); cv.style.maxWidth = "100%"; el.appendChild(cv); }
+    } else if (v === "ink") {                                         // line-level ink mask derived from the image (internal build)
+      el.className = "lv ink"; const st = STRIPS && STRIPS.lines[l.line_id]; if (st) el.innerHTML = `<img class="inkimg" src="${stripSrc(st.file)}" height="30" alt="ink mask of line ${LNUM[li]}">`;
     } else { el.className = "lv"; }
     return el;
   }
@@ -1227,13 +1204,13 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     if (state.layer === "edit") { state.layer = "both"; setLayerButtons(); render(); }
     state.active = li;
     const dp = document.querySelector(`.dipl[data-li="${li}"]`); if (!dp) return;
-    const cur = (state.dipl[li] ? state.dipl[li].text : (D.lines[li].diplomatic_text || simDipl(li))).normalize("NFC");
+    const cur = (state.dipl[li] ? state.dipl[li].text : (D.lines[li].diplomatic_text || "")).normalize("NFC");
     dp.innerHTML = `<input type="text" aria-label="diplomatic transcription, line ${LNUM[li]}" value="${esc(cur)}">`;
     const inp = dp.querySelector("input"); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
     inp.onclick = (e) => e.stopPropagation();
     inp.onkeydown = (e) => {
       e.stopPropagation();
-      if (e.key === "Enter") { e.preventDefault(); const v = inp.value.normalize("NFC"); if (v !== cur) mutate(() => { if (v === (D.lines[li].diplomatic_text || simDipl(li)).normalize("NFC")) delete state.dipl[li]; else state.dipl[li] = { text: v, at: new Date().toISOString() }; }); render(); toast(`diplomatic line ${li + 1} saved`); }
+      if (e.key === "Enter") { e.preventDefault(); const v = inp.value.normalize("NFC"); if (v !== cur) mutate(() => { if (v === (D.lines[li].diplomatic_text || "").normalize("NFC")) delete state.dipl[li]; else state.dipl[li] = { text: v, at: new Date().toISOString() }; }); render(); toast(`diplomatic line ${li + 1} saved`); }
       if (e.key === "Escape") render();
     };
     inp.onblur = () => setTimeout(() => { if (document.activeElement !== inp && !$("chars").matches(":hover")) render(); }, 150);
@@ -1265,17 +1242,21 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   drawChars();
 
   // ------------------------------------------------------------ line-view choice (per editor, stored in this browser and with the editor's login)
-  const VIEW_OPTS = [["dipl", "diplomatic (simulated)"], ["witness", "legacy witness"], ["pressutti", "Pressutti regest"], ["potthast", "Potthast regest"], ["image", "image strip"], ["none", "none"]], VKEY = `paprg.views.${CFG.login}`;
-  // default: the public build shows the image strip when images are present, else none; the internal build the simulated diplomatic line. A choice of the editor stands.
-  let VIEWS_CHOSEN = null; try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v)) VIEWS_CHOSEN = v.slice(0, 2); } catch (e) {}
-  const PUBLIC = (CFG.build || "internal") === "public";
-  effViews = () => VIEWS_CHOSEN || (PUBLIC ? (state.hasImage ? ["image"] : []) : ["dipl"]);
-  const setViewSel = () => { const ev_ = effViews(); ["lv1", "lv2"].forEach((id, i) => { $(id).innerHTML = VIEW_OPTS.map(o => `<option value="${o[0]}" ${(ev_[i] || "none") === o[0] ? "selected" : ""}>${o[1]}</option>`).join(""); }); };
-  ["lv1", "lv2"].forEach((id, i) => $(id).onchange = (e) => { const v = effViews().slice(); v[i] = e.target.value; VIEWS_CHOSEN = v.filter((x, k) => x && x !== "none" && v.indexOf(x) === k).slice(0, 2); try { localStorage.setItem(VKEY, JSON.stringify(VIEWS_CHOSEN)); } catch (x) {} setViewSel(); render(); });
+  const VKEY = `paprg.views.${CFG.login}`, PUBLIC = (CFG.build || "internal") === "public";
+  // the ink masks (derived from the image, sample/<folio>/strips/) exist for the internal build only, until the PI clears them
+  const STRIPS = (() => { if (PUBLIC) return null; try { const x = new XMLHttpRequest(); x.open("GET", `${SRCBASE}${S.folio}/strips/index.json`, false); x.send(); if (x.status === 200) return JSON.parse(x.responseText); } catch (e) {} return null; })();
+  // default: the legacy line when there is one, else the ink strip when masks exist (internal build), else none; the choice of the editor stands
+  let VIEWS_CHOSEN = null; try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v)) VIEWS_CHOSEN = v.filter(x => ["legacy", "image", "ink"].includes(x)); } catch (e) {}
+  effViews = () => VIEWS_CHOSEN || (HAS_WIT ? ["legacy"] : (STRIPS ? ["ink"] : []));
+  const VIEW_BTN = [["legacy", "legacy line", () => HAS_WIT || HAS_REG], ["image", "image strip", () => state.hasImage], ["ink", "ink strip", () => !!STRIPS], ["none", "none", () => true]];
+  const setViewSel = () => { const ev_ = effViews(); $("viewSel").innerHTML = "line view " + VIEW_BTN.filter(b => b[2]()).map(b => `<button class="t" data-v="${b[0]}" aria-pressed="${b[0] === "none" ? !ev_.length : ev_.includes(b[0])}">${b[1]}</button>`).join(" ");
+    $("viewSel").querySelectorAll("button").forEach(bt => bt.onclick = (e) => { e.stopPropagation(); const v = bt.dataset.v; let cur = effViews().slice(); cur = v === "none" ? [] : (cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v)); VIEWS_CHOSEN = cur; try { localStorage.setItem(VKEY, JSON.stringify(cur)); } catch (x) {} setViewSel(); render(); }); };
   setViewSel();
   // ------------------------------------------------------------ task modes: one Tab queue, counters, keys and progress record per operation
-  const MODE_LIST = ["triage", "boundaries", "structure", "cursus", "corrections", "ner", "codicology", "legal", "arenga", "edition"];
+  const MODE_LIST = ["lines", "oov", "triage", "boundaries", "structure", "cursus", "corrections", "ner", "codicology", "legal", "arenga", "edition"];
   const MODE_INFO = {
+    lines: ["T2.2 Tier 1", "lines by expected errors", "<kbd>Enter</kbd> confirm and approve the line · <kbd>1–3</kbd> candidate · type to correct"],
+    oov: ["T2.2 Tier 2", "OOV words and sigla", "<kbd>Enter</kbd> accept as read · <kbd>1–3</kbd> candidate · type to correct · <kbd>G</kbd> mark siglum"],
     triage: ["T2.2 Tier 1–2", "words by error score, OOV, sigla", "<kbd>Enter</kbd> accept · <kbd>1–3</kbd> candidate · type to correct · <kbd>D</kbd> diplomatic · <kbd>G</kbd> mark siglum"],
     boundaries: ["T2.2 Tier 0", "entry starts, part flags, i.e.m.", "<kbd>Enter</kbd> confirm · <kbd>S</kbd> split here · <kbd>M</kbd> merge with previous · <kbd>P</kbd> set part"],
     structure: ["T2.2 zones", "part boundaries", "<kbd>Enter</kbd> confirm · <kbd>P</kbd> relabel · drag a bar"],
@@ -1308,6 +1289,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   }
   function modeItems(m) {
     const DS = structure(), Ly = L0(), out = [];
+    if (m === "lines") { D.lines.forEach((l, li) => { if (!l.words.length || hiddenLine(l)) return; const ex = l.words.reduce((a, w, wi) => a + pErr(li, wi), 0); out.push({ id: "ln:" + li, li, label: `line ${LNUM[li]} · ${ex.toFixed(1)} expected errors`, score: ex }); }); return out.sort((a, b) => b.score - a.score); }
+    if (m === "oov") { FL.forEach(([li, wi], g) => { const w = D.lines[li].words[wi]; if (w.is_oov || SIGLUM.test(w.text)) out.push(wItem(`w:${li}:${wi}`, g, shownText(li, wi), { score: pErr(li, wi) })); }); return out.sort((a, b) => b.score - a.score); }
     if (m === "triage") {
       FL.forEach(([li, wi], g) => { const w = D.lines[li].words[wi]; if (level(li, wi) !== "high" || w.is_oov || SIGLUM.test(w.text)) out.push(wItem(`w:${li}:${wi}`, g, shownText(li, wi), { score: pErr(li, wi), oov: w.is_oov })); });
       return out.sort((a, b) => b.score - a.score);
@@ -1344,10 +1327,12 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       SUGG.filter(x => x.type === "cit").forEach(x => out.push(wItem("r:c" + x.k, x.gi, "citation suggestion")));
       return out;
     }
-    if (m === "edition") { if (HAS_WIT) D.lines.forEach((l, li) => { const wt = WIT[LNUM[li]]; if (wt && wt.align === "aligned" && l.words.length && rd(wt.text) !== rd(l.words.map(w => w.text).join(" "))) out.push({ id: "e:" + li, li, label: `line ${LNUM[li]}: ${wt.source} differs from the reading` }); }); return out; }
+    if (m === "edition") { if (HAS_WIT) D.lines.forEach((l, li) => { const df = witnessDiff(li); if (!df) return;
+      df.gaps.forEach((gp, k) => { const wi = gp.r.length ? gp.r[0] : gp.at; gp.r.forEach((ri, q) => out.push(wItem(`e:${li}:${ri}`, GI[keyOf(li, ri)], `${shownText(li, ri)} ⇄ ${q === 0 ? (gp.w.join(" ") || "∅") : "…"} (${df.wt.source})`)));
+        if (!gp.r.length) out.push(wItem(`e:${li}:+${k}`, GI[keyOf(li, wi)], `witness adds: ${gp.w.join(" ")} (${df.wt.source})`)); }); }); return out; }
     return out;
   }
-  const modeDone = (m, it) => isDone(m, it.id) || (m === "triage" && state.edits[keyOf(it.li, it.wi)]) || (m === "ner" && !it.suspect && it.sugg && !suggOpen().some(x => x.k === it.sugg.k));
+  const modeDone = (m, it) => isDone(m, it.id) || ((m === "triage" || m === "oov") && state.edits[keyOf(it.li, it.wi)]) || (m === "lines" && state.apprE.has(it.li)) || (m === "ner" && !it.suspect && it.sugg && !suggOpen().some(x => x.k === it.sugg.k));
   function modeStatus() {
     const m = state.mode, its = modeItems(m), left = its.filter(it => !modeDone(m, it));
     if (m === "edition" && !HAS_WIT) return "edition: no witness for this page"; if (m === "corrections" && !its.length) return "corrections: 0 on this page";
@@ -1357,7 +1342,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   function storeCounts() { try { const o = {}; MODE_LIST.forEach(m => { const its = modeItems(m); o[m] = [its.length, its.filter(it => !modeDone(m, it)).length]; });
     localStorage.setItem(`wb:modecounts:${G_PAGE}`, JSON.stringify({ at: new Date().toISOString(), modes: o })); } catch (e) {} }
   const G_PAGE = `${CFG.org ? "" : ""}${S.volume ? "RV" + S.volume + "/" + S.folio : S.folio}`;
-  function updateModeBar() { $("modeStat").textContent = modeStatus(); clearTimeout(updateModeBar.t); updateModeBar.t = setTimeout(storeCounts, 600); $("keysLine").innerHTML = `<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> next / previous stop · ${MODE_INFO[state.mode][2]} · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
+  const PLAIN_KEYS = `<kbd>Tab</kbd> next flagged word · <kbd>1–3</kbd> accept · <kbd>A</kbd> apparatus · <kbd>N</kbd><kbd>0–9</kbd> entity class · <kbd>R</kbd> role · name? right half ✓ left half ✗ · <kbd>D</kbd> edit diplomatic · <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> approve edition / diplomatic · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
+  function updateModeBar() { if (!state.mode) { $("modeStat").textContent = ""; $("keysLine").innerHTML = PLAIN_KEYS; $("modeCur").textContent = ""; return; } $("modeStat").textContent = modeStatus(); clearTimeout(updateModeBar.t); updateModeBar.t = setTimeout(storeCounts, 600); $("keysLine").innerHTML = `<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> next / previous stop · ${MODE_INFO[state.mode][2]} · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
     const cur = modeItems(state.mode).find(i => i.id === state.modeCur); $("modeCur").textContent = cur ? "· " + cur.label + (cur.why ? " (" + cur.why + ")" : "") : ""; }
   function focusItem(it) {
     state.modeCur = it.id;
@@ -1377,9 +1363,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   const curItem = () => modeItems(state.mode).find(i => i.id === state.modeCur) || null;
   // returns true when the key was handled by the active mode
   function modeKey(e) {
-    const m = state.mode, it = curItem(), k = e.key.toLowerCase(); if (!it) return false;
+    if (!state.mode) return false; const m = state.mode, it = curItem(), k = e.key.toLowerCase(); if (!it) return false;
     const done = (act, val) => { setDone(m, it.id, act, val, [it.li, it.wi]); toast(`${m}: ${act}${val ? " · " + val : ""}`); render(); updateModeBar(); };
-    if (e.key === "Enter" && !e.shiftKey && m !== "triage") {
+    if (e.key === "Enter" && !e.shiftKey && m !== "triage" && m !== "oov" && m !== "lines") {
       e.preventDefault();
       if (m === "ner" && it.sugg) { decideSugg(it.sugg, true, it.g); setDone(m, it.id, "accept", "", [it.li, it.wi]); }
       else if (m === "ner") done("checked: no entity");
@@ -1387,8 +1373,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       else done("confirm");
       modeNext(1); return true;
     }
-    if (m === "triage" && e.key === "Enter" && !e.shiftKey) { if (!state.edits[keyOf(it.li, it.wi)]) setDone(m, it.id, "accept as read"); return false; }   // the line is approved by the common rule below
-    if (m === "triage" && k === "g") { e.preventDefault(); done("siglum"); return true; }
+    if (m === "lines" && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); mutate(() => state.apprE.add(it.li)); setDone(m, it.id, "confirm"); render(); modeNext(1); return true; }
+    if ((m === "triage" || m === "oov") && e.key === "Enter" && !e.shiftKey) { if (!state.edits[keyOf(it.li, it.wi)]) setDone(m, it.id, "accept as read"); return false; }   // the line is approved by the common rule below
+    if ((m === "triage" || m === "oov") && k === "g") { e.preventDefault(); done("siglum"); return true; }
     if (m === "boundaries" || m === "structure") {
       if (k === "p") { e.preventDefault(); const r = (document.querySelector(`.w[data-k="${keyOf(it.li, it.wi)}"]`) || document.body).getBoundingClientRect(); dsMenu({ clientX: r.left, clientY: r.bottom, preventDefault() {}, stopPropagation() {} }, it.g); return true; }
       if (m === "boundaries" && k === "s") { e.preventDefault(); const pt = structure().part[it.g]; dsEdit(sg => { if (!sg.some(x => x[0] === it.g)) sg.push([it.g, pt]); }); toast("boundary set here"); return true; }
@@ -1421,17 +1408,16 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     }
     return false;
   }
-  function setMode(m, quiet) {
-    if (!MODE_INFO[m]) m = "triage"; state.mode = m; state.modeCur = null; $("modeSel").value = m;
-    try { const u = new URL(location.href); u.searchParams.set("mode", m); history.replaceState(null, "", u.pathname + u.search); } catch (e) {}
-    updateModeBar(); if (!quiet) { render(); modeNext(1); }
-  }
-  $("modeSel").innerHTML = MODE_LIST.map(m => `<option value="${m}">${m} · ${MODE_INFO[m][0]}</option>`).join("");
-  $("modeSel").onchange = (e) => setMode(e.target.value);
   function modeAfterRender() { document.querySelectorAll(".modecur").forEach(n => n.classList.remove("modecur")); const it = state.modeCur && curItem(); if (!it) return;
     const el = it.g !== undefined ? document.querySelector(`.w[data-k="${keyOf(it.li, it.wi)}"]`) : document.querySelector(`.line[data-li="${it.li}"]`); if (el) el.classList.add("modecur"); updateModeBar(); }
   { const baseRender = render; render = function () { baseRender(); modeAfterRender(); }; }
-  setMode(new URLSearchParams(location.search).get("mode") || state.mode, true);
+  // the mode comes from the task link only (?task=…, with ?mode= for the same task); without a task the page is the plain review
+  const TASKS = { "T2.2-0": ["Tier 0 boundaries", "boundaries"], "T2.2-1": ["Tier 1 lines", "lines"], "T2.2-2": ["Tier 2 OOV/sigla", "oov"], "T3.2": ["cursus", "cursus"], "T5.1": ["codicology", "codicology"], "T5.2": ["legal", "legal"], "T5.3": ["arenga", "arenga"], "T2.1": ["edition", "edition"],
+    "T3.3": ["entities", "ner"], "T2.2-z": ["zones", "structure"], "T3.2c": ["scribal corrections", "corrections"], "T2.2-w": ["words", "triage"] };
+  const TASK_ID = new URLSearchParams(location.search).get("task"), TASK = TASKS[TASK_ID] || null;
+  function setMode(m, quiet) { state.mode = m && MODE_INFO[m] ? m : null; state.modeCur = null; updateModeBar(); if (!quiet && state.mode) { render(); modeNext(1); } }
+  { const asg = WB.assignee ? WB.assignee(G_PAGE, TASK_ID) : null; $("modeWrap").innerHTML = TASK ? `task · ${esc(TASK_ID)} ${esc(TASK[0])} · ${asg ? (asg === CFG.login ? "assigned" : "assigned to @" + esc(asg)) : "open"} <b id="modeStat"></b> <span id="modeCur"></span> <span id="modeAsk" hidden></span>` : `<b id="modeStat"></b><span id="modeCur"></span><span id="modeAsk" hidden></span>`; }
+  setMode(TASK ? TASK[1] : null, true);
   // ------------------------------------------------------------ keyboard and toggles
   function next(dir, open) {
     const f = flaggedList(); if (!f.length) { toast("all flagged words reviewed"); return; }
@@ -1446,7 +1432,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     if (state.form) { if (e.key === "Escape") openPop(...state.pop); return; }
     const k = e.key.toLowerCase();
     if (modeKey(e)) return;
-    if (e.key === "Tab") { e.preventDefault(); closePop(); modeNext(e.shiftKey ? -1 : 1); }
+    if (e.key === "Tab") { e.preventDefault(); closePop(); if (state.mode) modeNext(e.shiftKey ? -1 : 1); else next(e.shiftKey ? -1 : 1, true); }
     else if (["1", "2", "3"].includes(e.key) && state.pop) { e.preventDefault(); accept(state.pop[0], state.pop[1], +e.key - 1); }
     else if (k === "a" && state.pop) { e.preventDefault(); $("bApp").click(); }
     else if (k === "n" && state.pop) { e.preventDefault(); $("bNe").click(); }
@@ -1600,8 +1586,8 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const list = (type, resp, items) => items.length ? `${I(3)}<listAnnotation type="${type}">${items.join("")}${I(3)}</listAnnotation>` : "";
     const folioMark = D.lines.map((l, li) => l.zone === "folio-mark" ? `${I(4)}<fw type="folio-mark" place="top-centre" facs="${zone(li)}" resp="#rules"/>` : "").join("");
     const nMargDec = D.lines.filter(z => z.zone_how === "editor").length;
-    const dipl = `${I(3)}<div type="transcription" subtype="diplomatic">${I(4)}<ab>` + L.mainL.map(li => { const real = state.dipl[li] ? state.dipl[li].text : (D.lines[li].diplomatic_text || "");
-      return `${I(5)}<lb n="${lnum[li]}" facs="${zone(li)}"/>` + (real ? `<seg resp="#editor">${xml(real)}</seg>` : `<seg resp="#rules" cert="low" ana="#simulated">${xml(simDipl(li))}</seg>`); }).join("") + `${I(4)}</ab>${I(3)}</div>`;
+    const diplLines = L.mainL.filter(li => state.dipl[li] || D.lines[li].diplomatic_text);
+    const dipl = diplLines.length ? `${I(3)}<div type="transcription" subtype="diplomatic">${I(4)}<ab>` + diplLines.map(li => `${I(5)}<lb n="${lnum[li]}" facs="${zone(li)}"/><seg resp="#editor">${xml(state.dipl[li] ? state.dipl[li].text : D.lines[li].diplomatic_text)}</seg>`).join("") + `${I(4)}</ab>${I(3)}</div>` : "";
     const pts = (poly) => (poly || []).map(p => Math.round(p[0] * W) + "," + Math.round(p[1] * H)).join(" ");
     const zones = D.lines.map(l => l.zones ? l.zones.map(z => `${I(4)}<zone xml:id="${xml(l.line_id)}${z.type === "main" ? "" : "-" + z.type}" type="${z.type === "main" ? "line" : z.type}" points="${pts(z.polygon)}"/>`).join("")
       : `${I(4)}<zone xml:id="${xml(l.line_id)}"${l.zone === "facing-page" ? ` type="facing-page"` : l.zone === "margin-left" ? ` type="margin" subtype="${xml(l.zone_subtype || "address")}"` : ""} points="${pts(l.polygon)}"/>`).join("");
@@ -1623,7 +1609,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       </titleStmt>
       <publicationStmt>
         <publisher>PAPREG</publisher>
-        <availability status="restricted"><p>Used under the holding archive's terms, not distributed.</p></availability>
+        <availability status="restricted"><p>Used under the holding archive's terms, not distributed.${STRIPS ? " Line-level ink masks derived from the images; the images are not distributed." : ""}</p></availability>
         <date when="${now}">${now.slice(0, 10)}</date>
       </publicationStmt>
       <sourceDesc>
@@ -1643,7 +1629,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       </sourceDesc>
     </fileDesc>
     <encodingDesc>
-      <projectDesc><p>Edition layer: expanded and punctuated text. Diplomatic layer: a SIMULATION, not a reading: the expanded reading re-abbreviated by rule from a table of register conventions (${SIM_TABLE_SIZE} entries; resp #rules, cert low, ana #simulated); a line the editor has corrected carries resp #editor and is a real diplomatic line.</p></projectDesc>
+      <projectDesc><p>Edition layer: expanded and punctuated text. Diplomatic layer: only lines the editor has transcribed (resp #editor); the workbench does not simulate it.</p></projectDesc>
       <editorialDecl>
         <segmentation><p>Each register entry is a div type="entry" (part="F": the page begins inside an entry of the previous folio; part="I": the entry goes on on the next folio; part="M": both); an entry that only refers to an earlier one is subtype="in-eundem-modum". Inside an entry each div carries a diplomatic part. Lines are lb milestones whose facs points to the zone of the line in the facsimile; text lines are numbered 1…n, marginal lines m1…mk.</p>
           <p>Diplomatic parts follow the register schema of the project: inscriptio, salutatio, arenga, narratio, dispositio, sanctio, datatio; and the register-internal units rubric, in-eundem-modum, nota-cancellariae, marginal-address, later-numbering, registration-note. The workbench rules propose inscriptio, arenga, narratio, dispositio, sanctio, datatio and registration-note, and the in-eundem-modum entry; marginal-address and later-numbering are the subtypes of marginal text on the left margin (a marginal-text annotation with hand h2 or, for a numeral, a gap with hand h3); salutatio, rubric and nota-cancellariae are not proposed yet.</p>
@@ -1655,7 +1641,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
           <p>Standoff annotations (back to the text through <att>target</att>) hold what is not yet confirmed: the cursus class of each clause end (ana, class of the pilot-1 rule classifier on the text as it now stands), the model's word confidence (<att>cert</att> = calibrated probability that the word is read correctly, given for words at 0.80 or below), marginal text that may be an addition (the editor can confirm it as an add in the text after the word it follows, or as a marginal note), and siglum candidates. An editor's correction of a word is marked resp="#editor" on the w; the machine reading is kept in the audit record.</p>
         </interpretation>
       </editorialDecl>
-      <classDecl><taxonomy xml:id="layer-status"><category xml:id="simulated"><catDesc>simulated: rule re-abbreviation of the expanded reading, not a reading</catDesc></category></taxonomy><taxonomy xml:id="entity-classes">${NE_KEYS.map((t, i) => `${I(5)}<category xml:id="N${i + 1}"><catDesc>${NE_TYPES[t][2]}: ${NE_TYPES[t][1]}${t === "actor" ? ' type="actor" role="…"' : t === "obj" ? ' type="object"' : ""} (model labels: ${NE_FROM[t]})</catDesc></category>`).join("")}
+      <classDecl><taxonomy xml:id="entity-classes">${NE_KEYS.map((t, i) => `${I(5)}<category xml:id="N${i + 1}"><catDesc>${NE_TYPES[t][2]}: ${NE_TYPES[t][1]}${t === "actor" ? ' type="actor" role="…"' : t === "obj" ? ' type="object"' : ""} (model labels: ${NE_FROM[t]})</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="actor-roles">${Object.entries(ROLES).map(([k, v]) => `${I(5)}<category xml:id="R-${k}"><catDesc>${v}</catDesc></category>`).join("")}
       </taxonomy><taxonomy xml:id="cursus"><category xml:id="cursus-class"><catDesc>cursus class of a clause end</catDesc>${cursusCats}
       </category></taxonomy></classDecl>
@@ -1736,6 +1722,8 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
 
   // ------------------------------------------------------------ image and magnifier
   const stage = $("stage"), img = $("pageImg"), lens = $("lens"); let zoom = 3;
+  // the original page image, when a local copy sits next to the sample (sample/<folio>/page.jpg: git-ignored, never pushed), is shown as it is: no layer, no mark
+  (function () { try { const x = new XMLHttpRequest(); x.open("HEAD", `${SRCBASE}${S.folio}/page.jpg`, false); x.send(); if (x.status === 200) setTimeout(() => setImage(`${SRCBASE}${S.folio}/page.jpg`), 0); } catch (e) {} })();
   function setImage(src) { img.onload = () => { state.hasImage = true; img.hidden = false; setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
   window.__wbSetImage = setImage;
   WB.image(D).then(u => u && setImage(u));                        // local folder or URL template (never GitHub)

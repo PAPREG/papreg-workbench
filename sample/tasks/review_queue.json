@@ -14,7 +14,14 @@
    "difficulty": "medium",
    "double_key": 1,
    "assignee": null,
-   "reason": "test task (setup check)"
+   "reason": "test task (setup check)",
+   "assignments": {
+    "T2.2-0": "test-editor",
+    "T3.2": "test-editor",
+    "T5.1": "test-editor",
+    "T5.3": "test-editor",
+    "T2.1": "test-editor"
+   }
   }
  ]
 }

@@ -278,21 +278,27 @@
     document.getElementById("wbTry").onclick = () => { const u = new URL(location.href); u.searchParams.set("test", "1"); u.searchParams.set("page", G.cfg.testPage || "RV9/154v"); location.href = u.pathname + u.search; };
   }
   const MODE_NAMES = ["triage", "boundaries", "structure", "cursus", "corrections", "ner", "codicology", "legal", "arenga", "edition"];   // task modes (index.html): ?mode= opens a page in one
-  // the stops left per mode are counted when a page is opened (the page data is read in the editor), so the counts are shown for pages opened in this browser
-  function modeLinks(pid) { let c = null; try { c = JSON.parse(localStorage.getItem(`wb:modecounts:${pid}`) || "null"); } catch (e) {}
-    return MODE_NAMES.map(m => `<a href="${pageUrl(pid)}&mode=${m}" title="${c ? `${c.modes[m][0]} stops, ${c.modes[m][1]} left (counted ${c.at.slice(0, 16).replace("T", " ")})` : "counted when the page is opened"}">${m}${c ? ` <b>${c.modes[m][1]}</b>` : ""}</a>`).join(" "); }
+  // assignment list: side x task x assignee x counts x status. The stops left per mode are counted when a page is opened in the editor (the page data is read there),
+  // so counts are shown for pages opened in this browser.
+  const ASSIGN_TASKS = [["T2.2-0", "Tier 0 boundaries", "boundaries"], ["T2.2-1", "Tier 1 lines", "lines"], ["T2.2-2", "Tier 2 OOV/sigla", "oov"], ["T3.2", "cursus", "cursus"], ["T5.1", "codicology", "codicology"], ["T5.2", "legal", "legal"], ["T5.3", "arenga", "arenga"], ["T2.1", "edition", "edition"]];
+  function assignmentRows() {
+    return (QUEUE.tasks || []).flatMap(t => { let c = null; try { c = JSON.parse(localStorage.getItem(`wb:modecounts:${t.page_id}`) || "null"); } catch (e) {}
+      return ASSIGN_TASKS.map(([id, label, mode]) => { const who = (t.assignments || {})[id] || "", cm = c && c.modes[mode], st = !who ? "unassigned" : cm && cm[1] === 0 ? "done" : cm && cm[1] < cm[0] ? "in progress" : "assigned";
+        return `<tr><td>${esc(t.page_id)}</td><td><a href="${pageUrl(t.page_id)}&task=${id}&mode=${mode}">${esc(id)} · ${esc(label)}</a></td><td>${who ? "@" + esc(who) : "—"}</td><td>${cm ? `${cm[0]} stops · ${cm[1]} left` : "–"}</td><td>${st}</td></tr>`; }); }).join(""); }
   function pageUrl(id) { const u = new URL(location.href); if (id) u.searchParams.set("page", id); else u.searchParams.delete("page"); return u.pathname + u.search; }
   async function taskView() {
     await loadTasks();
     const IDX = await data(G.cfg.pagesIndex).catch(() => ({ pages: [] }));
     const my = mine(), st = (t) => (G.mine.tasks.pages[t.task_id] || { data: { status: "assigned" } }).data.status;
     const row = (t) => `<tr><td><a href="${pageUrl(t.page_id)}">${esc(t.page_id)}</a></td><td>${esc(t.hand)}</td><td>${t.priority}</td><td>${(100 * t.est_cer).toFixed(1)}%</td>
-      <td>${Math.round(100 * t.coverage)}%</td><td>${esc(t.difficulty)}</td><td>${t.double_key ? "two editors" : ""}</td><td>${esc(st(t))}</td><td>${esc(claimants(t).filter(x => x !== G.login).join(", "))}</td><td class="wb-modes">${modeLinks(t.page_id)}</td></tr>`;
+      <td>${Math.round(100 * t.coverage)}%</td><td>${esc(t.difficulty)}</td><td>${t.double_key ? "two editors" : ""}</td><td>${esc(st(t))}</td><td>${esc(claimants(t).filter(x => x !== G.login).join(", "))}</td></tr>`;
     document.body.innerHTML = `<div class="wb-tasks"><header><h1>PAPREG Editorial Workbench</h1><span>signed in as <b>@${esc(G.login)}</b>${G.readOnly ? " (read-only)" : ""}${G.cfg.mode === "test" ? " · test mode: changes stay in this browser" : (G.cfg.mode === "local" ? " · local mode" : "")}</span>
       <span class="sp"></span><button id="wbOut">${G.cfg.mode === "test" ? "leave the test" : "sign out"}</button></header>
       <h2>My tasks (${my.length})</h2>
       <p class="note">Round ${esc(QUEUE.round)} of the review queue: sides chosen per hand, weak hands first (estimated error from the editions' agreement). Open a side, correct, and approve its lines; the task is done when every line is approved.</p>
-      ${my.length ? `<table><tr><th>side</th><th>hand</th><th>priority</th><th>est. CER</th><th>coverage</th><th>difficulty</th><th>keying</th><th>status</th><th>also with</th><th>open in mode</th></tr>${my.map(row).join("")}</table>` : "<p>No task yet.</p>"}
+      ${my.length ? `<table><tr><th>side</th><th>hand</th><th>priority</th><th>est. CER</th><th>coverage</th><th>difficulty</th><th>keying</th><th>status</th><th>also with</th></tr>${my.map(row).join("")}</table>` : "<p>No task yet.</p>"}
+      <h2>Assignments</h2><p class="note">One row per side and task. A task link opens the side in the mode of that task (Tab queue, counters, keys); without a task link a side opens as the plain review.</p>
+      <table><tr><th>side</th><th>task</th><th>assignee</th><th>counts</th><th>status</th></tr>${assignmentRows()}</table>
       <p>${G.readOnly ? "Read-only: ask the owner of the data repository for write access to take tasks." : `<button id="wbTake">take the next ${G.cfg.claimBatch || 5} tasks</button>`}</p>
       <h2>All sides</h2><p class="note">${IDX.pages.length} sides of ${esc((IDX.volumes || []).join(", "))}. Any side can be opened; work outside the tasks is saved in the same way.</p>
       <details><summary>browse</summary><div class="wb-grid">${(IDX.pages || []).map(p => `<a href="${pageUrl(p.page_id)}" title="${esc(p.hand)} · ${p.lines} lines">${esc(p.page_id)}</a>`).join(" ")}</div></details></div>`;
@@ -331,7 +337,8 @@
 
   // timer: save 60 s after the last change, or at once from 25 changes (the engine calls WB.tele("edit") on every change)
   function changed() { G.changes++; clearTimeout(G.timer); if (G.changes >= SAVE_BATCH) { G.changes = 0; window.__wbTick && window.__wbTick(); } else G.timer = setTimeout(() => { G.changes = 0; window.__wbTick && window.__wbTick(); }, SAVE_DELAY); }
-  window.WB = { ready, restore, save, peers, image: (D) => image(D, false), tele: (k) => { teleTick(k); if (k === "edit") changed(); }, get login() { return G.login; },
+  function assignee(pageId, taskId) { const t = QUEUE && QUEUE.tasks.find(x => x.page_id === pageId); return t && t.assignments && taskId ? (t.assignments[taskId] || null) : null; }
+  window.WB = { assignee, ready, restore, save, peers, image: (D) => image(D, false), tele: (k) => { teleTick(k); if (k === "edit") changed(); }, get login() { return G.login; },
     get readOnly() { return G.readOnly; }, describe: () => ({ branch: G.cfg.dataBranch, files: TYPES.map(myPath) }),
     exportMine: () => JSON.stringify(G.mine, null, 1) };
 })();

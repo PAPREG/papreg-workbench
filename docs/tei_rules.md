@@ -11,6 +11,6 @@ There is no ODD for the project yet; these rules are the checks the export must 
 7. The entity classes of `classDecl` (`N1`…`N9`) are the hotkeys of the interface.
 8. `resp` is `#rules`, `#model`, `#editor`, `#formulae` or a declared respStmt; a part that differs from the rule-based proposal carries `#editor` and an editorial note saying what moved.
 9. The name of the holding archive occurs neither in the file nor in the interface.
-10. Every simulated diplomatic line carries `ana="#simulated"`, `resp="#rules"` and `cert="low"`; a line the editor has corrected carries `resp="#editor"`.
+10. No simulated layer is present: nothing in the file carries `ana="#simulated"` or the word simulated; a diplomatic line exists only where the editor has transcribed it (`resp="#editor"`).
 11. Every line-end addition, marginal address and recipient note (the sources of a band recipient) carries a `resp`; the truncated margin head is `#rules` and ends in an ellipsis when cut.
 12. Witness lines (`annotation type="witness"`) stand in the standoff only; they never stand in the text and never replace the reading.

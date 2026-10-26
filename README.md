@@ -27,11 +27,15 @@ the others' corrections of the same side are shown as agreement (✓) and disagr
    top-three candidates with the cadence each would give, accents and cursus recomputed in the browser after every change (port of
    the pilot-1 classifier M1), two layers (diplomatic / edition), apparatus, named entities, diplomatic structure, special
    characters, TEI export. A side's task is done when all its lines are approved.
-   **Task modes** (`?mode=` in the URL, selector in the header; tests: `tests/modes_test.mjs`): triage, boundaries, structure, cursus, corrections, ner,
-   codicology, legal, arenga, edition. Each has its own Tab queue (Tab / Shift+Tab skip what is confirmed in that mode), counters, key subset and progress
-   record (saved with the editor's structure file); every confirmation is `resp="#editor"` in the TEI and the mode is recorded in `revisionDesc`.
-   **Entry bands** (`[` / `]` jump between entries, the arrow collapses an entry) show recipient (line end and margin witnesses, disagreement flagged),
-   type, computed date, lines, regest and status. **Line views** (per editor): simulated diplomatic line, legacy witness, regest, image strip.
+   **Tasks and modes.** The mode comes only from the task link (`?task=T5.3&mode=arenga`); without a task link a side opens as the plain review (Tab = next
+   flagged word). The header shows the task read-only ("task · T5.3 arenga · assigned"). The tasks page is the assignment list (side × task × assignee ×
+   counts × status). Tasks: T2.2-0 boundaries, T2.2-1 lines, T2.2-2 OOV/sigla, T3.2 cursus, T5.1 codicology, T5.2 legal, T5.3 arenga, T2.1 edition (and, by link,
+   T3.3 entities, T2.2-z zones, T3.2c scribal corrections, T2.2-w words). Each has its own Tab queue, counters, keys and progress record; a confirmation is
+   `resp="#editor"` in the TEI and the task is recorded in `revisionDesc` (tests: `tests/modes_test.mjs`).
+   **Entry bands** (`[` / `]` jump between entries, the arrow collapses an entry): recipient (line end and margin witnesses, disagreement flagged), type,
+   computed date, lines, regest (when `sample/<folio>/regests.json` exists) and status. **Line view**: the legacy edition line (`sample/<folio>/witness.json`,
+   differing tokens highlighted; they are the stops of the edition task), the strip of the original image (when the image is loaded on this computer), the
+   ink strip (internal build only). The original image is shown as it is when a local copy `sample/<folio>/page.jpg` exists; it is git-ignored and never pushed.
    The TEI export (tests: `tests/tei_test.mjs`) holds what the editor has decided in the text (names; `add`, `del`, `subst` from the apparatus
    types *add. supra lin.*, *add. in marg.*, *del.*, *corr. ex*, *in ras.*; hands as `handNote` / `handShift`; marginal lines the editor has
    marked as additions or notes) and, as standoff annotations, what is only proposed (cursus class of the clause ends, word confidence, marginal
