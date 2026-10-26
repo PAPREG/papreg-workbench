@@ -32,7 +32,7 @@ try {
   const tracked = execSync("git ls-files", { cwd: new URL("..", import.meta.url).pathname }).toString().split("\n");
   const real = urls.filter(u => /page\.jpg|\/strips\//.test(u)), trackedReal = tracked.filter(f => /(^|\/)page\.jpg$|(^|\/)strips\//.test(f)), synth = urls.filter(u => /page\.synthetic\.png/.test(u)).length;
   check(real.length === 0 && trackedReal.length === 0 && synth > 0, `public build: no page.jpg or strips/ requested (${real.length}) or tracked (${trackedReal.length}); the synthetic page is the source (${synth} request)`);
-  const im = JSON.parse(await ev(`JSON.stringify({ src: document.getElementById("pageImg").src.split("/").pop(), w: document.getElementById("pageImg").naturalWidth, h: document.getElementById("pageImg").naturalHeight, badge: !document.getElementById("simBadge").hidden, strips: document.querySelectorAll(".lv.strip canvas").length })`));
+  const im = JSON.parse(await ev(`JSON.stringify({ src: document.getElementById("pageImg").src.split("/").pop().split("?")[0], w: document.getElementById("pageImg").naturalWidth, h: document.getElementById("pageImg").naturalHeight, badge: !document.getElementById("simBadge").hidden, strips: document.querySelectorAll(".lv.strip canvas").length })`));
   check(im.src === "page.synthetic.png" && im.w === 3376 && im.h === 4268 && im.badge && im.strips > 30, `page panel: ${im.src} ${im.w}x${im.h}, "simulated" badge ${im.badge}, ${im.strips} line strips above the text`);
   await ev(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }))`); await sleep(500);
   const wm = await ev(`(document.querySelector("#pipMs .wm") || {}).textContent`); check(/simulated/i.test(wm || ""), `Current Word panel carries the badge (${wm})`);
