@@ -13,7 +13,7 @@
    Each file is written only by its owner (Git Data API, one commit per save, 60 s after the last change or at once
    from 25 changes; on a race the remote file is merged by timestamp and the commit retried), so editors never
    overwrite each other; the other editors' files are read for agreement / disagreement marks (peer consensus).
-   Images of the Vatican Apostolic Archive never go to GitHub: they come from a local folder chosen by the editor
+   Register images never go to GitHub: they come from a local folder chosen by the editor
    (File System Access API) or from a URL template set in config.json (e.g. a local or institutional IIIF server).
 
    The data repository is not named in this public app: after login it is found among the repositories the token can

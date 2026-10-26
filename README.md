@@ -9,7 +9,7 @@ section 1.5.4). This repository holds **only the app** (static HTML + JavaScript
 | app (this repo, public) | `index.html` (editor), `js/wb.js` (data, login, tasks, saving), `config.json` |
 | page data, page index, review queue (private) | data repository, branch `main`: `pages/RV<v>/<folio>.json`, `pages/index.json`, `tasks/review_queue.json` |
 | editors' work (private) | same repository, branch `annotations`: `annotations/<type>/<login>.json`, one file per editor and type |
-| images | **never on GitHub** (rights of the Vatican Apostolic Archive): read from the editor's local folder, or from a URL template |
+| images | **never on GitHub** (archive rights): read from the editor's local folder, or from a URL template |
 
 Types of editors' files: `corrections` (word corrections, diplomatic lines, approvals, stress), `apparatus`, `entities`,
 `structure` (diplomatic parts), `tasks` (claimed / finished review tasks), `telemetry` (active time, decisions; for the

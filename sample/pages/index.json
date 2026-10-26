@@ -9,9 +9,9 @@
 "volume": "9",
 "folio": "154v",
 "lines": 51,
-"words": 614,
+"words": 602,
 "hand": "",
-"expected_errors": 42.8,
+"expected_errors": 39.9,
 "task_id": "T00-001"
 }
 ]

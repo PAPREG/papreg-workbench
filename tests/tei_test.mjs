@@ -33,7 +33,7 @@ try {
   if (process.env.TEI_OUT) writeFileSync(process.env.TEI_OUT + ".plain.xml", await ev("window.__wb.tei()"));
   check(r.wellFormed, "untouched side: well formed " + (r.msg || ""));
   check(r.dangling.length === 0 && r.dup.length === 0, `no dangling pointer, no duplicate xml:id (${r.dangling.slice(0, 4)} ${r.dup.slice(0, 4)})`);
-  check(r.zones > 0 && r.availability === 1 && r.handNotes === 1, `facsimile zones ${r.zones}, restricted availability, one handNote`);
+  check(r.zones > 0 && r.availability === 1 && r.handNotes === 3, `facsimile zones ${r.zones}, restricted availability, handNotes h1-h3`);
   check(r.editorResp === 0, "nothing carries #editor before the editor has done anything");
   check(!r.cursusInline && r.ann.cursus > 0 && r.ann["word-confidence"] > 0, `cursus and confidence are standoff (${JSON.stringify(r.ann)})`);
   check(r.marginalia === 0 && r.ann["marginal-text"] > 0, "undecided marginal lines are standoff candidates, not a marginalia div");
@@ -51,7 +51,7 @@ try {
   if (process.env.TEI_OUT) writeFileSync(process.env.TEI_OUT + ".edited.xml", await ev("window.__wb.tei()"));
   check(r.wellFormed, "edited side: well formed " + (r.msg || ""));
   check(r.dangling.length === 0 && r.dup.length === 0, `no dangling pointer, no duplicate xml:id (${r.dangling.slice(0, 4)} ${r.dup.slice(0, 4)})`);
-  check(r.add === 3 && r.del === 2 && r.subst === 1 && r.handShift === 2 && r.handNotes === 3, `add ${r.add}, del ${r.del}, subst ${r.subst}, handShift ${r.handShift}, handNotes ${r.handNotes}`);
+  check(r.add === 3 && r.del === 2 && r.subst === 1 && r.handShift === 2 && r.handNotes === 5, `add ${r.add}, del ${r.del}, subst ${r.subst}, handShift ${r.handShift}, handNotes ${r.handNotes}`);
   check(r.editorResp === 0, "structure parts keep #rules unless the editor moved a boundary");
   check(r.marginalia === 1, "a line marked as note stands in the marginalia div");
   check(r.ann["marginal-text"] === nMarg - 2, `decided marginal lines left the standoff list (${r.ann["marginal-text"]} of ${nMarg})`);

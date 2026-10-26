@@ -490,7 +490,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   $("src").textContent = `${S.shelfmark}, fol. ${S.folio} · ${S.pontificate}`;
   $("who").innerHTML = `signed in as <b>@${esc(CFG.login)}</b>${CFG.mode === "local" ? " (local mode: edits stay in this browser)" : ""}${WB.readOnly ? " (read-only)" : ""}`;
   $("foot").innerHTML =
-    `<p>${esc(M.name)} · ${esc(M.version)} · ${esc(M.decoding || "")}. On the 39 held-out test pages of Reg. Vat. 9: WER ${pct(M.wer_test != null ? M.wer_test : M.wer_test_sigla)}${M.cer_test != null ? `, CER ${pct(M.cer_test)}` : ""}; calibration checked on ${M.test_words.toLocaleString("en")} test words.</p>` +
+    `<p>${esc(M.name)} · ${esc(M.version)} · ${esc(M.decoding || "")}. On the 39 held-out test pages of Reg. Vat. 9: WER ${pct(M.wer_test != null ? M.wer_test : M.wer_test_sigla)}${M.cer_test != null ? `, CER ${pct(M.cer_test)}` : ""}${M.cer_test_sigla != null ? ` (expanded reference); sigla as written: WER ${pct(M.wer_test_sigla)}, CER ${pct(M.cer_test_sigla)}` : ""}; calibration checked on ${M.test_words.toLocaleString("en")} test words.</p>` +
     `<p>Highlighting shows the calibrated probability that a word is wrong (${esc(M.calibration)}; AUROC ${M.auroc}, calibration error ${pct(M.ece)} on the test pages). It is a triage aid, not an error count: about ${Math.round(D.stats.expected_errors)} errors are expected on this side.</p>` +
     `<p>${D.notes.map(esc).join(" ")} ${D.hand ? `Hand ${esc(D.hand)}` : ""}${D.est_cer_agreement != null ? `, estimated CER ${pct(D.est_cer_agreement)} (edition agreement)` : ""}${D.task_id ? ` · task ${esc(D.task_id)}` : ""}.</p>` +
     `<p>Your work is saved to your own files in the data repository; other editors' corrections appear as agreement (✓) or disagreement marks. The image is read from your local folder and never uploaded.</p>`;
@@ -660,11 +660,12 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     arenga: /^(quoniam|licet|iustis|sicut|ea que|quotiens|decet|solet|apostolice|religiosam|sacrosancta|pastoralis|ad hoc|inter cetera|officii nostri|quanto|cum a nobis|cum sit)/,
   };
   // marginal lines (rubrics, notes, fragments outside the main column)
-  const MAIN_X = (() => { const xs = D.lines.filter(l => l.bbox).map(l => l.bbox[0]).sort((a, b) => a - b); return xs[Math.floor(xs.length / 2)] || .35; })();
-  const MAIN_W = (() => { const ws = D.lines.filter(l => l.bbox).map(l => l.bbox[2]).sort((a, b) => a - b); return ws[Math.floor(ws.length * .75)] || .5; })();
+  const hiddenLine = (l) => l.zone === "facing-page";          // a zone of the facing page: kept in the facsimile, not shown, not numbered
+  const MAIN_X = (() => { const xs = D.lines.filter(l => l.bbox && !hiddenLine(l)).map(l => l.bbox[0]).sort((a, b) => a - b); return xs[Math.floor(xs.length / 2)] || .35; })();
+  const MAIN_W = (() => { const ws = D.lines.filter(l => l.bbox && !hiddenLine(l)).map(l => l.bbox[2]).sort((a, b) => a - b); return ws[Math.floor(ws.length * .75)] || .5; })();
   const isMargin = (l) => !l.bbox || l.bbox[0] < MAIN_X - .06 || l.bbox[0] > MAIN_X + .12 || l.bbox[2] < MAIN_W * .3;
   // line labels: text lines 1…n in page order, marginal lines m1…mk (the same labels as the lb n of the TEI export)
-  const LNUM = (() => { let a = 0, b = 0; return D.lines.map(l => (l.words.length && isMargin(l)) ? "m" + (++b) : String(++a)); })();
+  const LNUM = (() => { let a = 0, b = 0; return D.lines.map(l => hiddenLine(l) ? "" : (l.words.length && isMargin(l)) ? "m" + (++b) : String(++a)); })();
   function computeParts() {
     const n = FL.length, part = new Array(n), toks = FL.map(([li, wi]) => shownText(li, wi)), rds = toks.map(rd);
     const margin = FL.map(([li]) => isMargin(D.lines[li]));
@@ -750,7 +751,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     DS.seg.forEach((x, i) => { const pv = i ? DS.seg[i - 1][1] : null, iem = x[1] === "nota" && iemAt(x[0]);      // an in eundem modum entry is an entry of its own
       if (i === 0 || iem || ((pv === "datatio" || pv === "nota") && x[1] !== "datatio" && x[1] !== "nota")) entryAt[x[0]] = { n: ++eNo, cont: i === 0 && x[1] !== "inscriptio", iem }; });
     const yc = (l) => l.bbox ? l.bbox[1] + l.bbox[3] / 2 : 0, isM = (li) => D.lines[li].words.length > 0 && D.lines[li].words.every((w, wi) => PART[GI[keyOf(li, wi)]] === "margo");
-    const mainL = D.lines.map((l, li) => li).filter(li => !isM(li)), margL = D.lines.map((l, li) => li).filter(isM);
+    const mainL = D.lines.map((l, li) => li).filter(li => !isM(li) && !hiddenLine(D.lines[li])), margL = D.lines.map((l, li) => li).filter(isM);
     const beside = (li) => mainL.reduce((b, m) => Math.abs(yc(D.lines[m]) - yc(D.lines[li])) < Math.abs(yc(D.lines[b]) - yc(D.lines[li])) ? m : b, mainL[0]);
     return { entryAt, mainL, margL, isM, beside, entries: eNo };
   }
@@ -761,7 +762,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
   // a marginal line is undecided (machine detection), an addition that belongs to the text at a place the editor names, or a marginal note
   function margCtl(li) {
     const m = state.marg[li], c = document.createElement("span"); c.className = "mctl";
-    const st = !m ? "undecided" : m.as === "note" ? "marginal note" : m.after != null ? `${m.place === "above" ? "interlinear" : "margin"} addition after “${shownText(...FL[m.after])}”` : "addition: click the word it follows";
+    const st = !m ? `undecided (${D.lines[li].zone_subtype || "margin"})` : m.as === "note" ? "marginal note" : m.after != null ? `${m.place === "above" ? "interlinear" : "margin"} addition after “${shownText(...FL[m.after])}”` : "addition: click the word it follows";
     c.innerHTML = `<span class="mst">${esc(st)}</span>`;
     const b = (txt, title, f) => { const x = document.createElement("button"); x.className = "t"; x.textContent = txt; x.title = title; x.onclick = (e) => { e.stopPropagation(); f(); }; c.appendChild(x); };
     const add = (place) => () => { mutate(() => state.marg[li] = { as: "add", place, after: null }); state.pickMarg = li; render(); toast("click the word of the text after which this was added"); };
@@ -1120,7 +1121,7 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
     const lid = (li) => "l" + lnum[li], wid = (g) => { const [li, wi] = FL[g]; return `w${lnum[li]}_${wi + 1}`; };
     const zone = (li) => "#" + xml(D.lines[li].line_id);
     // hands: h1 = the main hand of the page; every other hand named by the editor in the apparatus gets its own handNote
-    const hands = [...new Set(app.map(a => (a.hand || "").trim()).filter(Boolean))], hid = (h) => "h" + (hands.indexOf(h) + 2);
+    const hands = [...new Set(app.map(a => (a.hand || "").trim()).filter(Boolean))], hid = (h) => "h" + (hands.indexOf(h) + 4);
     // who decided: the rules propose the structure; a part is #editor's once its start or its end differs from the proposal
     const auto = autoSeg(computeParts()), segSame = (j) => { const s = DS.seg[j], n = DS.seg[j + 1], k = auto.findIndex(x => x[0] === s[0] && x[1] === s[1]);
       return k >= 0 && (auto[k + 1] ? auto[k + 1][0] : null) === (n ? n[0] : null); };
@@ -1183,13 +1184,15 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       return ids.length ? `${I(4)}<annotation xml:id="cur${c.clausula_id + 1}" type="cursus" ana="#${nw.label}"${nw.cadence && nw.cadence !== nw.label && nw.cadence !== "none" ? ` subtype="${xml(nw.cadence)}"` : ""} target="${ids.join(" ")}" resp="#rules"/>` : ""; }).filter(Boolean);
     const conf = []; FL.forEach(([li, wi], g) => { const w = D.lines[li].words[wi]; if (inl(g) && w.p_error >= 0.2 && !state.edits[keyOf(li, wi)])
       conf.push(`${I(4)}<annotation xml:id="cf${wid(g).slice(1)}" type="word-confidence" target="#${wid(g)}" resp="#model" cert="${(1 - w.p_error).toFixed(2)}"/>`); });
-    const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li)).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="addition-candidate" target="#${lid(L.beside(li))}" facs="${zone(li)}" resp="#rules">` + D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ") + `</annotation>`);
+    const marg = L.margL.filter(li => !inlineAdd(li) && !isNote(li)).map(li => `${I(4)}<annotation xml:id="mt${lnum[li].slice(1)}" type="marginal-text" subtype="${xml(D.lines[li].zone_subtype || "addition-candidate")}" target="#${lid(L.beside(li))}" facs="${zone(li)}"${D.lines[li].zone_subtype === "address" ? ` hand="#h2"` : D.lines[li].zone_subtype === "later-numbering" ? ` hand="#h3"` : ""} resp="#rules">` + (D.lines[li].zone_subtype === "later-numbering" ? `<gap reason="numeral"/>` : D.lines[li].words.map((w, wi) => xml(shownText(li, wi))).join(" ")) + `</annotation>`);
     const sig = []; FL.forEach(([li, wi], g) => { const t = shownText(li, wi); if (inl(g) && /^\p{Lu}\.,?$/u.test(t) && !state.ne.some(n => spanGis(n).includes(g))) sig.push(`${I(4)}<annotation xml:id="sg${wid(g).slice(1)}" type="siglum" target="#${wid(g)}" resp="#rules">${xml(t)}</annotation>`); });
     const list = (type, resp, items) => items.length ? `${I(3)}<listAnnotation type="${type}">${items.join("")}${I(3)}</listAnnotation>` : "";
     const dipl = L.mainL.some(li => (state.dipl[li] ? state.dipl[li].text : D.lines[li].diplomatic_text)) ?
       `${I(3)}<div type="transcription" subtype="diplomatic">${I(4)}<ab>` + D.lines.map((l, li) => `${I(5)}<lb n="${lnum[li]}" facs="${zone(li)}"/>${xml(state.dipl[li] ? state.dipl[li].text : (l.diplomatic_text || ""))}`).join("") + `${I(4)}</ab>${I(3)}</div>` : "";
-    const zones = D.lines.map(l => `${I(4)}<zone xml:id="${xml(l.line_id)}" points="${(l.polygon || []).map(p => Math.round(p[0] * W) + "," + Math.round(p[1] * H)).join(" ")}"/>`).join("");
-    const repo = String(S.shelfmark).split(", ")[0], idno = String(S.shelfmark).split(", ").slice(1).join(", ") || S.shelfmark;
+    const pts = (poly) => (poly || []).map(p => Math.round(p[0] * W) + "," + Math.round(p[1] * H)).join(" ");
+    const zones = D.lines.map(l => l.zones ? l.zones.map(z => `${I(4)}<zone xml:id="${xml(l.line_id)}${z.type === "add" ? "-add" : ""}" type="${z.type === "add" ? "add" : "line"}" points="${pts(z.polygon)}"/>`).join("")
+      : `${I(4)}<zone xml:id="${xml(l.line_id)}"${l.zone === "facing-page" ? ` type="facing-page"` : l.zone === "margin-left" ? ` type="margin" subtype="${xml(l.zone_subtype || "address")}"` : ""} points="${pts(l.polygon)}"/>`).join("");
+    const idno = String(S.shelfmark).replace(/^.*,\s*(?=Reg\. Vat\.)/, "");
     const cursusCats = ["planus", "tardus", "velox", "non-canonical"].map(c => `${I(7)}<category xml:id="${c}"><catDesc>${c === "non-canonical" ? "clause end that is not planus, tardus or velox" : c}</catDesc></category>`).join("");
     return `<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:lang="la">
@@ -1204,15 +1207,17 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       </titleStmt>
       <publicationStmt>
         <publisher>PAPREG</publisher>
-        <availability status="restricted"><p>Internal working file. The register images are subject to the terms of the Vatican Apostolic Archive and are not distributed; this file may not be redistributed.</p></availability>
+        <availability status="restricted"><p>Internal working file. The register images are not distributed; this file may not be redistributed.</p></availability>
         <date when="${now}">${now.slice(0, 10)}</date>
       </publicationStmt>
       <sourceDesc>
         <msDesc>
-          <msIdentifier><repository>${xml(repo)}</repository><idno>${xml(idno)}</idno></msIdentifier>
+          <msIdentifier><idno>${xml(idno)}</idno></msIdentifier>
           <msContents><msItem><locus>fol. ${xml(S.folio)}</locus></msItem></msContents>
           <physDesc><handDesc>
-            <handNote xml:id="h1" scope="major">main hand of the page${D.hand ? ` (${xml(D.hand)})` : ""}</handNote>${hands.map(h => `
+            <handNote xml:id="h1" scope="major">main hand of the page${D.hand ? ` (${xml(D.hand)})` : ""}</handNote>
+            <handNote xml:id="h2" scope="minor">hand of the marginal addresses and of the line-end additions</handNote>
+            <handNote xml:id="h3" scope="minor">later hand (later numbering)</handNote>${hands.map(h => `
             <handNote xml:id="${hid(h)}" scope="minor">${xml(h)} (named by the editor in the apparatus)</handNote>`).join("")}
           </handDesc></physDesc>
         </msDesc>
@@ -1222,8 +1227,9 @@ kbd{font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
       <projectDesc><p>Edition layer: expanded and punctuated text. Diplomatic layer: abbreviations and spelling as written${dipl ? "" : " (not yet produced for this page)"}.</p></projectDesc>
       <editorialDecl>
         <segmentation><p>Each register entry is a div type="entry" (part="F": the page begins inside an entry of the previous folio; part="I": the entry goes on on the next folio; part="M": both); an entry that only refers to an earlier one is subtype="in-eundem-modum". Inside an entry each div carries a diplomatic part. Lines are lb milestones whose facs points to the zone of the line in the facsimile; text lines are numbered 1…n, marginal lines m1…mk.</p>
-          <p>Diplomatic parts follow the register copy: inscriptio (the address; the register omits the issuer's intitulatio), arenga, narratio, dispositio, sanctio, datatio, registration-note. Of the eleven zones of the project description (invocatio, intitulatio, arenga, publicatio, narratio, dispositio, corroboratio, sanctio, datatio, apprecatio, subscriptio) the register copy shows, or the rules recognise, only the six that carry the same name; inscriptio takes the place of intitulatio, registration-note has no counterpart; invocatio, publicatio, corroboratio, apprecatio and subscriptio are not marked in this layer.</p>
-          <p><list type="parts">${DS_PARTS.map(p => `${I(5)}<item><term>${p === "nota" ? "registration-note" : p}</term></item>`).join("")}${I(5)}</list></p></segmentation>
+          <p>Diplomatic parts follow the register schema of the project: inscriptio, salutatio, arenga, narratio, dispositio, sanctio, datatio; and the register-internal units rubric, in-eundem-modum, nota-cancellariae, marginal-address, later-numbering, registration-note. The workbench rules propose inscriptio, arenga, narratio, dispositio, sanctio, datatio and registration-note, and the in-eundem-modum entry; marginal-address and later-numbering are the subtypes of marginal text on the left margin (a marginal-text annotation with hand h2 or, for a numeral, a gap with hand h3); salutatio, rubric and nota-cancellariae are not proposed yet.</p>
+          <p><list type="parts">${["inscriptio", "salutatio", "arenga", "narratio", "dispositio", "sanctio", "datatio", "rubric", "in-eundem-modum", "nota-cancellariae", "marginal-address", "later-numbering", "registration-note"].map(p => `${I(5)}<item><term>${p}</term></item>`).join("")}${I(5)}</list></p>
+          <p>Zones of the facsimile: type="line" and type="add" (a segment at the end of a line in lighter ink, split off by the ink rule recorded in the page data), type="margin" (left margin), type="facing-page" (centre beyond the right edge of the text block; its text is not kept).</p></segmentation>
         <interpretation>
           <p>Responsibility: <ident>#rules</ident> is a proposal of the rule set, <ident>#model</ident> a machine suggestion, <ident>#editor</ident> a decision of the editor; nothing carries <ident>#editor</ident> that the editor has not confirmed. A part div carries <ident>#editor</ident> only once its start or end differs from the proposal.</p>
           <p>Standoff annotations (back to the text through <att>target</att>) hold what is not yet confirmed: the cursus class of each clause end (ana, class of the pilot-1 rule classifier on the text as it now stands), the model's word confidence (<att>cert</att> = calibrated probability that the word is read correctly, given for words at 0.80 or below), marginal text that may be an addition (the editor can confirm it as an add in the text after the word it follows, or as a marginal note), and siglum candidates. An editor's correction of a word is marked resp="#editor" on the w; the machine reading is kept in the audit record.</p>
