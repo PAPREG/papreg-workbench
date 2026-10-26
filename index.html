@@ -104,7 +104,8 @@ main{display:grid;grid-template-columns:minmax(240px,32%) 1fr;max-width:1500px;m
 .sy{color:var(--rule);font-family:var(--sans);font-size:11px;margin:0 .5px}
 .st{font-weight:700;position:relative}
 .st::before{content:"´";position:absolute;left:50%;transform:translateX(-30%);top:-.62em;font-size:.9em;font-weight:400;color:var(--ink)}
-.w.ne{border-top:2px solid var(--nec);border-radius:0}
+.w.ne{border-top:2px solid var(--nec);border-radius:0;background:color-mix(in srgb, var(--nec) 15%, transparent)}
+.w.ne.edited{background:color-mix(in srgb, var(--nec) 15%, transparent)!important;border-bottom:2px solid var(--ok)}
 .net{font:600 9px var(--sans);letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin:0 3px 0 0;vertical-align:sub}
 .net::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--nec);margin-right:3px;vertical-align:middle}
 .fn{font:600 10px var(--sans);color:var(--ink);vertical-align:super;margin-right:2px;cursor:pointer}
@@ -940,7 +941,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     const DS = structure(), PART = DS.part;
     document.body.classList.toggle("ds-on-root", state.struct);
     const app = sortedApp(), appEnd = {}; app.forEach((a, i) => (appEnd[a.gi + a.span - 1] = appEnd[a.gi + a.span - 1] || []).push([a, fnLetter(i)]));
-    const neAt = {}, neEnd = {}; if (state.ner) state.ne.forEach(n => { spanGis(n).forEach(g => neAt[g] = n); neEnd[n.gi + n.span - 1] = n; });
+    const neAt = {}, neEnd = {}; state.ne.forEach(n => { spanGis(n).forEach(g => neAt[g] = n); neEnd[n.gi + n.span - 1] = n; });
     const cNow = {}; D.clausulae.forEach(c => cNow[c.clausula_id] = clausulaNow(c));
     const sgAt = state.ner ? SUGG_AT() : {};
     const fmAt = {}; if (state.fml) (D.formulas || []).forEach(f => { for (let g = f.gi; g < f.gi + f.span; g++) fmAt[g] = f; });
