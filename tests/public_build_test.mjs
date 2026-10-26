@@ -38,6 +38,11 @@ try {
   await save("public_panel.png", { x: 0, y: 0, width: 480, height: 800 });
   const sy = await ev(`(() => { const r = [...document.querySelectorAll(".line")].find(n => (n.querySelector(".ln") || {}).firstChild && n.querySelector(".ln").firstChild.textContent === "25"); r.scrollIntoView({ block: "start" }); window.scrollBy(0, -6); return window.scrollY; })()`); await sleep(500);
   await save("public_l25.png", { x: 480, y: sy, width: 1020, height: 300 });
+  // a failing image is shown, not replaced: remove the file from the served bundle and reload
+  rmSync(join(dist, "sample/154v/page.synthetic.png")); await cdp("Page.navigate", { url: `http://127.0.0.1:${port}/?test=1&page=RV9/154v&nocache=1` }); await sleep(4500);
+  const miss = JSON.parse(await ev(`JSON.stringify({ src: document.getElementById("pageSrc").textContent, red: getComputedStyle(document.getElementById("pageSrc")).color, pip: (document.querySelector("#pipMs .imgerr") || {}).textContent, polys: document.querySelectorAll("#page polygon, #page rect").length, imgHidden: document.getElementById("pageImg").hidden })`));
+  check(/^page image not found: http:\/\/127\.0\.0\.1:\d+\/sample\/154v\/page\.synthetic\.png\?v=\w+ \(404\)$/.test(miss.src) && /192, ?57, ?43/.test(miss.red.replace(/\s/g, "")) && /page image not found/.test(miss.pip || "") && miss.polys === 0, `a missing image is reported in red in both panels, with no substitute thumbnail ("${miss.src}")`);
+  await save("public_missing.png", { x: 0, y: 0, width: 480, height: 600 });
 } catch (e) { console.log("FAIL exception", e.message); ok = false; }
 finally { try { ws && ws.close(); } catch (e) {} chrome.kill(); srv.close(); try { rmSync(tmp, { recursive: true, force: true }); } catch (e) {} }
 console.log(ok ? "PUBLIC BUILD OK" : "PUBLIC BUILD FAILED"); process.exit(ok ? 0 : 1);
