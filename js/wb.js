@@ -261,15 +261,14 @@
     return true;
   }
   function loginView() {
-    document.body.innerHTML = `<div class="wb-login"><h1>PAPREG Editorial Workbench</h1>
-      <p>Editors of the project sign in with the GitHub access token they received for the workbench. The token stays in this
-      browser and is sent only to api.github.com.</p>
-      <input id="wbTok" type="password" placeholder="github_pat_…" autocomplete="off" style="width:420px"> <button id="wbGo">Sign in</button>
+    document.body.innerHTML = `<div class="wb-login"><main>
+      <h1>Editorial Workbench</h1><div class="ver">beta 0.3</div>
+      <input id="wbTok" type="password" placeholder="access token" autocomplete="off" aria-label="GitHub access token">
+      <button id="wbGo">Sign in</button>
       <p class="note" id="wbErr"></p>
-      <h2>Try it</h2>
-      <p>Anyone can try the editor on a test side (machine reading of one page of the register of Honorius III), without login.
-      Changes stay in your browser and are not sent anywhere.</p>
-      <p><button id="wbTry">Open the test side</button></p></div>`;
+      <div class="or">or</div>
+      <button id="wbTry" class="alt">Try it · open the test page</button>
+      <p class="fine">The token stays in this browser and is sent only to api.github.com. The test page needs no login; changes stay in your browser.</p></main></div>`;
     document.getElementById("wbGo").onclick = async () => {
       const t = document.getElementById("wbTok").value.trim(); if (!t) return;
       G.token = t; LS.set(TOKKEY, t); LS.set(REPOKEY, "");
