@@ -84,3 +84,9 @@ editors' files into training data and into CEI/TEI for GAMS, supervisory dashboa
 See `docs/`.
 
 Fonts: Junicode (SIL Open Font License, `fonts/OFL.txt`).
+
+**Page image.** One source for the viewer, the line strips above the text and the word crop, chosen at build time (`build` in `config.json`): the public build reads
+`sample/<folio>/page.synthetic.png` only, a simulated page generated from the zone polygons and the text (`pilot2_ocr_vs_htr/scripts/137_synthetic_page.py`; see
+`page.synthetic.NOTICE.md`: UnifrakturMaguntia, SIL OFL 1.1; nothing photographic); the internal build reads the real image `page.jpg` (git-ignored) when it is there and falls back to
+the synthetic page. A page that is simulated carries the badge "simulated" in the page panel and the Current Word panel. `tests/layout_test.mjs` asserts that the public build
+requests no `page.jpg` or `strips/` file and that none is tracked in the repository.

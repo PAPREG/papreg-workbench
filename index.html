@@ -42,8 +42,8 @@ header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px s
 #sync.dirty::before{content:"● ";color:var(--unc)}
 #sync.clean::before{content:"● ";color:var(--ok)}
 .row2{margin-top:4px;color:var(--mute);font-size:12px}
-.row2 .sep{color:var(--rule)}
-.row3{font-size:11px;margin-top:2px}
+.row2 .sep{display:none}
+.row3{font-size:11px;margin-top:2px} html{scroll-padding-top:calc(var(--hdr,92px) + 10px)} .keysb{border:1px solid var(--rule);border-radius:9px;padding:0 7px;font:600 10px var(--sans);color:var(--mute);cursor:default} #modeWrap{display:inline-flex;gap:6px;align-items:baseline;flex-wrap:wrap}
 main{display:grid;grid-template-columns:minmax(240px,32%) 1fr;max-width:1500px;margin:0 auto}
 @media (max-width:900px){header{position:static}.row2 .keys,.row3 .sep,.row2 .sep{display:none}main{grid-template-columns:1fr}.viewer{position:static!important;border-right:0!important;border-bottom:1px solid var(--rule);max-height:none!important}}
 .viewer{position:sticky;top:var(--hdr,92px);align-self:start;padding:18px 22px;border-right:1px solid var(--rule);max-height:calc(100vh - var(--hdr,92px));overflow:auto}
@@ -257,6 +257,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
 .pip-ms .tk{opacity:.55;margin:0 .22em;filter:blur(.15px)} .pip-ms .tk.cur{opacity:1;filter:none;font-size:1.25em;padding:0 .12em;
   box-shadow:0 0 0 2px #b42318;border-radius:3px;background:rgba(255,255,255,.18)}
 .pip-ms .rule{position:absolute;left:0;right:0;height:1px;background:rgba(90,60,30,.16)}
+.stage{position:relative} .simb{position:absolute;left:6px;top:6px;z-index:5;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;background:rgba(40,30,22,.78);color:#f4f1ea;padding:2px 7px;border-radius:9px;pointer-events:none}
 .pip-ms .wm{position:absolute;right:8px;bottom:5px;font:600 9.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:rgba(70,45,20,.55)}
 .pip-ms .empty{font:13px var(--sans);color:#6b5236}
 .pip-map{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:6px;font:11.5px var(--sans);color:var(--mute)}
@@ -285,11 +286,11 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     <button class="b" id="bExport">Approve &amp; save</button>
   </div>
   <div class="row2">
-    <span id="layerBar"></span><span class="sep">|</span><span id="viewSel"></span><span class="sep">|</span>
+    <span id="layerBar"></span><span class="sep">|</span><span id="viewSel"></span><span class="sep">|</span><span id="modeWrap"><b id="modeStat"></b> <span id="modeCur"></span> <span id="modeAsk" hidden></span></span> <span class="keysb" id="keysBtn" tabindex="0">keys</span>
     <span class="oldlayers">layer
       <button class="t" data-layer="both" aria-pressed="true">both</button>
       <button class="t" data-layer="dipl" aria-pressed="false">diplomatic</button>
-      <button class="t" data-layer="edit" aria-pressed="false">edition</button></span><span class="sep">|</span>
+      <button class="t" data-layer="edit" aria-pressed="false">edition</button></span>
     <button class="t" id="bHeat" aria-pressed="true">uncertainty</button>
     <button class="t" id="bAcc" aria-pressed="true">accents</button>
     <button class="t" id="bClaus" aria-pressed="false">clausulae only</button>
@@ -297,11 +298,6 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     <button class="t" id="bNer" aria-pressed="true" title="Named entities: accepted names and the NER head's suggestions (PERS? / PLACE?). Turn off to check the structure or the formulae without them.">NER</button>
     <button class="t" id="bForm" aria-pressed="true" title="Formulae found algorithmically: legal / procedural formulae of Herde's Audientia litterarum contradictarum, and chancery formulae that recur in the Honorius III register">formulae</button><span class="sep">|</span>
     <button class="t" id="bPeers" aria-pressed="false" title="Two SIMULATED editors, for illustrating the UI only: not checked palaeographically, not ground truth, with one deliberate wrong choice. Off by default, so that the page shows the model's own output and calibrated uncertainty.">simulated peers (UI demo)</button>
-  </div>
-  <div class="row2 row3">
-    <span id="modeWrap">mode <select id="modeSel" aria-label="task mode"></select> <b id="modeStat"></b> <span id="modeCur"></span> <span id="modeAsk" hidden></span></span><span class="sep">|</span>
-    <span id="stats"></span><span class="sep">|</span>
-<span class="keys" id="keysLine"></span>
   </div>
 </header>
 
@@ -318,6 +314,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     <p class="lbl">Page</p>
     <div class="stage" id="stage">
       <img id="pageImg" alt="Manuscript page" hidden>
+      <span id="simBadge" class="simb" hidden>simulated</span>
       <svg id="page" role="img" aria-label="Line regions of the page"></svg>
       <div id="lens" hidden></div>
     </div>
@@ -544,7 +541,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function stats() {
     const f = flaggedList(), lows = f.filter(([li, wi]) => level(li, wi) === "low").length;
     const exp = FL.reduce((a, [li, wi]) => a + pErr(li, wi), 0);
-    $("stats").textContent = `${D.lines.length} lines · ${lows} likely errors · ${f.length - lows} to check · expected errors ≈ ${Math.round(exp)} · ` +
+    if ($("stats")) $("stats").textContent = `${D.lines.length} lines · ${lows} likely errors · ${f.length - lows} to check · expected errors ≈ ${Math.round(exp)} · ` +
       `${state.apprE.size}/${state.apprD.size} lines approved (edition/diplomatic) · ${Object.keys(state.edits).length + Object.keys(state.dipl).length} edits · ${state.app.length} notes · ${state.ne.length} entities · ${state.peers.length} other editor(s)`;
   }
 
@@ -650,7 +647,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       const rw = Math.max((fx1 - fx0) * b[2] * IW * 2.6, lh * 7), rh = lh * 2.4;
       const rx = Math.max(0, Math.round(cx - rw / 2)), ry = Math.max(0, Math.round(cy - rh / 2)), RW = Math.round(Math.min(rw, IW - rx)), RH = Math.round(Math.min(rh, IH - ry));
       const box = $("pipMs"), cw = box.clientWidth || 400, ch = box.clientHeight || 118;
-      box.innerHTML = `<canvas width="${cw * 2}" height="${ch * 2}" style="width:100%;height:100%"></canvas>${S.iiif ? `<span class="wm">synthetic · IIIF region</span>` : ""}`;
+      box.innerHTML = `<canvas width="${cw * 2}" height="${ch * 2}" style="width:100%;height:100%"></canvas>${S.iiif ? `<span class="wm">synthetic · IIIF region</span>` : state.synthetic ? `<span class="wm">simulated</span>` : ""}`;
       const cv = box.querySelector("canvas"), g = cv.getContext("2d"), sc = Math.min(cv.width / RW, cv.height / RH);
       const dw = RW * sc, dh = RH * sc, ox = (cv.width - dw) / 2, oy = (cv.height - dh) / 2;
       g.fillStyle = "#e6d6b0"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, rx, ry, RW, RH, ox, oy, dw, dh);
@@ -1414,7 +1411,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   // default: the legacy line when there is one, else the ink strip when masks exist (internal build), else none; the choice of the editor stands
   let VIEWS_CHOSEN = null; try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v)) VIEWS_CHOSEN = v.filter(x => ["legacy", "image", "ink"].includes(x)); } catch (e) {}
   let LAY = null;                                                           // layer groups (set below)
-  effViews = () => (LAY && LAY.text.wit ? ["legacy"] : []).concat((VIEWS_CHOSEN || (STRIPS ? ["ink"] : [])).filter(x => x !== "legacy"));
+  effViews = () => (LAY && LAY.text.wit ? ["legacy"] : []).concat((VIEWS_CHOSEN || (state.hasImage ? ["image"] : (STRIPS ? ["ink"] : []))).filter(x => x !== "legacy"));
   const VIEW_BTN = [["image", "image strip", () => state.hasImage], ["ink", "ink strip", () => !!STRIPS], ["none", "none", () => true]];
   const setViewSel = () => { const ev_ = effViews(); const av = VIEW_BTN.filter(b => b[2]() && b[0] !== "none"); $("viewSel").innerHTML = av.length ? "line view " + VIEW_BTN.filter(b => b[2]()).map(b => `<button class="t" data-v="${b[0]}" aria-pressed="${b[0] === "none" ? !ev_.length : ev_.includes(b[0])}">${b[1]}</button>`).join(" ") : "";
     $("viewSel").querySelectorAll("button").forEach(bt => bt.onclick = (e) => { e.stopPropagation(); const v = bt.dataset.v; let cur = effViews().slice(); cur = v === "none" ? [] : (cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v)); VIEWS_CHOSEN = cur.filter(x => x !== "legacy"); try { localStorage.setItem(VKEY, JSON.stringify(VIEWS_CHOSEN)); } catch (x) {} setViewSel(); render(); }); };
@@ -1513,7 +1510,8 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     localStorage.setItem(`wb:modecounts:${G_PAGE}`, JSON.stringify({ at: new Date().toISOString(), modes: o })); } catch (e) {} }
   const G_PAGE = `${CFG.org ? "" : ""}${S.volume ? "RV" + S.volume + "/" + S.folio : S.folio}`;
   const PLAIN_KEYS = `<kbd>Tab</kbd> next flagged word · <kbd>1–3</kbd> accept · <kbd>A</kbd> apparatus · <kbd>N</kbd><kbd>0–9</kbd> entity class · <kbd>R</kbd> role · name? right half ✓ left half ✗ · <kbd>D</kbd> edit diplomatic · <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> approve edition / diplomatic · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
-  function updateModeBar() { if (!state.mode) { $("modeStat").textContent = ""; $("keysLine").innerHTML = PLAIN_KEYS; $("modeCur").textContent = ""; return; } $("modeStat").textContent = modeStatus(); clearTimeout(updateModeBar.t); updateModeBar.t = setTimeout(storeCounts, 600); $("keysLine").innerHTML = `<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> next / previous stop · ${MODE_INFO[state.mode][2]} · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
+  const setKeys = (html) => { const d = document.createElement("div"); d.innerHTML = html; $("keysBtn").setAttribute("data-tip", d.textContent.replace(/\s+/g, " ")); };
+  function updateModeBar() { if (!state.mode) { $("modeStat").textContent = ""; setKeys(PLAIN_KEYS); $("modeCur").textContent = ""; return; } $("modeStat").textContent = modeStatus(); clearTimeout(updateModeBar.t); updateModeBar.t = setTimeout(storeCounts, 600); setKeys(`<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> next / previous stop · ${MODE_INFO[state.mode][2]} · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`);
     const cur = modeItems(state.mode).find(i => i.id === state.modeCur); $("modeCur").textContent = cur ? "· " + cur.label + (cur.why ? " (" + cur.why + ")" : "") : ""; }
   function focusItem(it) {
     state.modeCur = it.id;
@@ -1946,8 +1944,9 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
   // ------------------------------------------------------------ image and magnifier
   const stage = $("stage"), img = $("pageImg"), lens = $("lens"); let zoom = 3;
   // the original page image, when a local copy sits next to the sample (sample/<folio>/page.jpg: git-ignored, never pushed), is shown as it is: no layer, no mark
-  (function () { try { const x = new XMLHttpRequest(); x.open("HEAD", `${SRCBASE}${S.folio}/page.jpg`, false); x.send(); if (x.status === 200) setTimeout(() => setImage(`${SRCBASE}${S.folio}/page.jpg`), 0); } catch (e) {} })();
-  function setImage(src) { img.onload = () => { state.hasImage = true; img.hidden = false; setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
+  // one image source, chosen at build time: the public build reads page.synthetic.png only; the internal build the real image (page.jpg, git-ignored) and falls back to the synthetic page
+  (function () { for (const n of PUBLIC ? ["page.synthetic.png"] : ["page.jpg", "page.synthetic.png"]) { try { const x = new XMLHttpRequest(); x.open("HEAD", `${SRCBASE}${S.folio}/${n}`, false); x.send(); if (x.status === 200) { state.synthetic = n.includes("synthetic"); setTimeout(() => setImage(`${SRCBASE}${S.folio}/${n}`), 0); return; } } catch (e) {} } })();
+  function setImage(src) { img.onload = () => { state.hasImage = true; img.hidden = false; $("simBadge").hidden = !state.synthetic; setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
   window.__wbSetImage = setImage;
   WB.image(D).then(u => u && setImage(u));                        // local folder or URL template (never GitHub)
   function lensAt(e) {
@@ -1972,7 +1971,7 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
   window.__wb = { clausulaNow, accOf, jsAcc, cadence, state, tei, GI, marginClasses, editionRow, regestRow, formulaRow, regestAlign, coverage, entryInfo, L0, FL, LNUM };          // for automated tests
 
   const hdr = () => document.documentElement.style.setProperty("--hdr", document.querySelector("header").offsetHeight + "px");
-  addEventListener("resize", hdr); hdr();
+  addEventListener("resize", hdr); hdr(); new ResizeObserver(hdr).observe(document.querySelector("header"));
   await pull(); render(); syncStatus();
 })();
 </script>
