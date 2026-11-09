@@ -18,7 +18,7 @@ try {
   const counts = {};
   for (const m of MODES) {
     await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=${TASKS[m]}&mode=${m}&data=tests/fixtures/none/` }); await sleep(3500);
-    await ev(`localStorage.setItem("wb:tourSeen","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove())`);
+    await ev(`localStorage.setItem("wb:tourSeen.v2","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove())`);
     const st0 = await ev(`document.getElementById("modeStat").textContent`), sel = await ev(`document.getElementById("modeWrap").innerText.trim().startsWith("task · ${TASKS[m]}") ? "${m}" : ""`);
     const n = +(st0.match(/(\d+) stops/) || st0.match(/(\d+) suggestions/) || [0, 0])[1]; counts[m] = st0;
     check(sel === m && /^ner:|stops|no witness for this page|0 on this page/.test(st0), `${m}: opens through its task link (${st0})`);
@@ -35,7 +35,7 @@ try {
   }
   // public-domain witnesses present (synthetic fixture, never real data): the band shows the regest, the edition mode has a stop, the TEI carries note, annotation and listBibl
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition&data=tests/fixtures/wit/` }); await sleep(3500);
-  await ev(`localStorage.setItem("wb:tourSeen","1")`);
+  await ev(`localStorage.setItem("wb:tourSeen.v2","1")`);
   const e1 = await ev(`document.getElementById("modeStat").textContent`); check(/\d+ stops/.test(e1) && +e1.match(/(\d+) stops/)[1] >= 1, `edition with a witness file: the differing tokens are the stops (${e1})`);
   const lw = await ev(`document.querySelectorAll(".pair .wit.differs").length + "|" + document.querySelectorAll(".pair.plus").length`); check(/^[1-9]\d*\|[1-9]/.test(lw), `witness pairs are the default view, differing tokens highlighted (${lw})`);
   const band = await ev(`[...document.querySelectorAll(".band")][1].innerText`); check(/P TEST-1/.test(band) && /MGH|H |Horoy/.test(await ev(`document.querySelector(".band .cov") ? document.body.innerText : ""`)) || /P TEST-1/.test(band), "the coverage badge of the entry names the regest of the files");

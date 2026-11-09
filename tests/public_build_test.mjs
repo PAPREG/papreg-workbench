@@ -25,7 +25,7 @@ try {
   ws = new WebSocket(t.find(x => x.type === "page").webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
   const resp = [], failed = []; ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } if (d.method === "Network.responseReceived") resp.push([d.params.response.status, d.params.response.url]); if (d.method === "Network.loadingFailed") failed.push(d.params.errorText); };
   await cdp("Network.enable"); await cdp("Page.enable"); await cdp("Network.enable"); await cdp("Network.setCacheDisabled", { cacheDisabled: true }); const url = `http://127.0.0.1:${port}/?test=1&page=RV9/154v`; await cdp("Page.navigate", { url }); await sleep(8000);
-  await ev(`localStorage.setItem("wb:tourSeen","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove())`);
+  await ev(`localStorage.setItem("wb:tourSeen.v2","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove())`);
   // default: the line geometry, no image request; the image is loaded on request
   const g0 = JSON.parse(await ev(`JSON.stringify({ src: document.getElementById("pageSrc").textContent, polys: document.querySelectorAll("#page polygon").length, btn: !!document.getElementById("bLoadImg") })`));
   check(!resp.some(r => /page\.synthetic/.test(r[1])) && /^source: line geometry/.test(g0.src) && g0.polys > 40 && g0.btn, `default: line geometry, no image requested (${JSON.stringify(g0)})`);

@@ -6,7 +6,7 @@
 (function () {
   const params = new URLSearchParams(location.search);
   if (!params.get("test") || !params.get("page")) return;
-  const LSK = "wb:tourSeen";
+  const LSK = "wb:tourSeen.v2";      // raise the version when the tour gets new steps: it then starts once more for everyone
   const W = () => window.__wb && window.__wb.state;
   const nEdits = () => Object.keys(W().edits || {}).length;
   const STEPS = [
