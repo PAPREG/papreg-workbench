@@ -1,0 +1,36 @@
+{
+ "schema": "papreg.page/0.3",
+ "page_id": "RV9/154v",
+ "source": {
+  "shelfmark": "Reg. Vat. 9",
+  "volume": "9",
+  "folio": "154v",
+  "folio_number": 154,
+  "side": "v",
+  "pontificate": "Honorius III",
+  "image_file": "RegVat9_f154V.JPG",
+  "image_dir": "RVAT9",
+  "page_width_px": 3376,
+  "page_height_px": 4268,
+  "image": "not distributed; the workbench loads it from the editor's local folder"
+ },
+ "task_id": "T00-001",
+ "layers": {
+  "text": {
+   "file": "../../../../../../sample/pages/RV9/154v/text.json",
+   "generator": "pilot2 scripts/131 (reading, calibration, candidates, accents)"
+  },
+  "cursus": {
+   "file": "../../../../../../sample/pages/RV9/154v/cursus.json",
+   "generator": "pilot2 scripts/131 (pilot-1 clause ends, M1 cadence)"
+  },
+  "ner": {
+   "file": "../../../../../../sample/pages/RV9/154v/ner.json",
+   "generator": "pilot2 scripts/131 (Span-NER + NER head of the hybrid)"
+  },
+  "structure": {
+   "file": "../../../../../../sample/pages/RV9/154v/structure.json",
+   "generator": "pilot2 scripts/138 (diplomatic rules of src/workbench_layers.py)"
+  }
+ }
+}

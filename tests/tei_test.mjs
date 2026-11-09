@@ -36,7 +36,7 @@ try {
   let t; for (let k = 0; k < 40; k++) { try { t = await (await fetch("http://127.0.0.1:9335/json")).json(); break; } catch (e) { await sleep(250); } }
   ws = new WebSocket(t.find(x => x.type === "page").webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
   ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } };
-  await cdp("Page.enable"); await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}` }); await sleep(4000);
+  await cdp("Page.enable"); await cdp("Network.enable"); await cdp("Network.setCacheDisabled", { cacheDisabled: true }); await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}` }); await sleep(4000);
   let r = await ev(CHECKS);
   if (process.env.TEI_OUT) writeFileSync(process.env.TEI_OUT + ".plain.xml", await ev("window.__wb.tei()"));
   check(r.wellFormed, "untouched side: well formed " + (r.msg || ""));

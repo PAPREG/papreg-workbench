@@ -14,10 +14,10 @@ try {
   let t; for (let k = 0; k < 40; k++) { try { t = await (await fetch("http://127.0.0.1:9338/json")).json(); break; } catch (e) { await sleep(250); } }
   ws = new WebSocket(t.find(x => x.type === "page").webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
   ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } };
-  await cdp("Page.enable");
+  await cdp("Page.enable"); await cdp("Network.enable"); await cdp("Network.setCacheDisabled", { cacheDisabled: true });
   const counts = {};
   for (const m of MODES) {
-    await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=${TASKS[m]}&mode=${m}&sources=tests/none/` }); await sleep(3500);
+    await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=${TASKS[m]}&mode=${m}&data=tests/fixtures/none/` }); await sleep(3500);
     await ev(`localStorage.setItem("wb:tourSeen","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove())`);
     const st0 = await ev(`document.getElementById("modeStat").textContent`), sel = await ev(`document.getElementById("modeWrap").innerText.trim().startsWith("task · ${TASKS[m]}") ? "${m}" : ""`);
     const n = +(st0.match(/(\d+) stops/) || st0.match(/(\d+) suggestions/) || [0, 0])[1]; counts[m] = st0;
@@ -34,23 +34,23 @@ try {
     check(+saved >= 1 || m === "triage" || m === "ner", `${m}: progress record kept (${saved})`);
   }
   // public-domain witnesses present (synthetic fixture, never real data): the band shows the regest, the edition mode has a stop, the TEI carries note, annotation and listBibl
-  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition&sources=tests/fixtures/` }); await sleep(3500);
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition&data=tests/fixtures/wit/` }); await sleep(3500);
   await ev(`localStorage.setItem("wb:tourSeen","1")`);
   const e1 = await ev(`document.getElementById("modeStat").textContent`); check(/\d+ stops/.test(e1) && +e1.match(/(\d+) stops/)[1] >= 1, `edition with a witness file: the differing tokens are the stops (${e1})`);
   const lw = await ev(`document.querySelectorAll(".pair .wit.differs").length + "|" + document.querySelectorAll(".pair.plus").length`); check(/^[1-9]\d*\|[1-9]/.test(lw), `witness pairs are the default view, differing tokens highlighted (${lw})`);
   const band = await ev(`[...document.querySelectorAll(".band")][1].innerText`); check(/P TEST-1/.test(band) && /MGH|H |Horoy/.test(await ev(`document.querySelector(".band .cov") ? document.body.innerText : ""`)) || /P TEST-1/.test(band), "the coverage badge of the entry names the regest of the files");
   const tx = await ev(`window.__wb.tei()`); check(/<note type="regest" source="#Pressutti"/.test(tx) && /type="witness"[^>]*source="#Horoy"/.test(tx) && /<bibl xml:id="Pressutti">/.test(tx) && /<bibl xml:id="Horoy">/.test(tx), "TEI: regest notes, witness annotations, listBibl");
   const rl = await ev(`window.TEI_CHECKS.run(window.__wb.tei(), document.body.innerText).filter(r => !r.ok).map(r => r.id).join(",")`); check(rl === "", `rules met with witnesses loaded (${rl})`);
-  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&sources=tests/none/` }); await sleep(3500);
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&data=tests/fixtures/none/` }); await sleep(3500);
   const hd = await ev(`[!!document.getElementById("modeSel"), document.getElementById("viewSel").innerText, document.body.innerText.includes("simulated"), !!document.querySelector(".lvw .wd")].join("|")`);
   check(hd.startsWith("false|") && !/ink strip/.test(hd) && /false\|(true|false)$/.test(hd), `no mode dropdown; no ink option in the public build; no simulated text (${hd.replace(/\n/g, " ")})`);
   const lg = await ev(`document.querySelectorAll(".pair .wit.differs").length + "|" + document.querySelectorAll(".pair.plus").length`); console.log("legacy lines shown:", lg);
   // without a task link the page is the plain review: no mode, Tab goes to the next flagged word
-  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&mode=ner&sources=tests/none/` }); await sleep(3500);
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&mode=ner&data=tests/fixtures/none/` }); await sleep(3500);
   await key("Tab"); await sleep(400); const pl = await ev(`[window.__wb.state.mode, !!window.__wb.state.focus, document.getElementById("modeStat").textContent].join("|")`);
   check(pl.startsWith("|true|"), `a mode without a task is ignored: plain review, Tab = next flagged word (${pl})`);
   // the entity form: N opens it on the focused word, + / - move the right edge, Shift+arrows the left edge, a digit marks at once (6 = DATE)
-  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&sources=tests/none/` }); await sleep(3500);
+  await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&data=tests/fixtures/none/` }); await sleep(3500);
   await key("Tab"); await sleep(300); await key("n"); await sleep(300);
   const f0 = JSON.parse(await ev(`JSON.stringify({ form: !!window.__wb.state.form, span: window.__wb.state.form && window.__wb.state.form.span, marked: document.querySelectorAll(".w.nesel").length })`));
   await key("+"); await sleep(150); await key("+"); await sleep(150); const f1 = JSON.parse(await ev(`JSON.stringify({ span: window.__wb.state.form.span, marked: document.querySelectorAll(".w.nesel").length })`));
@@ -64,7 +64,7 @@ try {
   const cr = JSON.parse(await ev(`(async () => { const sl = (ms) => new Promise(r => setTimeout(r, ms)); const L = window.__wb.state; window.__wbLay && 0; const lows = [...document.querySelectorAll(".w.low, .w.med")];
     for (const el of lows) { el.click(); await sl(120); if (document.querySelector("#pop li")) { const dk = el.dataset.k; document.dispatchEvent(new KeyboardEvent("keydown", { key: "1", bubbles: true })); await sl(250); const e2 = document.querySelector('.w[data-k="' + dk + '"]'); const cs = getComputedStyle(e2); return JSON.stringify({ before: el.className, after: e2.className, bg: cs.backgroundColor, deco: cs.textDecorationLine }); } } return JSON.stringify({ none: true }); })()`));
   check(cr.none || (/edited/.test(cr.after) && !/low|med/.test(cr.after) && cr.deco === "none" && cr.bg !== "rgba(0, 0, 0, 0)"), `a corrected word loses the red / amber mark and shows the pale green (${JSON.stringify(cr)})`);
-  // the public-domain witnesses of the sample (sample/154v/regests.json, witness.json)
+  // the public-domain witnesses of the sample (sample/pages/RV9/154v/witnesses.json)
   await cdp("Page.navigate", { url: `http://127.0.0.1:8090/papreg_workbench/?test=1&page=${PAGE}&task=T2.1&mode=edition` }); await sleep(3500);
   const real = await ev(`JSON.stringify({ stat: document.getElementById("modeStat").textContent, witnessLines: document.querySelectorAll(".wsig .wit.siglum").length, diffTokens: document.querySelectorAll(".pair .wit.differs").length, plus: document.querySelectorAll(".pair.plus .chip.pl").length, ocr: document.querySelectorAll(".pair .wit.ocr").length,
     bands: [...document.querySelectorAll(".band")].map(b => (b.querySelector(".cov") ? b.querySelector(".cov").textContent + " | " + b.querySelector(".cov").dataset.tip.split(" — ")[0] : "-")), texts: [...document.querySelectorAll(".band")].map(b => b.innerText.split(String.fromCharCode(10)).join(" ")) })`);

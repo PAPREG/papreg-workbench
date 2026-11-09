@@ -88,6 +88,27 @@
     if (OFFLINE()) { const r = await fetch((G.cfg.mode === "test" ? (G.cfg.testData || "sample/") : G.cfg.localData).replace(/\/?$/, "/") + path); if (!r.ok) throw new Error(`${r.status} ${path}`); return r.json(); }
     return JSON.parse(await ghRaw(path, G.cfg.branch));
   }
+  // a page is a directory of layers, each written by one pipeline step (pilot2 scripts/131, 136, 138; docs/DATA_CONTRACT.md):
+  // page.json (manifest) -> text, cursus, ner, structure, witnesses, fetched in parallel. text and structure are required; a missing optional layer is listed in D.missing.
+  const REQUIRED = ["text", "structure"];
+  async function loadPage(pageId) {
+    const dir = `${G.cfg.pageDir}/${pageId}/`, man = await data(dir + "page.json");
+    if (!/^papreg\.page\/0\.3/.test(man.schema || "")) throw new Error(`page ${pageId}: schema ${man.schema || "?"} (a layer directory of papreg.page/0.3 is expected)`);
+    const names = Object.keys(man.layers || {}), missing = REQUIRED.filter(n => !names.includes(n));
+    if (missing.length) throw new Error(`page ${pageId}: layer(s) ${missing.join(", ")} missing in page.json`);
+    const strips = OFFLINE() && G.cfg.build !== "public" ? data(dir + "strips/index.json").catch(() => null) : Promise.resolve(null);
+    const got = await Promise.all(names.map(n => data(dir + man.layers[n].file).then(v => [n, v], e => { if (REQUIRED.includes(n)) throw e; return [n, null, e.message]; })));
+    const L = {}, failed = []; got.forEach(([n, v, err]) => { if (v) L[n] = v; else failed.push(`${n} (${err})`); });
+    const T = L.text, X = T.extra || {}; delete T.extra;
+    const D = Object.assign({}, X, T, L.cursus || { clausulae: [] }, {
+      schema: man.schema, page_id: man.page_id, source: man.source, task_id: man.task_id, layers: man.layers, missing: failed,
+      entity_suggestions: L.ner ? L.ner.suggestions : [], entity_suggestion_source: L.ner ? L.ner.source : null,
+      structure: L.structure, structure_proposal: L.structure.proposal || null, witnesses: L.witnesses || null,
+      strips: await strips,
+      pageBase: OFFLINE() ? new URL(((G.cfg.mode === "test" ? (G.cfg.testData || "sample/") : G.cfg.localData).replace(/\/?$/, "/")) + dir, document.baseURI).href : null });
+    D.clausulae = D.clausulae || [];
+    return D;
+  }
   const myPath = (t) => `${G.cfg.annotationsDir}/${t}/${G.login}.json`;
   function emptyFile(t) { return { schema: "papreg.workbench/0.1", type: t, login: G.login, updated: null, pages: {}, log: [] }; }
   function merge(t, remote) {                                     // keep the newer record per page (or per task), union of the logs
@@ -322,13 +343,14 @@
     const cfgName = params.get("config") || "config.json";
     G.cfg = Object.assign({ mode: "github", branch: "main", dataBranch: "annotations", annotationsDir: "annotations", pagesIndex: "pages/index.json",
       tasks: "tasks/review_queue.json", pageDir: "pages", syncSeconds: 60, claimBatch: 5 }, await (await fetch(cfgName, { cache: "no-store" })).json());
-    if (params.get("test")) G.cfg.mode = "test";
+    if (params.get("test")) { G.cfg.mode = "test"; const d = params.get("data") || "";      // test data trees of the test suite only (tests/fixtures/<name>/)
+      if (/^tests\/fixtures\/[\w-]+\/$/.test(d)) G.cfg.testData = d; }
     if (G.cfg.repo && G.cfg.mode === "github" && !LS.get(REPOKEY, "")) LS.set(REPOKEY, G.cfg.repo);
     if (!(await auth())) { loginView(); return null; }
     await loadMine();
     window.WORKBENCH_CONFIG = { mode: OFFLINE() ? "local" : "live", login: G.login, syncSeconds: G.cfg.syncSeconds, build: G.cfg.build || "internal" };
     if (!G.pageId) { await taskView(); return null; }
-    const D = await data(`${G.cfg.pageDir}/${G.pageId}.json`);
+    const D = await loadPage(G.pageId);
     try { G.index = (await data(G.cfg.pagesIndex)).pages.map(p => p.page_id); } catch (e) { G.index = []; }
     try { await loadTasks(); } catch (e) { QUEUE = { tasks: [] }; }
     G.D = D; setTimeout(() => pageChrome(D), 0);

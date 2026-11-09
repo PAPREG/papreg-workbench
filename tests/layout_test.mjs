@@ -13,7 +13,7 @@ try {
   ws = new WebSocket(t.find(x => x.type === "page").webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
   ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } };
   const urls = []; ws.addEventListener("message", (m) => { const d = JSON.parse(m.data); if (d.method === "Network.requestWillBeSent") urls.push(d.params.request.url); });
-  await cdp("Network.enable"); await cdp("Page.enable"); await cdp("Page.navigate", { url: "http://127.0.0.1:8090/papreg_workbench/?test=1&page=RV9/154v&task=T2.1&mode=edition" }); await sleep(4500);
+  await cdp("Network.enable"); await cdp("Page.enable"); await cdp("Network.enable"); await cdp("Network.setCacheDisabled", { cacheDisabled: true }); await cdp("Page.navigate", { url: "http://127.0.0.1:8090/papreg_workbench/?test=1&page=RV9/154v&task=T2.1&mode=edition&image=1" }); await sleep(4500);
   await ev(`localStorage.setItem("wb:tourSeen","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove()); document.querySelector("header").style.position = "static"; document.getElementById("pageImg").style.display = "none"`);
   const geo = JSON.parse(await ev(`JSON.stringify((() => { let n = 0, bad = []; document.querySelectorAll(".pair").forEach(p => { const reg = p.querySelector(".reg").getBoundingClientRect();
     p.querySelectorAll(".wit").forEach(w => { if (!w.textContent.replace(/\\u00a0/g, "").trim()) return; n++; const b = w.getBoundingClientRect(); if (b.left < reg.left - 4 || b.right > reg.right + 4) bad.push([w.textContent.slice(0, 20), Math.round(b.left - reg.left), Math.round(reg.right - b.right)]); }); });
@@ -30,10 +30,10 @@ try {
   check(tp.titles === 0 && tp.help === 0 && tp.shown && tp.text.length > 0, `no native title (${tp.titles}), no cursor:help (${tp.help}), tooltip at once: "${tp.text}"`);
   // one image source: the public build reads the synthetic page only; the real image and the ink strips are not requested, and are not in the repository
   const tracked = execSync("git ls-files", { cwd: new URL("..", import.meta.url).pathname }).toString().split("\n");
-  const real = urls.filter(u => /page\.jpg|\/strips\//.test(u)), trackedReal = tracked.filter(f => /(^|\/)page\.jpg$|(^|\/)strips\//.test(f)), synth = urls.filter(u => /page\.synthetic\.png/.test(u)).length;
+  const real = urls.filter(u => /page\.jpg|\/strips\//.test(u)), trackedReal = tracked.filter(f => /(^|\/)page\.jpg$|(^|\/)strips\//.test(f)), synth = urls.filter(u => /page\.synthetic\.jpg/.test(u)).length;
   check(real.length === 0 && trackedReal.length === 0 && synth > 0, `public build: no page.jpg or strips/ requested (${real.length}) or tracked (${trackedReal.length}); the synthetic page is the source (${synth} request)`);
   const im = JSON.parse(await ev(`JSON.stringify({ src: document.getElementById("pageImg").src.split("/").pop().split("?")[0], w: document.getElementById("pageImg").naturalWidth, h: document.getElementById("pageImg").naturalHeight, badge: !document.getElementById("simBadge").hidden, strips: document.querySelectorAll(".lv.strip canvas").length })`));
-  check(im.src === "page.synthetic.png" && im.w === 3376 && im.h === 4268 && im.badge && im.strips > 30, `page panel: ${im.src} ${im.w}x${im.h}, "simulated" badge ${im.badge}, ${im.strips} line strips above the text`);
+  check(im.src === "page.synthetic.jpg" && im.w === 1600 && im.h === 2023 && im.badge && im.strips > 30, `page panel: ${im.src} ${im.w}x${im.h}, "simulated" badge ${im.badge}, ${im.strips} line strips above the text`);
   await ev(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }))`); await sleep(500);
   const wm = await ev(`(document.querySelector("#pipMs .wm") || {}).textContent`); check(/simulated/i.test(wm || ""), `Current Word panel carries the badge (${wm})`);
   // header: no leftover row, the counters inside the toolbar, nothing clipped at 1280 and 1680 px

@@ -14,7 +14,7 @@ try {
   let t; for (let k = 0; k < 40; k++) { try { t = await (await fetch("http://127.0.0.1:9334/json")).json(); break; } catch (e) { await sleep(250); } }
   ws = new WebSocket(t.find(x => x.type === "page").webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
   ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } };
-  await cdp("Page.enable"); await cdp("Page.navigate", { url: URL_ }); await sleep(4000);
+  await cdp("Page.enable"); await cdp("Network.enable"); await cdp("Network.setCacheDisabled", { cacheDisabled: true }); await cdp("Page.navigate", { url: URL_ }); await sleep(4000);
   check(await title() === "Welcome", "tour starts with Welcome");
   const next = async () => { await ev(`document.getElementById("tourNext").click()`); await sleep(400); };
   await next(); check(await title() === "The reading", "step 2: The reading");

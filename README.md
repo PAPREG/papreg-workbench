@@ -7,7 +7,7 @@ section 1.5.4). This repository holds **only the app** (static HTML + JavaScript
 | what | where |
 |---|---|
 | app (this repo, public) | `index.html` (editor), `js/wb.js` (data, login, tasks, saving), `config.json` |
-| page data, page index, review queue (private) | data repository, branch `main`: `pages/RV<v>/<folio>.json`, `pages/index.json`, `tasks/review_queue.json` |
+| page data, page index, review queue (private) | data repository, branch `main`: `pages/RV<v>/<folio>/` (one directory of layers per side, `docs/DATA_CONTRACT.md`), `pages/index.json`, `tasks/review_queue.json` |
 | editors' work (private) | same repository, branch `annotations`: `annotations/<type>/<login>.json`, one file per editor and type |
 | images | **never on GitHub** (archive rights): read from the editor's local folder, or from a URL template |
 
@@ -33,9 +33,9 @@ the others' corrections of the same side are shown as agreement (✓) and disagr
    T3.3 entities, T2.2-z zones, T3.2c scribal corrections, T2.2-w words). Each has its own Tab queue, counters, keys and progress record; a confirmation is
    `resp="#editor"` in the TEI and the task is recorded in `revisionDesc` (tests: `tests/modes_test.mjs`).
    **Entry bands** (`[` / `]` jump between entries, the arrow collapses an entry): recipient (line end and margin witnesses, disagreement flagged), type,
-   computed date, lines, regest (when `sample/<folio>/regests.json` exists) and status. **Line view**: the legacy edition line (`sample/<folio>/witness.json`,
+   computed date, lines, regest (from `witnesses.json` of the side, when it exists) and status. **Line view**: the legacy edition line (`witnesses.json`, aligned in the pipeline,
    differing tokens highlighted; they are the stops of the edition task), the strip of the original image (when the image is loaded on this computer), the
-   ink strip (internal build only). The original image is shown as it is when a local copy `sample/<folio>/page.jpg` exists; it is git-ignored and never pushed.
+   ink strip (internal build only). The original image is shown as it is when a local copy `sample/pages/RV9/<folio>/page.jpg` exists; it is git-ignored and never pushed.
    The TEI export (tests: `tests/tei_test.mjs`) holds what the editor has decided in the text (names; `add`, `del`, `subst` from the apparatus
    types *add. supra lin.*, *add. in marg.*, *del.*, *corr. ex*, *in ras.*; hands as `handNote` / `handShift`; marginal lines the editor has
    marked as additions or notes) and, as standoff annotations, what is only proposed (cursus class of the clause ends, word confidence, marginal
@@ -85,8 +85,9 @@ See `docs/`.
 
 Fonts: Junicode (SIL Open Font License, `fonts/OFL.txt`).
 
-**Page image.** One source for the viewer, the line strips above the text and the word crop, chosen at build time (`build` in `config.json`): the public build reads
-`sample/<folio>/page.synthetic.png` only, a simulated page generated from the zone polygons and the text (`pilot2_ocr_vs_htr/scripts/137_synthetic_page.py`; see
+**Page image.** By default the page panel shows the line geometry of the segmentation only; the image is loaded when the editor asks for it
+(“show the generated page image”, or `&image=1`). One source for the viewer, the line strips above the text and the word crop, chosen at build time (`build` in `config.json`): the public build reads
+`sample/pages/RV9/<folio>/page.synthetic.jpg` only (1600 px, ≈ 0.3 MB), a simulated page generated from the zone polygons and the text (`pilot2_ocr_vs_htr/scripts/137_synthetic_page.py`; see
 `page.synthetic.NOTICE.md`: UnifrakturMaguntia, SIL OFL 1.1; nothing photographic); the internal build reads the real image `page.jpg` (git-ignored) when it is there and falls back to
 the synthetic page. A page that is simulated carries the badge "simulated" in the page panel and the Current Word panel. `tests/layout_test.mjs` asserts that the public build
 requests no `page.jpg` or `strips/` file and that none is tracked in the repository.

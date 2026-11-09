@@ -15,7 +15,7 @@ try {
   let targets; for (let k = 0; k < 40; k++) { try { targets = await (await fetch("http://127.0.0.1:9333/json")).json(); break; } catch (e) { await sleep(250); } }
   ws = new WebSocket(targets.find(t => t.type === "page").webSocketDebuggerUrl);
   await new Promise(r => ws.onopen = r); ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pending.has(d.id)) { pending.get(d.id)(d); pending.delete(d.id); } };
-  await cdp("Page.enable"); await cdp("Runtime.enable");
+  await cdp("Page.enable"); await cdp("Network.enable"); await cdp("Network.setCacheDisabled", { cacheDisabled: true }); await cdp("Runtime.enable");
   await open(BASE + "&page=" + PAGE);
   const lines = await evalJS(`document.querySelectorAll(".line").length`); check(lines > 0, `page ${PAGE} renders ${lines} lines`);
   const flagged = await evalJS(`document.querySelectorAll(".w.low, .w.med").length`); check(flagged > 0, `${flagged} flagged words`);

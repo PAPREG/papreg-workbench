@@ -2,8 +2,10 @@
 *.jpg
 *.JPG
 *.tif
+# the simulated page of the test side is generated (pilot2 scripts/137), not a register image
+!/sample/pages/*/*/page.synthetic.jpg
 /pages/
 /annotations/
 # ink masks derived from the register images: internal build only, until the PI clears them
-/sample/*/strips/
+/sample/pages/*/*/strips/
 /tests/artefacts/

@@ -1,0 +1,27 @@
+{
+ "round": 0,
+ "generated": "2026-10-26",
+ "tasks": [
+  {
+   "task_id": "T00-001",
+   "round": 0,
+   "page_id": "RV9/154v",
+   "hand": "",
+   "priority": 1,
+   "est_cer": 0.051,
+   "coverage": 0.0,
+   "lines": 52,
+   "difficulty": "medium",
+   "double_key": 1,
+   "assignee": null,
+   "reason": "test task (setup check)",
+   "assignments": {
+    "T2.2-0": "test-editor",
+    "T3.2": "test-editor",
+    "T5.1": "test-editor",
+    "T5.3": "test-editor",
+    "T2.1": "test-editor"
+   }
+  }
+ ]
+}

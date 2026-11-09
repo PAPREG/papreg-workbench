@@ -10,8 +10,9 @@ execSync(`git clone --quiet --no-hardlinks "${repo}" "${clone}"`);
 let chk = 0; try { execSync(`bash "${clone}/tools/build_public.sh" --check`, { stdio: "pipe" }); } catch (e) { chk = 1; }
 check(chk === 0, "build.json of the clone is the hash of its tracked files");
 execSync(`bash "${clone}/tools/build_public.sh" "${dist}"`, { stdio: "pipe" }); const build = JSON.parse(readFileSync(join(dist, "build.json"))).hash;
-check(existsSync(join(dist, "sample/154v/page.synthetic.png")) && !existsSync(join(dist, "sample/154v/page.jpg")) && !existsSync(join(dist, "sample/154v/strips")), "the bundle holds the synthetic page and neither page.jpg nor strips/");
-const MIME = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".png": "image/png", ".woff2": "font/woff2", ".css": "text/css", ".md": "text/plain" };
+const PD = "sample/pages/RV9/154v";
+check(existsSync(join(dist, PD, "page.synthetic.jpg")) && existsSync(join(dist, PD, "text.json")) && existsSync(join(dist, PD, "structure.json")) && !existsSync(join(dist, PD, "page.jpg")) && !existsSync(join(dist, PD, "strips")), "the bundle holds the synthetic page and neither page.jpg nor strips/");
+const MIME = { ".html": "text/html", ".js": "text/javascript", ".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".woff2": "font/woff2", ".css": "text/css", ".md": "text/plain" };
 const served = [], srv = createServer((q, r) => { const u = new URL(q.url, "http://x"); let f = join(dist, decodeURIComponent(u.pathname)); if (u.pathname.endsWith("/")) f = join(f, "index.html");
   if (!existsSync(f) || !f.startsWith(dist)) { served.push([404, u.pathname]); r.writeHead(404); r.end(); return; } served.push([200, u.pathname + u.search]); r.writeHead(200, { "content-type": MIME[extname(f)] || "application/octet-stream" }); r.end(readFileSync(f)); });
 await new Promise(r => srv.listen(0, "127.0.0.1", r)); const port = srv.address().port;
@@ -23,11 +24,15 @@ try {
   let t; for (let k = 0; k < 40; k++) { try { t = await (await fetch("http://127.0.0.1:9342/json")).json(); break; } catch (e) { await sleep(250); } }
   ws = new WebSocket(t.find(x => x.type === "page").webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
   const resp = [], failed = []; ws.onmessage = (m) => { const d = JSON.parse(m.data); if (d.id && pend.has(d.id)) { pend.get(d.id)(d); pend.delete(d.id); } if (d.method === "Network.responseReceived") resp.push([d.params.response.status, d.params.response.url]); if (d.method === "Network.loadingFailed") failed.push(d.params.errorText); };
-  await cdp("Network.enable"); await cdp("Page.enable"); const url = `http://127.0.0.1:${port}/?test=1&page=RV9/154v`; await cdp("Page.navigate", { url }); await sleep(8000);
+  await cdp("Network.enable"); await cdp("Page.enable"); await cdp("Network.enable"); await cdp("Network.setCacheDisabled", { cacheDisabled: true }); const url = `http://127.0.0.1:${port}/?test=1&page=RV9/154v`; await cdp("Page.navigate", { url }); await sleep(8000);
   await ev(`localStorage.setItem("wb:tourSeen","1"); document.querySelectorAll(".tour-card,.tour-spot").forEach(n => n.remove())`);
-  const im = resp.find(r => /page\.synthetic\.png/.test(r[1])); console.log("image URL as served:", im && im[1]);
+  // default: the line geometry, no image request; the image is loaded on request
+  const g0 = JSON.parse(await ev(`JSON.stringify({ src: document.getElementById("pageSrc").textContent, polys: document.querySelectorAll("#page polygon").length, btn: !!document.getElementById("bLoadImg") })`));
+  check(!resp.some(r => /page\.synthetic/.test(r[1])) && /^source: line geometry/.test(g0.src) && g0.polys > 40 && g0.btn, `default: line geometry, no image requested (${JSON.stringify(g0)})`);
+  await ev(`document.getElementById("bLoadImg").click()`); await sleep(2500);
+  const im = resp.find(r => /page\.synthetic\.jpg/.test(r[1])); console.log("image URL as served:", im && im[1]);
   check(!!im && im[0] === 200 && im[1].endsWith("?v=" + build), `the page image request returns 200 with the build hash (${im && im[0]}, v=${build})`);
-  const panel = await ev(`document.getElementById("pageSrc").textContent`); check(/^source: simulated page · loaded 3376×4268$/.test(panel), `the panel reports "${panel}"`);
+  const panel = await ev(`document.getElementById("pageSrc").textContent`); check(/^source: simulated page · loaded 1600×2023$/.test(panel), `the panel reports "${panel}"`);
   const strip = JSON.parse(await ev(`JSON.stringify((() => { const r = [...document.querySelectorAll(".line")].find(n => (n.querySelector(".ln") || {}).firstChild && n.querySelector(".ln").firstChild.textContent === "25"); const cv = r && r.querySelector(".lv.strip canvas"); if (!cv) return { ok: false }; const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data; let dark = 0; for (let i = 0; i < d.length; i += 40) if (d[i] < 120) dark++; return { ok: true, w: cv.width, h: cv.height, dark }; })())`));
   check(strip.ok && strip.dark > 20, `the strip of line 25 is rendered above the text (${strip.w}x${strip.h}, ${strip.dark} dark samples), with no task link`);
   const bid = JSON.parse(await ev(`JSON.stringify({ id: document.getElementById("buildId").textContent, stale: !!document.getElementById("staleBar") })`)); check(bid.id === "build " + build.slice(0, 7) && !bid.stale, `the toolbar shows the running build (${bid.id}), no out-of-date bar`);
@@ -49,9 +54,9 @@ try {
   const sy = await ev(`(() => { const r = [...document.querySelectorAll(".line")].find(n => (n.querySelector(".ln") || {}).firstChild && n.querySelector(".ln").firstChild.textContent === "25"); r.scrollIntoView({ block: "start" }); window.scrollBy(0, -6); return window.scrollY; })()`); await sleep(500);
   await save("public_l25.png", { x: 480, y: sy, width: 1020, height: 300 });
   // a failing image is shown, not replaced: remove the file from the served bundle and reload
-  rmSync(join(dist, "sample/154v/page.synthetic.png")); await cdp("Page.navigate", { url: `http://127.0.0.1:${port}/?test=1&page=RV9/154v&nocache=1` }); await sleep(4500);
+  rmSync(join(dist, PD, "page.synthetic.jpg")); await cdp("Page.navigate", { url: `http://127.0.0.1:${port}/?test=1&page=RV9/154v&image=1&nocache=1` }); await sleep(4500);
   const miss = JSON.parse(await ev(`JSON.stringify({ src: document.getElementById("pageSrc").textContent, red: getComputedStyle(document.getElementById("pageSrc")).color, pip: (document.querySelector("#pipMs .imgerr") || {}).textContent, polys: document.querySelectorAll("#page polygon, #page rect").length, imgHidden: document.getElementById("pageImg").hidden })`));
-  check(/^page image not found: http:\/\/127\.0\.0\.1:\d+\/sample\/154v\/page\.synthetic\.png\?v=\w+ \(404\)$/.test(miss.src) && /192, ?57, ?43/.test(miss.red.replace(/\s/g, "")) && /page image not found/.test(miss.pip || "") && miss.polys === 0, `a missing image is reported in red in both panels, with no substitute thumbnail ("${miss.src}")`);
+  check(/^page image not found: http:\/\/127\.0\.0\.1:\d+\/sample\/pages\/RV9\/154v\/page\.synthetic\.jpg\?v=\w+ \(404\)$/.test(miss.src) && /192, ?57, ?43/.test(miss.red.replace(/\s/g, "")) && /page image not found/.test(miss.pip || "") && miss.polys > 40, `a missing image is reported in red in both panels, with no substitute thumbnail ("${miss.src}")`);
   await save("public_missing.png", { x: 0, y: 0, width: 480, height: 600 });
 } catch (e) { console.log("FAIL exception", e.message); ok = false; }
 finally { try { ws && ws.close(); } catch (e) {} chrome.kill(); srv.close(); try { rmSync(tmp, { recursive: true, force: true }); } catch (e) {} }

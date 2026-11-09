@@ -1,4 +1,4 @@
-# page.synthetic.png
+# page.synthetic.jpg
 
 A simulated page: generated from the zone polygons and the text of the page data. Nothing in it comes from a photograph of the register (the parchment is generated noise).
 

@@ -260,6 +260,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   box-shadow:0 0 0 2px #b42318;border-radius:3px;background:rgba(255,255,255,.18)}
 .pip-ms .rule{position:absolute;left:0;right:0;height:1px;background:rgba(90,60,30,.16)}
 .pagesrc{margin:4px 0 0;font:11px var(--sans);color:var(--mute)} .pagesrc.bad,.imgerr{color:#c0392b;font-weight:600} .imgerr{font:600 11.5px/1.35 var(--sans);padding:8px;white-space:normal;word-break:break-all;text-align:center}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:#2f5d8a;text-decoration:underline;cursor:pointer}
 .stage{position:relative} .simb{position:absolute;left:6px;top:6px;z-index:5;font:600 10px var(--sans);letter-spacing:.06em;text-transform:uppercase;background:rgba(40,30,22,.78);color:#f4f1ea;padding:2px 7px;border-radius:9px;pointer-events:none}
 .pip-ms .wm{position:absolute;right:8px;bottom:5px;font:600 9.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:rgba(70,45,20,.55)}
 .pip-ms .empty{font:13px var(--sans);color:#6b5236}
@@ -327,7 +328,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       <p class="note"><code id="pipUrl" style="font-size:10.5px;word-break:break-all"></code></p>
     </div>
     <p class="lbl">Page</p>
-    <p id="pageSrc" class="note pagesrc">page image: loading…</p>
+    <p id="pageSrc" class="note pagesrc">source: line geometry of the segmentation</p>
     <div class="stage" id="stage">
       <img id="pageImg" alt="Manuscript page" hidden>
       <span id="simBadge" class="simb" hidden>simulated</span>
@@ -612,12 +613,12 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   const DSCOL = { salutatio: "#6f8fd0", rubric: "#c0392b", "nota-cancellariae": "#8a6d3b", inscriptio: "#4f6bb8", arenga: "#8b5cc4", narratio: "#1f9a8b", dispositio: "#c7861a", sanctio: "#c4415e", datatio: "#7d7d7d", nota: "#a0784f", margo: "#b0a89a" };
   function drawPage() {
     const cs = getComputedStyle(document.documentElement), ink = cs.getPropertyValue("--ink").trim(), err = cs.getPropertyValue("--err").trim();
-    if (!state.hasImage) { svg.innerHTML = ""; return; }              // no image: no thumbnail; the panel says why (state.imageError)
-    let h = "";
+    let h = state.hasImage ? "" : `<rect x="0" y="0" width="${VW}" height="${VH}" fill="#e6d6b0" fill-opacity=".35"/>`;   // no image: the line geometry alone (the default; the image is loaded on request)
+    const geo = !state.hasImage;
     D.lines.forEach((l, li) => {                                      // outlines of the line zones over the page image
       if (!l.polygon || !l.polygon.length || hiddenLine(l)) return;
       const pts = l.polygon.map(p => `${(p[0] * VW).toFixed(1)},${(p[1] * VH).toFixed(1)}`).join(" "), act = li === state.active;
-      h += `<polygon points="${pts}" fill="${ink}" fill-opacity="${act ? .14 : 0}" stroke="${ink}" stroke-opacity="${act ? .9 : .18}" stroke-width="${act ? 1.6 : .8}" data-li="${li}" style="cursor:pointer"/>`;
+      h += `<polygon points="${pts}" fill="${ink}" fill-opacity="${act ? .14 : geo ? .07 : 0}" stroke="${ink}" stroke-opacity="${act ? .9 : geo ? .45 : .18}" stroke-width="${act ? 1.6 : .8}" data-li="${li}" style="cursor:pointer"/>`;
     });
     try { const Ls = L0(); Ls.entList.forEach(E => { const lis = new Set(); for (let g = E.g0; g <= E.g1; g++) { const [li_] = FL[g]; if (!Ls.isM(li_)) lis.add(li_); }
       const bs = [...lis].map(i => D.lines[i].bbox).filter(Boolean); if (!bs.length) return;
@@ -712,20 +713,12 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     });
     return out + esc(chars.slice(letters[letters.length - 1] + 1).join(""));
   }
-  // ------------------------------------------------------------ diplomatic structure (rule-based on formula openings)
-  // Entries start at the top of the page, after a datatio and after a registration note. Inside an entry the part
-  // changes only at a clause start (after . ; ? !) whose first words carry a cue; otherwise the previous part goes on.
+  // ------------------------------------------------------------ diplomatic structure: structure.json of the page (pilot2 scripts/138, rules on formula openings).
+  // The rules ran on the machine reading; the editor moves and relabels the boundaries (state.dsSeg). Nothing of it is recomputed here.
   const DS = ["inscriptio", "arenga", "narratio", "dispositio", "sanctio", "datatio", "nota", "margo"];
   const rd = (t) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z ]/g, "").replace(/v/g, "u").replace(/j/g, "i");
-  const CUE = {
-    datatio: /^(datum|dat|data)\b/,
-    nota: /^(in eundem|in e m\b|in eodem|scriptum est|in eundem fere)/,
-    sanctio: /^(nulli ergo|nulli omnino|si quis autem|si quis igitur|decernimus ergo)/,
-    dispositio: /^(quocir|quo circa|ideoque|eapropter|propter quod|hinc est quod|nos igitur|nos ergo|quapropter|per apostolica|discretioni uestr|fraternitati uestr|mandamus|precipimus|concedimus|confirmamus|statuimus|indulgemus|auctoritate presentium|quod si non omnes|tuis supplicationibus|uestris supplicationibus|tuis precibus|precibus inclinati|supplicationibus inclinati)/,
-    dispverb: /^(mandamus|precipimus|concedimus|confirmamus|statuimus|indulgemus|dispensamus|dispensandum|committimus|decernimus)$/,
-    narratio: /^(ex parte|ex litteris|accepimus|significauit|significarunt|sua nobis|qua nobis|intelleximus|ad audientiam|exposuit|insinuauit|conquestus|querelam|cum igitur|cum itaque|cum olim|cum dilect|cum uenerabil|dilecti filii|dilectus filius|uenerabilis frater|peruenit|lecta)/,
-    arenga: /^(quoniam|licet|iustis|sicut|ea que|quotiens|decet|solet|apostolice|religiosam|sacrosancta|pastoralis|ad hoc|inter cetera|officii nostri|quanto|cum a nobis|cum sit)/,
-  };
+  const LAYER_PARTS = (() => { const P = [].concat(...D.structure.parts);
+    if (P.length !== FL.length) throw new Error(`structure.json has ${P.length} words, the reading ${FL.length}: the layer was built on another reading`); return P; })();
   // marginal lines (rubrics, notes, fragments outside the main column)
   const hiddenLine = (l) => l.zone === "facing-page" || l.zone === "folio-mark";    // zones of the facing page and the folio mark: kept in the facsimile, not shown, not numbered
   const numeralLine = (l) => { marginClasses(); return l.zone_subtype === "later-numbering"; };   // a later hand's number in the left margin: a gutter chip, never a text line
@@ -734,68 +727,20 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   const isMargin = (l) => !l.bbox || l.bbox[0] < MAIN_X - .06 || l.bbox[0] > MAIN_X + .12 || l.bbox[2] < MAIN_W * .3;
   // line labels: text lines 1…n in page order, marginal lines m1…mk (the same labels as the lb n of the TEI export)
   const LNUM = D.labels ? D.labels.map(x => x || "") : (() => { let a = 0, b = 0; return D.lines.map(l => hiddenLine(l) ? "" : (l.words.length && isMargin(l)) ? "m" + (++b) : String(++a)); })();
-  // Left-margin zones, by rule: a leading ".." in the reading or an address form of the inscriptio formulary (dative of the addressee) -> address; else a zone
-  // 1-4 lines below the start of an entry (the rules' own segmentation) -> later numbering; a zone that touches an address above it continues it.
-  // The page can carry the editor's classification (zone_truth); where it differs from the rule the editor's decision stands and is marked as such.
-  const ADDRESS_FORM = /^(archiepiscop|episcop|abbat|abbatiss|decan|prepos|prior|archidiacon|magistr|capitul|conventui|universis|venerabil|dilect(o|is|e)$|nobil|illustr|cantor|thesaurar|canonic|cleric|rector|plebano)/;
+  // Left-margin zones: classes of structure.json (the rules: a leading ".." or an address form -> address; 1-4 lines below the start of an entry -> later numbering;
+  // a zone touching an address above it continues it). The page can carry the editor's classification (zone_truth); where it differs the editor's decision stands.
   let MC = null;
   function marginClasses() {
-    if (MC) return MC; MC = {};
-    const auto = autoSeg(computeParts()), starts = [], yc = (l) => l.bbox[1] + l.bbox[3] / 2;
-    let inIem = false;                                                   // after an in eundem modum note, its own variant text and date belong to the same entry
-    auto.forEach((x, i) => { const pv = i ? auto[i - 1][1] : null, iem = x[1] === "nota" && iemAtG(x[0]);
-      const st = i === 0 || iem || ((pv === "datatio" || (pv === "nota" && !inIem)) && x[1] !== "datatio" && x[1] !== "nota"); if (st) { inIem = !!iem; starts.push(yc(D.lines[FL[x[0]][0]])); } });
-    const ys = D.lines.filter(l => l.bbox && !hiddenLine(l) && l.zone !== "margin-left" && l.words.length).map(yc).sort((a, b) => a - b), gaps = ys.slice(1).map((y, i) => y - ys[i]).sort((a, b) => a - b), pitch = gaps[Math.floor(gaps.length / 2)] || .016;
-    let prev = null;
+    if (MC) return MC; MC = {}; const src = D.structure.margin_classes || {};
     D.lines.forEach((l, li) => {
       if (l.zone !== "margin-left") return;
-      const text = (l.reading_raw != null ? l.reading_raw : l.expanded_text || "").trim(), first = rd(text).split(" ")[0] || "";
-      let cls = null, why = "";
-      if (/^\.\./.test(text)) { cls = "address"; why = 'leading ".."'; }
-      else if (ADDRESS_FORM.test(first)) { cls = "address"; why = "address form: " + first; }
-      else { const ds = starts.map(y => (yc(l) - y) / pitch).filter(d => d > .5 && d <= 4.5); if (ds.length) { cls = "later-numbering"; why = `${ds[0].toFixed(1)} lines below an entry start`; } }
-      if (!cls && prev && prev.cls === "address" && l.bbox[1] <= prev.y1 + .004) { cls = "address"; why = "continues the address above"; }
-      MC[li] = { cls: cls || "unclassified", why }; prev = { cls: MC[li].cls, y1: l.bbox[1] + l.bbox[3] };
+      MC[li] = src[li] || { cls: "unclassified", why: "no class in structure.json" };
       l.zone_rule = MC[li].cls; l.zone_subtype = l.zone_truth || MC[li].cls; l.zone_how = l.zone_truth && l.zone_truth !== MC[li].cls ? "editor" : "rules";
     });
     return MC;
   }
   const iemAtG = (g) => /^(in eundem|in e m\b|in eodem)/.test(FL.slice(g, g + 4).filter(([li]) => !isMargin(D.lines[li])).map(([li, wi]) => rd(shownText(li, wi))).join(" "));
-  function computeParts() {
-    const n = FL.length, part = new Array(n), toks = FL.map(([li, wi]) => shownText(li, wi)), rds = toks.map(rd);
-    const margin = FL.map(([li, wi]) => isMargin(D.lines[li]) || !!D.lines[li].words[wi].add);       // words in a line-end addition stand outside the running text
-    const hard = toks.map(t => /[.?;!]$/.test(t) && !/^(\.\.|[A-Z]\.,?|[IVXLC]+\.|(Kal|Non|Id|etc)\.)$/.test(t));
-    const soft = toks.map((t, k) => hard[k] || /[,:]$/.test(t));
-    const head = (k) => { const out = []; for (let q = k; q < n && out.length < 5; q++) if (!margin[q]) out.push(rds[q]); return out.join(" "); };
-    const k0 = margin.findIndex(m => !m);
-    let cur = null, afterDat = !(k0 >= 0 && /^\p{Ll}/u.test(toks[k0])), segStart = true;     // a lower-case first word: the page begins inside a letter
-    for (let k = 0; k < n; k++) {
-      if (margin[k]) { part[k] = "margo"; continue; }
-      const h = head(k), cap = /^\p{Lu}/u.test(toks[k]);
-      if (segStart) {
-        if (CUE.datatio.test(h)) cur = "datatio";
-        else if (CUE.nota.test(h)) cur = "nota";
-        else if (CUE.sanctio.test(h)) cur = "sanctio";
-        else if (CUE.dispositio.test(h)) cur = "dispositio";
-        else if (CUE.narratio.test(h) && cur !== "dispositio" && cur !== "sanctio") cur = "narratio";
-        else if (afterDat && (cur === null || cur === "inscriptio")) cur = "inscriptio";
-        else if (cur === "inscriptio") cur = CUE.arenga.test(h) ? "arenga" : "narratio";
-      } else if (cur === "inscriptio" && cap && k > 0 && (CUE.arenga.test(h) || CUE.narratio.test(h))) {
-        cur = CUE.arenga.test(h) ? "arenga" : "narratio";                 // address without a full stop
-      }
-      if ((cur === "narratio" || cur === "arenga") && CUE.dispverb.test(rds[k])) {   // dispositive verb: the segment turns dispositive
-        let q = k; while (q > 0 && !soft[q - 1] && !margin[q - 1]) q--;
-        for (let r = q; r < k; r++) part[r] = "dispositio";
-        cur = "dispositio";
-      }
-      if (cur !== "inscriptio" && cur !== null) afterDat = false;
-      part[k] = cur || "narratio";
-      if (hard[k]) { afterDat = cur === "datatio" || cur === "nota"; if (afterDat) cur = null; }
-      if (afterDat && cur === "inscriptio" && hard[k]) afterDat = false;
-      segStart = soft[k];
-    }
-    return part;
-  }
+  function computeParts() { return LAYER_PARTS; }                    // the rule-based part of every word (structure.json)
   // segmentation = list of [first word, part] for the main text; the rules propose it, the editor moves or relabels it
   const DS_NAME = (pt) => pt === "nota" ? "reg. note" : pt === "margo" ? "margin" : pt;
   const DS_PARTS = ["inscriptio", "salutatio", "arenga", "narratio", "dispositio", "sanctio", "datatio", "nota", "rubric", "nota-cancellariae"];
@@ -803,8 +748,17 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function autoSeg(part) { const seg = []; let prev = null; part.forEach((p, g) => { if (p === "margo") return; if (p !== prev) seg.push([g, p]); prev = p; }); return seg; }
   // a page can bring its own proposal (part starts by line and word; the editor's brief for the demo side); the rules propose otherwise
   const proposalSeg = () => D.structure_proposal ? D.structure_proposal.map(([li, wi, p]) => [GI[keyOf(li, wi)], p]).filter(x => x[0] !== undefined).sort((a, b) => a[0] - b[0]) : null;
+  // structure() and the page layout depend only on the shown text (the editor's word corrections) and the editor's part boundaries: cached on both
+  const textSig = () => { let k = ""; for (const x in state.edits) k += x + "=" + state.edits[x].corrected + "|"; return k; };
+  let DS_KEY = null, DS_VAL = null, PARTS_KEY = null, PARTS_VAL = null, L0_DS = null, L0_VAL = null;
   function structure() {
-    const auto = computeParts(), seg = state.dsSeg || proposalSeg() || autoSeg(auto), part = auto.slice(), start = {}, endBar = {};
+    const key = textSig() + "#" + JSON.stringify(state.dsSeg || null);
+    if (key !== DS_KEY) { DS_VAL = structure_(); DS_KEY = key; }
+    return DS_VAL;
+  }
+  function computePartsC() { const k = textSig(); if (k !== PARTS_KEY) { PARTS_VAL = computeParts(); PARTS_KEY = k; } return PARTS_VAL; }
+  function structure_() {
+    const auto = computePartsC(), seg = state.dsSeg || proposalSeg() || autoSeg(auto), part = auto.slice(), start = {}, endBar = {};
     let j = -1, lastMain = null;
     for (let g = 0; g < part.length; g++) {
       if (auto[g] === "margo") { if (g === 0 || auto[g - 1] !== "margo") start[g] = true; continue; }
@@ -859,15 +813,15 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       (F.herde.some(x => x.branch === "a" || x.branch === "b") ? " · calibrated match" : " · exact fragment of ≥ 4 words") : "") +
     (F.register_letters ? ` · recurs in ≥ ${F.register_letters} of ${(D.formula_source && D.formula_source.register.letters) || "?"} other register letters` : "");
   // a marginal line is undecided (machine detection), an addition that belongs to the text at a place the editor names, or a marginal note
-  // ------------------------------------------------------------ public-domain witnesses (Pressutti, Potthast, Horoy): sample/<folio>/regests.json and witness.json when they exist.
-  // The expert transcription of the test set is never loaded here. regests: [{entry, source, n, text, date}]; witness: [{line, source, text, align: "aligned" | "entry-level"}]
-  const SRCBASE = new URLSearchParams(location.search).get("sources") || "sample/";
-  const loadJSON = (name) => { try { const x = new XMLHttpRequest(); x.open("GET", `${SRCBASE}${S.folio}/${name}`, false); x.send(); if (x.status === 200) { const j = JSON.parse(x.responseText); return Array.isArray(j) ? j : (j.entries || j.lines || null); } } catch (e) {} return null; };
+  // ------------------------------------------------------------ public-domain witnesses (Pressutti, Potthast, Horoy): witnesses.json of the page (pilot2 scripts/136 + 138), when it exists.
+  // The expert transcription of the test set is never loaded here. regests: [{entry, source, n, text, date}]; editions: [{line, source, text, align, cite, letter}];
+  // alignment: the word alignment with the machine reading, computed in the pipeline (edition groups by letter, regests by entry; references [line, word]).
+  const WLY = D.witnesses || { editions: [], regests: [], concordance: [], alignment: { edition: [], regest: [] } };
   const REG = {}, WIT = {}, SRC_USED = new Set();
-  (loadJSON("regests.json") || []).forEach(r => { if (r && r.entry != null && r.source && r.n != null && (r.text || r.note)) { (REG[String(r.entry)] = REG[String(r.entry)] || []).push(r); SRC_USED.add(r.source); } });
-  (loadJSON("witness.json") || []).forEach(w => { if (w && w.line != null && w.source && w.text) { WIT[String(w.line)] = w; SRC_USED.add(w.source); } });
+  (WLY.regests || []).forEach(r => { if (r && r.entry != null && r.source && r.n != null && (r.text || r.note)) { (REG[String(r.entry)] = REG[String(r.entry)] || []).push(r); SRC_USED.add(r.source); } });
+  (WLY.editions || []).forEach(w => { if (w && w.line != null && w.source && w.text) { WIT[String(w.line)] = w; SRC_USED.add(w.source); } });
   let effViews = () => ["dipl"];                                    // set with the line-view choice below
-  const CONC = {}; (loadJSON("concordance.json") || []).forEach(c => { if (c && c.entry != null && c.register_no) CONC[String(c.entry)] = c; });     // Pressutti number <-> running number of the register
+  const CONC = {}; (WLY.concordance || []).forEach(c => { if (c && c.entry != null && c.register_no) CONC[String(c.entry)] = c; });     // Pressutti number <-> running number of the register
   if (Object.keys(CONC).length) SRC_USED.add("concordance");
   const HAS_WIT = Object.keys(WIT).length > 0, HAS_REG = Object.keys(REG).length > 0;
   const BIBL = { Pressutti: "Pressutti, Pietro, Regesta Honorii papae III, 2 vols., Rome 1888–1895", Potthast: "Potthast, August, Regesta pontificum Romanorum inde ab a. 1198 ad a. 1304, 2 vols., Berlin 1874–1875", MGH: "Epistolae saeculi XIII e regestis pontificum Romanorum selectae, ed. Carolus Rodenberg, vol. 1, Monumenta Germaniae Historica, Berlin 1883", concordance: "Concordance of the Pressutti numbers with the running numbers of the register (the project's link table)", Horoy: "Horoy, Charles Auguste, Honorii III Romani pontificis opera omnia, 5 vols., Paris 1879–1882" };
@@ -904,7 +858,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     const nums = D.lines.map((z, zi) => ({ z, li: zi })).filter(o => numeralLine(o.z) && o.z.bbox).filter(({ z }) => { const ey = D.lines[li0].bbox ? D.lines[li0].bbox[1] + D.lines[li0].bbox[3] / 2 : 0, ez = z.bbox[1] + z.bbox[3] / 2, nxt = (L0().entList.find(e => e.g0 > E.g0) || null); const ny = nxt ? (D.lines[FL[nxt.g0][0]].bbox[1] + D.lines[FL[nxt.g0][0]].bbox[3] / 2) : 9; return ez >= ey - .004 && ez < ny - .004; });
     return { gr, lineEnd, lineEndParts, head, type: state.etype[E.n] || rule, typeRule: rule, date, from: lab.length ? Math.min(...lab) : null, to: lab.length ? Math.max(...lab) : null, li0, nums, margin: gr ? gr.margin_lines.map(m => D.lines[LNUM.indexOf(m)].expanded_text).join(" ") : "" };
   }
-  const L0 = () => pageLayout(structure());
+  const L0 = () => { const DS = structure(); if (DS !== L0_DS) { L0_VAL = pageLayout(DS); L0_DS = DS; } return L0_VAL; };
   const cutHead = (I) => I.head && rd(I.head).replace(/[^a-z]/g, "") !== rd(I.margin).replace(/[^a-z]/g, "");
   // the entry band is the Kopfzeile: ¶ n · address · place, date (modern + Roman) · type · witnesses · margin number · status. The sources of the address are the notes of the apparatus under it.
   const appOpenDefault = () => state.mode === "codicology" || state.mode === "boundaries";
@@ -968,7 +922,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     const cNow = {}; D.clausulae.forEach(c => cNow[c.clausula_id] = clausulaNow(c));
     const sgAt = state.ner ? SUGG_AT() : {};
     const fmAt = {}; if (state.fml) (D.formulas || []).forEach(f => { for (let g = f.gi; g < f.gi + f.span; g++) fmAt[g] = f; });
-    const { entryAt, mainL, margL, isM, beside } = pageLayout(DS);
+    const { entryAt, mainL, margL, isM, beside } = L0();
     mainL.concat(margL).forEach((li) => {
       const l = D.lines[li];
       if (li === margL[0]) root.insertAdjacentHTML("beforeend", `<div class="msec">Marginalia<span>${margL.length} line(s) outside the text column, in page order; the reference gives the text line beside them</span></div>`);
@@ -1256,72 +1210,26 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   // diplomatic layer: line-level editing
   // sources of the line view: the editor's own diplomatic line, the legacy witness line, the original image strip, the ink mask
   const foldT = (t) => rd(t).replace(/[^a-z]/g, "");
-  // ------------------------------------------------------------ word alignment of the witnesses with the reading (Needleman-Wunsch on normalised forms)
-  // normalised: case, diacritics, u/v, i/j/y, ae/oe/e, ci/ti before a vowel, h, punctuation. A witness token with a non-letter inside (X>>s, vol>is) is OCR noise: class ocr, no stop, no difference.
+  // ------------------------------------------------------------ word alignment of the witnesses with the reading: witnesses.json (Needleman-Wunsch on normalised forms, pilot2 src/workbench_layers.py).
+  // normalised: case, diacritics, u/v, i/j/y, ae/oe/e, ci/ti before a vowel, h, punctuation. Cell kinds: same, differs, ocr (OCR noise of the witness: no stop, no difference),
+  // cand (a flagged word takes the witness form as a candidate), plus (text the reading lacks; placed before its next word), missing, cont (second word of a 2:1 merge).
+  // When the editor corrects a register word the status same / differs of its pair is recomputed here; the alignment itself is the pipeline's.
   const normW = (t) => { let x = String(t).toLowerCase().replace(/[æǽ]/g, "e").replace(/œ/g, "e"); x = x.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z]/g, ""); return x.replace(/ae|oe/g, "e").replace(/v/g, "u").replace(/[jy]/g, "i").replace(/ti(?=[aeiou])/g, "ci").replace(/h/g, ""); };
-  const EDGE_RE = /^[\s.,;:!?()\[\]«»"'“”‘’…·—-]+|[\s.,;:!?()\[\]«»"'“”‘’…·—-]+$/g;
-  const isOCR = (t) => { const c = String(t).replace(EDGE_RE, ""); return !c || /[^\p{L}'’\-]/u.test(c) || !normW(c); };
-  const lev = (a, b) => { const m = a.length, n = b.length; if (!m) return n; if (!n) return m; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; };
-  const simW = (a, b) => 1 - lev(a, b) / Math.max(a.length, b.length, 1);
-  // Needleman-Wunsch with 1:1 pairs of at least thr similarity and merges 2:1 / 1:2 by character similarity of the joined forms (dum modo ~ dummodo, de cetero ~ decetero)
-  function nwOps(R, W, thr) {
-    const n = R.length, m = W.length, NEG = -1e9, S = Array.from({ length: n + 1 }, () => new Float32Array(m + 1).fill(NEG)), T = Array.from({ length: n + 1 }, () => new Uint8Array(m + 1));
-    S[0][0] = 0; for (let i = 1; i <= n; i++) { S[i][0] = -i; T[i][0] = 1; } for (let j = 1; j <= m; j++) { S[0][j] = -j; T[0][j] = 2; }
-    const sc = (i, j) => { if (R[i] === W[j]) return 3; const s_ = R[i] && W[j] ? simW(R[i], W[j]) : 0; return s_ >= thr ? 2 * s_ : -3; };
-    const mg = (a, b, parts) => { if (!a || !b || parts.some(x => x.length < 2)) return NEG; const s_ = simW(a, b); return s_ >= .85 ? 2 * s_ + 1 : NEG; };
-    for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) {
-      let best = S[i - 1][j - 1] + sc(i - 1, j - 1), t = 0; const u = S[i - 1][j] - 1, l = S[i][j - 1] - 1;
-      if (u > best) { best = u; t = 1; } if (l > best) { best = l; t = 2; }
-      if (i >= 2) { const v = S[i - 2][j - 1] + mg(R[i - 2] + R[i - 1], W[j - 1], [R[i - 2], R[i - 1]]); if (v > best) { best = v; t = 3; } }
-      if (j >= 2) { const v = S[i - 1][j - 2] + mg(R[i - 1], W[j - 2] + W[j - 1], [W[j - 2], W[j - 1]]); if (v > best) { best = v; t = 4; } }
-      S[i][j] = best; T[i][j] = t; }
-    const ops = []; let i = n, j = m;
-    while (i > 0 || j > 0) { const t = T[i][j];
-      if (i > 0 && j > 0 && t === 0) { ops.push(["p", i - 1, j - 1]); i--; j--; } else if (i > 1 && j > 0 && t === 3) { ops.push(["m21", i - 2, i - 1, j - 1]); i -= 2; j--; } else if (i > 0 && j > 1 && t === 4) { ops.push(["m12", i - 1, j - 2, j - 1]); i--; j -= 2; }
-      else if (i > 0 && (j === 0 || t === 1)) { ops.push(["r", i - 1]); i--; } else { ops.push(["w", j - 1]); j--; } }
-    return ops.reverse();
-  }
-  // cells in text order. Between two anchors (pairs, merges) the leftovers are treated by policy: only witness tokens (no register token there) are "+" (dropped text); a flagged register token
-  // (siglum, OOV, cert <= .5) takes the witness token in the same gap as a candidate; the other leftovers are not shown (register token without witness: "—" when asked).
-  // opt: { missing, plus, cand }
-  function alignTokens(regT, witT0, thr, opt) {
-    const witT = []; witT0.forEach(t => { if (!normW(t) && witT.length) witT[witT.length - 1] += t; else if (normW(t) || /[\p{L}\d]/u.test(t)) witT.push(t); });          // a token of punctuation only belongs to the word before it
-    const R = regT.map(x => normW(x.t)), W = witT.map(normW), ops = nwOps(R, W, thr), cells = [], stats = { merges: 0 };
-    const nextRef = (k) => { const nx = ops.slice(k).find(q => q[0] !== "w" && q[0] !== "r" || q[0] === "r"); return nx ? regT[nx[1]].ref : null; };
-    let k = 0;
-    while (k < ops.length) {
-      const o = ops[k];
-      if (o[0] === "p") { cells.push({ k: isOCR(witT[o[2]]) ? "ocr" : (R[o[1]] === W[o[2]] ? "same" : "differs"), i: o[1], ref: regT[o[1]].ref, refs: [regT[o[1]].ref], form: witT[o[2]] }); k++; continue; }
-      if (o[0] === "m21") { const f = witT[o[3]], st = R[o[1]] + R[o[2]] === W[o[3]] ? "same" : "differs"; cells.push({ k: st, i: o[1], ref: regT[o[1]].ref, refs: [regT[o[1]].ref, regT[o[2]].ref], form: f, merge: "2:1" }); cells.push({ k: "cont", i: o[2], ref: regT[o[2]].ref, form: "〃" }); stats.merges++; k++; continue; }
-      if (o[0] === "m12") { const f = witT[o[2]] + " " + witT[o[3]], st = R[o[1]] === W[o[2]] + W[o[3]] ? "same" : "differs"; cells.push({ k: st, i: o[1], ref: regT[o[1]].ref, refs: [regT[o[1]].ref], form: f, merge: "1:2" }); stats.merges++; k++; continue; }
-      // a gap: the run of r / w operations up to the next anchor
-      let e = k; const Rs = [], Ws = []; while (e < ops.length && (ops[e][0] === "r" || ops[e][0] === "w")) { (ops[e][0] === "r" ? Rs : Ws).push(ops[e][1]); e++; }
-      const nx = ops[e] ? regT[ops[e][1]].ref : null;
-      if (!Rs.length) { if (opt.plus) Ws.forEach(j => { if (!isOCR(witT[j])) cells.push({ k: "plus", form: witT[j], next: nx }); }); }
-      else if (!Ws.length) { if (opt.missing) Rs.forEach(i => cells.push({ k: "missing", i, ref: regT[i].ref, refs: [regT[i].ref] })); }
-      else if (opt.cand) {
-        const fl = Rs.filter(i => regT[i].flag);
-        if (Rs.length === Ws.length) Rs.forEach((i, q) => cells.push({ k: isOCR(witT[Ws[q]]) ? "ocr" : (regT[i].flag ? "cand" : (R[i] === W[Ws[q]] ? "same" : "differs")), i, ref: regT[i].ref, refs: [regT[i].ref], form: witT[Ws[q]] }));
-        else { let q = 0; Rs.forEach(i => { if (regT[i].flag && q < Ws.length) { cells.push({ k: isOCR(witT[Ws[q]]) ? "ocr" : "cand", i, ref: regT[i].ref, refs: [regT[i].ref], form: witT[Ws[q]] }); q++; } else if (opt.missing) cells.push({ k: "missing", i, ref: regT[i].ref, refs: [regT[i].ref] }); }); }
-      } else if (opt.missing) Rs.forEach(i => cells.push({ k: "missing", i, ref: regT[i].ref, refs: [regT[i].ref] }));
-      k = e;
-    }
-    cells.sort((a, b) => 0); cells.stats = stats; return cells;
+  const gOf = (lw) => GI[keyOf(lw[0], lw[1])];
+  function liveCells(cells) {
+    return cells.map(c => { const o = { ...c };
+      if (c.ref) o.ref = gOf(c.ref); if (c.refs) o.refs = c.refs.map(gOf); if ("next" in c) o.next = c.next ? gOf(c.next) : null;
+      if ((c.k === "same" || c.k === "differs") && o.refs && o.refs.some(g => state.edits[keyOf(...FL[g])])) o.k = o.refs.map(g => normW(shownText(...FL[g]))).join("") === normW(c.form) ? "same" : "differs";
+      return o; });
   }
   const WSIG = { MGH: "MGH", Horoy: "H", Pressutti: "P" };
-  const lineRegT = (li) => D.lines[li].words.map((w, wi) => ({ t: shownText(li, wi), ref: wi, flag: SIGLUM.test(w.text) || !!w.is_oov || pErr(li, wi) >= .5 }));
   // witness rows: the edition is aligned with the text of its whole letter (entry level) and mapped back to the lines, so a word split by a line break (dum | modo) and the
   // tokens at a line boundary resolve; a "+" belongs to the line of the register word it precedes.
   let WGROUPS = null;
-  function witGroups() { if (WGROUPS) return WGROUPS; const by = {};
-    Object.entries(WIT).forEach(([lab, w]) => { const key = w.source + "|" + (w.letter != null ? w.letter : lab); (by[key] = by[key] || { source: w.source, letter: w.letter, recs: [] }).recs.push({ lab: +lab, ...w }); });
-    WGROUPS = Object.values(by).map(g => { g.recs.sort((a, b) => a.lab - b.lab); g.lines = g.recs.map(r => LNUM.indexOf(String(r.lab))).filter(i => i >= 0 && D.lines[i].words.length); return g; }); return WGROUPS; }
+  function witGroups() { if (WGROUPS) return WGROUPS;
+    WGROUPS = ((WLY.alignment && WLY.alignment.edition) || []).map(g => ({ source: g.source, letter: g.letter, lines: g.lines, recs: [{ cite: g.cite }], cells: g.cells })); return WGROUPS; }
   const GCACHE = new Map();
-  function groupAlign(g) {
-    const regT = []; g.lines.forEach(li => D.lines[li].words.forEach((w, wi) => regT.push({ t: shownText(li, wi), ref: GI[keyOf(li, wi)], flag: SIGLUM.test(w.text) || !!w.is_oov || pErr(li, wi) >= .5 })));
-    const key = g.source + "|" + g.letter + "|" + regT.map(x => x.t).join(" "); if (GCACHE.has(key)) return GCACHE.get(key);
-    const cells = alignTokens(regT, g.recs.flatMap(r => r.text.split(/\s+/).filter(Boolean)), .5, { missing: true, plus: true, cand: true }); GCACHE.set(key, cells); return cells;
-  }
+  function groupAlign(g) { const key = g.source + "|" + g.letter + "|" + g.lines.join(",") + "|" + textSig(); if (!GCACHE.has(key)) GCACHE.set(key, liveCells(g.cells)); return GCACHE.get(key); }
   function editionRow(li) {
     const g = witGroups().find(x => x.lines.includes(li)); if (!g || !D.lines[li].words.length) return null;
     const last = g.lines[g.lines.length - 1], cells = [];
@@ -1334,10 +1242,8 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   // the regest of Pressutti reuses the words of the letter: aligned over the whole entry (only pairs of at least .75 similarity), shown only where a token aligns in the line
   const PCACHE = new Map();
   function regestAlign(E) {
-    const rs = (REG[String(E.n)] || []).filter(r => r.source === "Pressutti" && r.text); if (!rs.length) return null;
-    const regT = []; for (let g = E.g0; g <= E.g1; g++) { const [li, wi] = FL[g]; if (L0().isM(li) || D.lines[li].words[wi].add) continue; regT.push({ t: shownText(li, wi), ref: g }); }
-    const key = E.n + "|" + regT.map(x => x.t).join(" "); if (PCACHE.has(key)) return PCACHE.get(key);
-    const cells = alignTokens(regT, rs[0].text.replace(/^[^.]*\.\s*/, "").split(/\s+/).filter(Boolean), .75, { missing: false, plus: false, cand: false }); PCACHE.set(key, { cells, n: rs[0].n }); return PCACHE.get(key);
+    const A = ((WLY.alignment && WLY.alignment.regest) || []).find(x => x.entry === E.n); if (!A) return null;
+    const key = E.n + "|" + textSig(); if (!PCACHE.has(key)) PCACHE.set(key, { cells: liveCells(A.cells), n: A.n }); return PCACHE.get(key);
   }
   function regestRow(li) {
     const E = L0().entList.find(e => { const f = FL[e.g0][0], l = FL[e.g1][0]; return li >= f && li <= l; }); if (!E) return null; const A = regestAlign(E); if (!A) return null;
@@ -1444,8 +1350,8 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
 
   // ------------------------------------------------------------ line-view choice (per editor, stored in this browser and with the editor's login)
   const VKEY = `paprg.views.v2.${CFG.login}`, PUBLIC = (CFG.build || "internal") === "public";
-  // the ink masks (derived from the image, sample/<folio>/strips/) exist for the internal build only, until the PI clears them
-  const STRIPS = (() => { if (PUBLIC) return null; try { const x = new XMLHttpRequest(); x.open("GET", `${SRCBASE}${S.folio}/strips/index.json`, false); x.send(); if (x.status === 200) return JSON.parse(x.responseText); } catch (e) {} return null; })();
+  // the ink masks (derived from the image, <page dir>/strips/, read by js/wb.js) exist for the internal build only, until the PI clears them
+  const STRIPS = PUBLIC ? null : (D.strips || null);
   // default: the legacy line when there is one, else the ink strip when masks exist (internal build), else none; the choice of the editor stands
   let VIEWS_CHOSEN = null; try { const v = JSON.parse(localStorage.getItem(VKEY) || "null"); if (Array.isArray(v)) VIEWS_CHOSEN = v.filter(x => ["legacy", "image", "ink"].includes(x)); } catch (e) {}
   let LAY = null;                                                           // layer groups (set below)
@@ -1983,9 +1889,10 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
   // ------------------------------------------------------------ the page image
   const stage = $("stage"), img = $("pageImg");
   // ------------------------------------------------------------ the page image: one source and one base URL for the page panel, the line strips and the word crop.
-  // A failure is shown, never replaced silently. The public build reads page.synthetic.png only; the internal build tries the real image (page.jpg, git-ignored) and, as a declared fallback, the synthetic page.
-  const IMG_BASE = new URL(`${SRCBASE}${S.folio}/`, document.baseURI).href;                       // relative to the built site, not to a dev server
-  let BUILD_ID = ""; try { const x = new XMLHttpRequest(); x.open("GET", new URL("build.json", document.baseURI).href, false); x.send(); if (x.status === 200) BUILD_ID = (JSON.parse(x.responseText).hash || ""); } catch (e) {}
+  // A failure is shown, never replaced silently. The public build reads page.synthetic.jpg only; the internal build tries the real image (page.jpg, git-ignored) and, as a declared fallback, the synthetic page.
+  const IMG_BASE = D.pageBase || "";                                 // the page directory (test side / local data); none on GitHub: images never go there
+  let BUILD_ID = "";
+  const BUILD_P = fetch(new URL("build.json", document.baseURI).href, { cache: "no-store" }).then(r => r.ok ? r.json() : {}).then(j => { BUILD_ID = j.hash || ""; $("buildId").textContent = "build " + (BUILD_ID || "?").slice(0, 7); }).catch(() => {});      // the image URLs wait for it (cache busting)
   const imgUrl = (n) => IMG_BASE + n + (BUILD_ID ? "?v=" + BUILD_ID : "");                       // the build hash busts the cache
   const setPageSrc = (txt, bad) => { const e = $("pageSrc"); e.textContent = txt; e.className = "note pagesrc" + (bad ? " bad" : ""); };
   async function statusOf(url) { try { const r = await fetch(url, { method: "HEAD", cache: "no-store" }); return String(r.status); } catch (e) { return "network error"; } }
@@ -1999,7 +1906,15 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
       $("pipMs").innerHTML = `<span class="imgerr">${esc(state.imageError)}</span>`; setViewSel(); render(); drawPage(); };
     img.src = url;
   }
-  loadPageImage(PUBLIC ? ["page.synthetic.png"] : ["page.jpg", "page.synthetic.png"]);
+  // default: the line geometry only (no image request); the image is loaded when the editor asks for it
+  const IMG_NAMES = PUBLIC ? ["page.synthetic.jpg"] : ["page.jpg", "page.synthetic.jpg"];
+  function offerImage() {
+    const e = $("pageSrc"); e.className = "note pagesrc"; e.innerHTML = `source: line geometry of the segmentation · <button type="button" class="linkbtn" id="bLoadImg">${PUBLIC ? "show the generated page image (≈ 0.3 MB)" : "show the page image"}</button>`;
+    $("bLoadImg").onclick = () => { setPageSrc("page image: loading…"); BUILD_P.then(() => loadPageImage(IMG_NAMES)); };
+  }
+  if (IMG_BASE) offerImage(); else setPageSrc("source: line geometry of the segmentation (the page image comes from your image folder)");
+  drawPage();
+  if (IMG_BASE && new URLSearchParams(location.search).get("image") === "1") BUILD_P.then(() => loadPageImage(IMG_NAMES));
   // which build runs, shown small in the toolbar (the demo is static: no check against the server)
   $("buildId").textContent = "build " + (BUILD_ID || "?").slice(0, 7); $("buildId").dataset.tip = "the build of the code running in this browser";
   function setImage(src) { img.onload = () => { state.hasImage = true; state.synthetic = false; state.imageError = null; img.hidden = false; $("simBadge").hidden = true; setPageSrc(`source: manuscript image (editor's folder) · loaded ${img.naturalWidth}×${img.naturalHeight}`); setViewSel(); render(); drawPage(); drawPip(); }; img.src = src; }
@@ -2010,7 +1925,7 @@ ${Object.keys(state.modes).filter(mn => Object.keys(mdone(mn)).length).map(mn =>
   setTimeout(() => { try {                                                  // the export is checked against the rules of docs/tei_rules.md (not a schema validation)
     const r = TEI_CHECKS.run(tei(), document.body.innerText), bad = r.filter(x => !x.ok), p = document.createElement("p"); p.id = "teiCheck";
     p.textContent = `TEI checked against ${r.length} rules (docs/tei_rules.md): ${bad.length ? bad.length + " not met (" + bad.map(b => b.id).join(", ") + ")" : "all met"}.`; $("foot").appendChild(p); } catch (e) { console.warn("TEI check failed", e); } }, 400);
-  window.__wb = { clausulaNow, accOf, jsAcc, cadence, state, tei, GI, marginClasses, editionRow, regestRow, formulaRow, regestAlign, coverage, entryInfo, L0, FL, LNUM };          // for automated tests
+  window.__wb = { computeParts, clausulaNow, accOf, jsAcc, cadence, state, tei, GI, marginClasses, editionRow, regestRow, formulaRow, regestAlign, coverage, entryInfo, L0, FL, LNUM };          // for automated tests
 
   const hdr = () => document.documentElement.style.setProperty("--hdr", document.querySelector("header").offsetHeight + "px");
   addEventListener("resize", hdr); hdr(); new ResizeObserver(hdr).observe(document.querySelector("header"));
