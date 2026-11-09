@@ -1,10 +1,10 @@
 // Smoke test in local mode (no GitHub): open a side, correct the first flagged word with candidate 1, save, reload,
 // check that the correction and the task view survive. usage: node tests/smoke_local.mjs [page] [local|test]. Needs: python3 -m http.server 8090 in the parent directory
 // (so that the local data copy named in config.local.json is served) and chromium. usage: node tests/smoke_local.mjs [page]
-import { spawn } from "node:child_process";
+import { spawn } from "node:child_process"; import { mkdtempSync } from "node:fs"; import { tmpdir } from "node:os"; import { join } from "node:path";
 const PAGE = process.argv[2] || "RV9/154v", MODE = process.argv[3] || "local";
 const BASE = MODE === "test" ? "http://127.0.0.1:8090/papreg_workbench/?test=1" : "http://127.0.0.1:8090/papreg_workbench/?config=config.local.json";
-const chrome = spawn("chromium", ["--headless=new", "--disable-gpu", "--no-sandbox", "--remote-debugging-port=9333", "--user-data-dir=/tmp/wb-smoke-profile", "about:blank"], { stdio: "ignore" });
+const chrome = spawn("chromium", ["--headless=new", "--disable-gpu", "--no-sandbox", "--remote-debugging-port=9333", `--user-data-dir=${mkdtempSync(join(tmpdir(), "wb-smoke-"))}`, "about:blank"], { stdio: "ignore" });
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 let ws, id = 0; const pending = new Map();
 async function cdp(method, params = {}) { const i = ++id; ws.send(JSON.stringify({ id: i, method, params })); return new Promise(r => pending.set(i, r)); }

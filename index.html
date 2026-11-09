@@ -861,7 +861,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   const L0 = () => { const DS = structure(); if (DS !== L0_DS) { L0_VAL = pageLayout(DS); L0_DS = DS; } return L0_VAL; };
   const cutHead = (I) => I.head && rd(I.head).replace(/[^a-z]/g, "") !== rd(I.margin).replace(/[^a-z]/g, "");
   // the entry band is the Kopfzeile: ¶ n · address · place, date (modern + Roman) · type · witnesses · margin number · status. The sources of the address are the notes of the apparatus under it.
-  const appOpenDefault = () => state.mode === "codicology" || state.mode === "boundaries";
+  const appOpenDefault = () => !state.mode || state.mode === "codicology" || state.mode === "boundaries";      // open on the start screen (no task) and in the codicology / boundaries tasks
   function bandEl(E) {
     const I = entryInfo(E), wrap = document.createElement("div"), b = document.createElement("div"), col = !!state.collapsed[E.n], chosen = state.recip[E.n], cov = coverage(E, I);
     wrap.className = "bandw"; b.className = "band" + (E.n > 1 ? " gap" : "") + (col ? " col" : ""); b.dataset.e = E.n; b.dataset.g = E.g0; wrap.appendChild(b);
@@ -1588,8 +1588,10 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   const LAYNAME = { text: "Text", app: "Apparatus", ana: "Analysis" };
   function layDefault(mode) { const L = { text: { edition: 1, dipl: 1, wit: 0 }, app: {}, ana: {} }, on = (g, ...k) => k.forEach(x => { L[g][x] = 1; }), allApp = () => on("app", "add", "margin", "num", "hands", "init");
     if (["lines", "oov", "triage", "corrections"].includes(mode)) { allApp(); on("ana", "conf"); } else if (["boundaries", "structure"].includes(mode)) { allApp(); on("ana", "conf", "struct"); } else if (mode === "cursus") on("ana", "cursus");
-    else if (mode === "ner") on("ana", "ent"); else if (mode === "codicology") allApp(); else if (mode === "edition") L.text.wit = 1; else if (mode === "legal") on("ana", "form", "struct"); else if (mode === "arenga") on("ana", "conf"); return L; }
-  const LKEY = `paprg.layers.${CFG.login}.${TASK_ID || "plain"}`; LAY = layDefault(state.mode);
+    else if (mode === "ner") on("ana", "ent"); else if (mode === "codicology") allApp(); else if (mode === "edition") L.text.wit = 1; else if (mode === "legal") on("ana", "form", "struct"); else if (mode === "arenga") on("ana", "conf");
+    else if (!mode) { L.text.wit = HAS_WIT || HAS_REG ? 1 : 0; allApp(); on("ana", "conf", "cursus", "ent", "struct"); }      // no task (the start screen, the test side): everything the page has is shown
+    return L; }
+  const LKEY = `paprg.layers.v2.${CFG.login}.${TASK_ID || "plain"}`; LAY = layDefault(state.mode);      // v2: the defaults of 2026-11-09 (all layers on without a task)
   try { const v = JSON.parse(localStorage.getItem(LKEY) || "null"); if (v && v.text && v.app && v.ana) LAY = v; } catch (e) {}
   const layAvail = (g, k) => !(g === "text" && k === "wit" && !(HAS_WIT || HAS_REG));
   function applyLayers() {

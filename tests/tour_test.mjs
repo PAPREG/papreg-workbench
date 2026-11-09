@@ -23,7 +23,8 @@ try {
   for (let k = 0; k < 10 && await title() === "Candidates"; k++) { await key("1"); await sleep(1600); if (await title() === "Candidates") { await key("Tab"); await sleep(400); } }   // a flagged word without alternatives: next one
   check(await title() === "Undo", "accepting a candidate advanced to Undo");
   await key("z", ", ctrlKey: true"); await sleep(1600); check(await title() === "Cursus at the clause ends", "Ctrl+Z advanced to the cursus step");
-  await next(); await next(); await next(); check(await title() === "Try it: approve a line", "approve step");
+  for (let k = 0; k < 7; k++) await next();
+  check(await title() === "Try it: approve a line", "approve step (after entry band, structure, witnesses, entity suggestions, line views, notes)");
   await key("Tab"); await sleep(300); await key("Escape"); await sleep(200); await key("Enter"); await sleep(1600);
   check(await title() === "Current word and page", "Enter advanced past the approve step");
   for (let k = 0; k < 4; k++) await next();
