@@ -35,6 +35,10 @@
   "witnesses": {
    "file": "witnesses.json",
    "generator": "pilot2 scripts/136 (witness texts) + 138 (alignment)"
+  },
+  "formulas": {
+   "file": "formulas.json",
+   "generator": "pilot2 scripts/139 (Herde formulary, register recurrence)"
   }
  }
 }

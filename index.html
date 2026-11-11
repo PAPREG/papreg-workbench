@@ -1601,9 +1601,9 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function layDefault(mode) { const L = { text: { edition: 1, dipl: 1, wit: 0 }, app: {}, ana: {} }, on = (g, ...k) => k.forEach(x => { L[g][x] = 1; }), allApp = () => on("app", "add", "margin", "num", "hands", "init");
     if (["lines", "oov", "triage", "corrections"].includes(mode)) { allApp(); on("ana", "conf"); } else if (["boundaries", "structure"].includes(mode)) { allApp(); on("ana", "conf", "struct"); } else if (mode === "cursus") on("ana", "cursus");
     else if (mode === "ner") on("ana", "ent"); else if (mode === "codicology") allApp(); else if (mode === "edition") L.text.wit = 1; else if (mode === "legal") on("ana", "form", "struct"); else if (mode === "arenga") on("ana", "conf");
-    else if (!mode) { L.text.wit = HAS_WIT || HAS_REG ? 1 : 0; allApp(); on("ana", "conf", "cursus", "ent", "struct"); }      // no task (the start screen, the test side): everything the page has is shown
+    else if (!mode) { L.text.wit = HAS_WIT || HAS_REG ? 1 : 0; allApp(); on("ana", "conf", "cursus", "ent", "struct"); if ((D.formulas || []).length) on("ana", "form"); }      // no task (the start screen, the test side): everything the page has is shown
     return L; }
-  const LKEY = `paprg.layers.v2.${CFG.login}.${TASK_ID || "plain"}`; LAY = layDefault(state.mode);      // v2: the defaults of 2026-11-09 (all layers on without a task)
+  const LKEY = `paprg.layers.v3.${CFG.login}.${TASK_ID || "plain"}`; LAY = layDefault(state.mode);      // v3: the defaults of 2026-11-11 (formulae on without a task when the page has them)
   try { const v = JSON.parse(localStorage.getItem(LKEY) || "null"); if (v && v.text && v.app && v.ana) LAY = v; } catch (e) {}
   const layAvail = (g, k) => !(g === "text" && k === "wit" && !(HAS_WIT || HAS_REG));
   function applyLayers() {

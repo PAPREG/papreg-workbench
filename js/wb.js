@@ -89,7 +89,7 @@
     return JSON.parse(await ghRaw(path, G.cfg.branch));
   }
   // a page is a directory of layers, each written by one pipeline step (pilot2 scripts/131, 136, 138; docs/DATA_CONTRACT.md):
-  // page.json (manifest) -> text, cursus, ner, structure, witnesses, fetched in parallel. text and structure are required; a missing optional layer is listed in D.missing.
+  // page.json (manifest) -> text, cursus, ner, structure, witnesses, formulas (scripts/139), fetched in parallel. text and structure are required; a missing optional layer is listed in D.missing.
   const REQUIRED = ["text", "structure"];
   async function loadPage(pageId) {
     const dir = `${G.cfg.pageDir}/${pageId}/`, man = await data(dir + "page.json");
@@ -104,6 +104,7 @@
       schema: man.schema, page_id: man.page_id, source: man.source, task_id: man.task_id, layers: man.layers, missing: failed,
       entity_suggestions: L.ner ? L.ner.suggestions : [], entity_suggestion_source: L.ner ? L.ner.source : null,
       structure: L.structure, structure_proposal: L.structure.proposal || null, witnesses: L.witnesses || null,
+      formulas: L.formulas ? L.formulas.formulas || [] : [], formula_source: L.formulas ? L.formulas.formula_source || null : null,
       strips: await strips,
       pageBase: OFFLINE() ? new URL(((G.cfg.mode === "test" ? (G.cfg.testData || "sample/") : G.cfg.localData).replace(/\/?$/, "/")) + dir, document.baseURI).href : null });
     D.clausulae = D.clausulae || [];

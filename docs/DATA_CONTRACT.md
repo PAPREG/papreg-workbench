@@ -26,6 +26,7 @@ work is stored apart, on the `annotations` branch, see `ANNOTATIONS.md`). Code: 
 | `ner.json` | scripts/131 (Span-NER + NER head) | no | `source, suggestions[{line_index, word_index, span, type, label, score, source}]` |
 | `structure.json` | scripts/138 (diplomatic rules) | yes | `parts[line][word]` (rule-based part of every word: inscriptio … datatio, nota, margo), `rules[[line, word, part]]` (segmentation), `proposal` (the page's own, if any), `entries[{n, cont, iem, from[line, word], to[line, word]}]`, `margin_classes{line: {cls, why}}` |
 | `witnesses.json` | scripts/136 (texts) + 138 (alignment) | no | `editions[{line, source, text, cite, letter, align}], regests[{entry, source, n, text, date}], concordance[{entry, pressutti, register_no}]`, `alignment{edition[{source, letter, lines[], cite, cells[]}], regest[{entry, n, cells[]}]}` |
+| `formulas.json` | scripts/139 | no | `formulas[{gi, span, kind: herde|chancery, herde[{key, label, branch: a|b|fragment, identity}], herde_n, register_letters}]`, `formula_source{herde, register{letters, left_out, rule}, reading, script}`; references only, no text of Herde or of the register edition |
 
 Lines of `text.json`:
 

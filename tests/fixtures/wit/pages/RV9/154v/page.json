@@ -32,6 +32,10 @@
    "file": "../../../../../../sample/pages/RV9/154v/structure.json",
    "generator": "pilot2 scripts/138 (diplomatic rules of src/workbench_layers.py)"
   },
+  "formulas": {
+   "file": "../../../../../../sample/pages/RV9/154v/formulas.json",
+   "generator": "pilot2 scripts/139 (Herde formulary, register recurrence)"
+  },
   "witnesses": {
    "file": "witnesses.json",
    "generator": "tests/fixtures/make_fixtures.py (synthetic witnesses)"
