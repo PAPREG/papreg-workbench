@@ -1108,7 +1108,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     pop.querySelectorAll("li").forEach(n => n.onclick = (e) => { e.stopPropagation(); accept(li, wi, +n.dataset.i); });
     pop.querySelectorAll(".sylb").forEach(b => b.onclick = (e) => { e.stopPropagation(); setStress(li, wi, +b.dataset.s); });
     if ($("stReset")) $("stReset").onclick = (e) => { e.stopPropagation(); mutate(() => delete state.stress[k]); render(); openPop(li, wi); };
-    $("manual").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); manual(li, wi); } if (e.key === "Escape") closePop(); e.stopPropagation(); };
+    $("manual").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); if ($("manual").value.trim()) manual(li, wi); else confirmRead(li, wi); } if (e.key === "Escape") closePop(); e.stopPropagation(); };
     $("bApp").onclick = (e) => { e.stopPropagation(); openForm("app", hasApp[0] || null); };
     $("bNe").onclick = (e) => { e.stopPropagation(); openForm("ne", hasNe || null); };
     if ($("revert")) $("revert").onclick = (e) => { e.stopPropagation(); revert(li, wi); };
@@ -1198,6 +1198,13 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     const w = D.lines[li].words[wi], cd = candidatesFor(li, wi)[i]; if (!cd) return;
     record(li, wi, cd.text, cd.peer ? "peer" : (cd.text === w.text ? "confirmed" : "candidate"));
     toast(`${w.text} → ${cd.text}`);
+  }
+  // Enter on a word (its box open, or the current word of the triage / OOV task): the reading is right as it stands; recorded like a
+  // candidate equal to the reading (method "confirmed": green, ✓ on the word), not as an approval of the whole line
+  function confirmRead(li, wi) {
+    const w = D.lines[li].words[wi];
+    if (state.edits[keyOf(li, wi)]) { closePop(); next(1, false); return; }
+    record(li, wi, w.text, "confirmed"); toast(`${w.text}: confirmed as read`);
   }
   function manual(li, wi) {
     const v = $("manual").value.trim().normalize("NFC"); if (!v) return;
@@ -1453,7 +1460,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
   function storeCounts() { try { const o = {}; MODE_LIST.forEach(m => { const its = modeItems(m); o[m] = [its.length, its.filter(it => !modeDone(m, it)).length]; });
     localStorage.setItem(`wb:modecounts:${G_PAGE}`, JSON.stringify({ at: new Date().toISOString(), modes: o })); } catch (e) {} }
   const G_PAGE = `${CFG.org ? "" : ""}${S.volume ? "RV" + S.volume + "/" + S.folio : S.folio}`;
-  const PLAIN_KEYS = `<kbd>Tab</kbd> next flagged word · <kbd>1–3</kbd> accept · <kbd>A</kbd> apparatus · <kbd>N</kbd><kbd>0–9</kbd> entity class · <kbd>R</kbd> role · name? right half ✓ left half ✗ · <kbd>D</kbd> edit diplomatic · <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> approve edition / diplomatic · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
+  const PLAIN_KEYS = `<kbd>Tab</kbd> next flagged word · <kbd>1–3</kbd> accept · <kbd>A</kbd> apparatus · <kbd>N</kbd><kbd>0–9</kbd> entity class · <kbd>R</kbd> role · name? right half ✓ left half ✗ · <kbd>D</kbd> edit diplomatic · <kbd>Enter</kbd> on an open word: confirm as read · <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> approve line: edition / diplomatic · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`;
   const setKeys = (html) => { const d = document.createElement("div"); d.innerHTML = html; $("keysBtn").setAttribute("data-tip", d.textContent.replace(/\s+/g, " ")); };
   function updateModeBar() { if (!state.mode) { $("modeStat").textContent = ""; setKeys(PLAIN_KEYS); $("modeCur").textContent = ""; return; } $("modeStat").textContent = modeStatus(); clearTimeout(updateModeBar.t); updateModeBar.t = setTimeout(storeCounts, 600); setKeys(`<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> next / previous stop · ${MODE_INFO[state.mode][2]} · <kbd>[</kbd> <kbd>]</kbd> entry · <kbd>Ctrl+Z</kbd> undo`);
     const cur = modeItems(state.mode).find(i => i.id === state.modeCur); $("modeCur").textContent = cur ? "· " + cur.label + (cur.why ? " (" + cur.why + ")" : "") : ""; }
@@ -1486,7 +1493,11 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
       modeNext(1); return true;
     }
     if (m === "lines" && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); mutate(() => state.apprE.add(it.li)); setDone(m, it.id, "confirm"); render(); modeNext(1); return true; }
-    if ((m === "triage" || m === "oov") && e.key === "Enter" && !e.shiftKey) { if (!state.edits[keyOf(it.li, it.wi)]) setDone(m, it.id, "accept as read"); return false; }   // the line is approved by the common rule below
+    if ((m === "triage" || m === "oov") && e.key === "Enter" && !e.shiftKey) {      // the word is confirmed as read (green, ✓), the line is not approved
+      e.preventDefault(); const kk = keyOf(it.li, it.wi), w = D.lines[it.li].words[it.wi];
+      if (!state.edits[kk]) { mutate(() => state.edits[kk] = { corrected: w.text, method: "confirmed", at: new Date().toISOString() }); setDone(m, it.id, "accept as read"); toast(`${w.text}: confirmed as read`); }
+      closePop(); render(); modeNext(1); return true;
+    }
     if ((m === "triage" || m === "oov") && k === "g") { e.preventDefault(); done("siglum"); return true; }
     if (m === "boundaries" || m === "structure") {
       if (k === "p") { e.preventDefault(); const r = (document.querySelector(`.w[data-k="${keyOf(it.li, it.wi)}"]`) || document.body).getBoundingClientRect(); dsMenu({ clientX: r.left, clientY: r.bottom, preventDefault() {}, stopPropagation() {} }, it.g); return true; }
@@ -1562,6 +1573,7 @@ i.bt{display:inline-block;width:2px;height:1.1em;margin:0 .3em 0 -.15em;vertical
     else if (k === "a" && state.pop) { e.preventDefault(); $("bApp").click(); }
     else if (k === "n" && state.pop) { e.preventDefault(); $("bNe").click(); }
     else if (k === "d" && state.active !== null) { e.preventDefault(); closePop(); editDipl(state.active); }
+    else if (e.key === "Enter" && !e.shiftKey && state.pop) { e.preventDefault(); confirmRead(...state.pop); }
     else if (e.key === "Enter" && state.active !== null) {
       e.preventDefault(); const li = state.active, set = e.shiftKey ? state.apprD : state.apprE;
       mutate(() => set.add(li)); closePop(); render(); toast(`line ${LNUM[li]}: ${e.shiftKey ? "diplomatic" : "edition"} approved`);
